@@ -1,0 +1,54 @@
+.crosstab-detail-page {
+  padding: var(--spacing-xl);
+}
+
+.crosstab-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-xl);
+}
+
+.crosstab-title {
+  font-size: 1.5rem;
+  margin-bottom: var(--spacing-lg);
+}
+
+.crosstab-table-container {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  overflow: auto;
+}
+
+.crosstab-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.crosstab-table th,
+.crosstab-table td {
+  padding: var(--spacing-md);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.crosstab-table th {
+  background-color: var(--color-border-light);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-light);
+}
+
+.crosstab-table td {
+  font-size: 0.875rem;
+}
+
+.crosstab-table .row-header {
+  font-weight: 500;
+  background-color: var(--color-border-light);
+}
+
+.crosstab-table tr:hover td {
+  background-color: var(--color-primary-light);
+}

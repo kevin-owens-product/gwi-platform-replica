@@ -1,0 +1,307 @@
+.printrf-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.printrf-header {
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.printrf-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-xl);
+}
+
+.printrf-config {
+  max-width: 900px;
+}
+
+.printrf-config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.printrf-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.printrf-field-full {
+  grid-column: 1 / -1;
+}
+
+.printrf-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.printrf-multiselect-wrapper,
+.printrf-select-wrapper {
+  position: relative;
+}
+
+.printrf-select-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  color: var(--color-text);
+  background: var(--color-white);
+  text-align: left;
+}
+
+.printrf-select-btn:hover {
+  border-color: var(--color-text-muted);
+}
+
+.printrf-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.printrf-dropdown-wide {
+  min-width: 360px;
+}
+
+.printrf-dropdown-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.printrf-dropdown-option:hover {
+  background: var(--color-border-light);
+}
+
+.printrf-dropdown-option input[type="checkbox"] {
+  accent-color: var(--color-primary);
+  margin-top: 3px;
+}
+
+.printrf-pub-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.printrf-pub-name {
+  font-weight: 500;
+}
+
+.printrf-pub-meta {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.printrf-dropdown-item {
+  width: 100%;
+  padding: 8px 14px;
+  text-align: left;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.printrf-dropdown-item:hover {
+  background: var(--color-border-light);
+}
+
+.printrf-dropdown-item.selected {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.printrf-insertions {
+  margin-bottom: var(--spacing-xl);
+}
+
+.printrf-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--spacing-md);
+}
+
+.printrf-insertion-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.printrf-insertion-table th {
+  text-align: left;
+  padding: 10px 14px;
+  font-weight: 500;
+  color: var(--color-text-light);
+  border-bottom: 2px solid var(--color-border);
+  font-size: 0.8125rem;
+}
+
+.printrf-insertion-table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.printrf-table-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  color: var(--color-text);
+  background: var(--color-white);
+}
+
+.printrf-table-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.printrf-table-select-sm {
+  width: 120px;
+}
+
+.printrf-table-input {
+  width: 80px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  color: var(--color-text);
+  text-align: center;
+}
+
+.printrf-table-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.printrf-remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  transition: all var(--transition-fast);
+}
+
+.printrf-remove-btn:hover:not(:disabled) {
+  background: var(--color-primary-light);
+  color: var(--color-error);
+}
+
+.printrf-remove-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.printrf-add-row-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 8px 14px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  color: var(--color-text-light);
+  transition: all var(--transition-fast);
+}
+
+.printrf-add-row-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.printrf-actions {
+  margin-bottom: var(--spacing-xl);
+}
+
+.printrf-run-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 12px 28px;
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color var(--transition-fast);
+}
+
+.printrf-run-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.printrf-run-btn:disabled {
+  background: var(--color-button-disabled);
+  color: var(--color-button-disabled-text);
+  cursor: not-allowed;
+}
+
+.printrf-results {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.printrf-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.printrf-result-card {
+  padding: var(--spacing-lg);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.printrf-result-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--spacing-sm);
+}
+
+.printrf-result-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+}

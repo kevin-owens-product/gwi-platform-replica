@@ -1,0 +1,104 @@
+.chart-detail-page {
+  padding: var(--spacing-xl);
+}
+
+.chart-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-xl);
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  background-color: var(--color-white);
+}
+
+.icon-btn:hover {
+  background-color: var(--color-border-light);
+}
+
+.chart-detail-content {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--spacing-xl);
+}
+
+.chart-title-section {
+  grid-column: 1 / -1;
+}
+
+.chart-title-section h1 {
+  font-size: 1.5rem;
+  margin-bottom: var(--spacing-xs);
+}
+
+.chart-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-light);
+}
+
+.chart-canvas {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-placeholder {
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.chart-placeholder svg {
+  margin-bottom: var(--spacing-md);
+}
+
+.chart-config-panel {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  height: fit-content;
+}
+
+.chart-config-panel h3 {
+  font-size: 1rem;
+  margin-bottom: var(--spacing-lg);
+}
+
+.config-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.config-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.config-group label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-light);
+}
+
+.config-select {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  background-color: var(--color-white);
+}

@@ -1,7 +1,16 @@
+/* ============================================
+   Chart Detail Page - GWI Platform Design
+   ============================================ */
+
 .chart-detail-page {
   padding: var(--spacing-xl);
+  max-width: var(--content-max-width);
+  animation: fadeIn 0.2s ease;
 }
 
+/* ============================================
+   Header - Back link + Actions
+   ============================================ */
 .chart-detail-header {
   display: flex;
   align-items: center;
@@ -10,52 +19,76 @@
 }
 
 .back-link {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--spacing-sm);
-  color: var(--color-text);
-  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .back-link:hover {
   color: var(--color-primary);
+  background-color: var(--color-primary-light);
 }
 
 .header-actions {
   display: flex;
+  align-items: center;
   gap: var(--spacing-sm);
 }
 
 .icon-btn {
-  width: 40px;
-  height: 40px;
-  display: flex;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  color: var(--color-text);
+  color: var(--color-text-secondary);
   background-color: var(--color-white);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
 }
 
 .icon-btn:hover {
-  background-color: var(--color-border-light);
+  background-color: var(--color-surface-secondary);
+  border-color: var(--color-border-hover);
+  color: var(--color-text);
 }
 
+.icon-btn:active {
+  background-color: var(--color-surface-tertiary);
+}
+
+/* ============================================
+   Title Section
+   ============================================ */
 .chart-detail-title-section {
   margin-bottom: var(--spacing-lg);
 }
 
 .chart-title-input {
   width: 100%;
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
   border: none;
   outline: none;
   background: transparent;
   color: var(--color-text);
-  padding: 0;
+  padding: var(--spacing-xs) 0;
   margin-bottom: var(--spacing-xs);
+  letter-spacing: var(--letter-spacing-tight);
+  border-bottom: 2px solid transparent;
+  transition: border-color var(--transition-fast);
+}
+
+.chart-title-input::placeholder {
+  color: var(--color-text-muted);
 }
 
 .chart-title-input:focus {
@@ -63,37 +96,51 @@
 }
 
 .chart-subtitle {
-  font-size: 0.875rem;
-  color: var(--color-text-light);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-muted);
 }
 
+/* ============================================
+   Content Layout - Main + Config Sidebar
+   ============================================ */
 .chart-detail-content {
   display: grid;
   grid-template-columns: 1fr 280px;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-lg);
   align-items: start;
 }
 
+/* ============================================
+   Main Chart Area
+   ============================================ */
 .chart-main-area {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
+/* View toggle tabs (Chart / Table / Summary) */
 .chart-view-tabs {
   display: flex;
   gap: 0;
-  border-bottom: 2px solid var(--color-border-light);
-  margin-bottom: 0;
+  background: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-bottom: none;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 0 var(--spacing-sm);
 }
 
 .chart-view-tab {
-  padding: 10px 20px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-text-light);
+  position: relative;
+  padding: 12px 20px;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
   border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: all var(--transition-fast);
+  margin-bottom: -1px;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+  background: none;
+  cursor: pointer;
 }
 
 .chart-view-tab:hover {
@@ -103,21 +150,25 @@
 .chart-view-tab.active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
+/* Chart canvas area */
 .chart-canvas {
   background-color: var(--color-white);
   border: 1px solid var(--color-border-light);
-  border-top: none;
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  min-height: 400px;
-  padding: var(--spacing-lg);
+  border-top: 1px solid var(--color-border-light);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  min-height: 420px;
+  padding: var(--spacing-xl) var(--spacing-lg);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  box-shadow: var(--shadow-card);
 }
 
+/* SVG chart sizing */
 .chart-svg {
   width: 100%;
   max-width: 600px;
@@ -128,21 +179,34 @@
   max-width: 280px;
 }
 
+/* Chart empty message */
+.chart-empty-message {
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--spacing-2xl) 0;
+}
+
+/* ============================================
+   Chart Legend
+   ============================================ */
 .chart-legend {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: var(--spacing-lg);
-  margin-top: var(--spacing-md);
+  margin-top: var(--spacing-lg);
   padding-top: var(--spacing-md);
   border-top: 1px solid var(--color-border-light);
+  width: 100%;
 }
 
 .chart-legend-item {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  font-size: 0.8125rem;
-  color: var(--color-text-light);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
 }
 
 .chart-legend-dot {
@@ -152,11 +216,13 @@
   flex-shrink: 0;
 }
 
-/* Pie chart */
+/* ============================================
+   Pie Chart Layout
+   ============================================ */
 .pie-chart-container {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-2xl);
   width: 100%;
   justify-content: center;
 }
@@ -171,7 +237,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-size: 0.8125rem;
+  font-size: var(--font-size-body-sm);
 }
 
 .pie-legend-dot {
@@ -184,14 +250,17 @@
 .pie-legend-label {
   color: var(--color-text);
   min-width: 80px;
+  font-weight: var(--font-weight-medium);
 }
 
 .pie-legend-value {
-  color: var(--color-text-light);
-  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
 }
 
-/* Data Table */
+/* ============================================
+   Data Table
+   ============================================ */
 .chart-table-wrapper {
   width: 100%;
   overflow-x: auto;
@@ -206,30 +275,47 @@
 .chart-data-table td {
   padding: 10px 16px;
   text-align: left;
-  font-size: 0.875rem;
+  font-size: var(--font-size-body);
   border-bottom: 1px solid var(--color-border-light);
 }
 
 .chart-data-table th {
-  font-weight: 600;
-  color: var(--color-text-light);
-  font-size: 0.8125rem;
-  background-color: var(--color-border-light);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body-sm);
+  background-color: var(--color-surface-secondary);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.chart-data-table td {
+  color: var(--color-text);
 }
 
 .chart-data-table .row-label {
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
 }
 
-.chart-data-table tr:hover td {
-  background-color: var(--color-primary-light);
+.chart-data-table tbody tr {
+  transition: background-color var(--transition-fast);
 }
 
-/* Summary */
+.chart-data-table tbody tr:hover td {
+  background-color: var(--color-primary-50);
+}
+
+.chart-data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ============================================
+   Summary Stats
+   ============================================ */
 .chart-summary {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
   width: 100%;
 }
 
@@ -238,37 +324,52 @@
   flex-direction: column;
   gap: var(--spacing-xs);
   padding: var(--spacing-md);
-  background-color: var(--color-border-light);
-  border-radius: var(--radius-md);
+  background-color: var(--color-surface-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--transition-fast);
+}
+
+.summary-stat:hover {
+  border-color: var(--color-border);
 }
 
 .summary-label {
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--letter-spacing-caps);
 }
 
 .summary-value {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
 }
 
-/* Config Panel */
+/* ============================================
+   Config Panel - Right Sidebar (280px)
+   ============================================ */
 .chart-config-panel {
   background-color: var(--color-white);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding: var(--spacing-lg);
   position: sticky;
-  top: var(--spacing-xl);
+  top: var(--spacing-lg);
+  box-shadow: var(--shadow-card);
 }
 
 .chart-config-panel h3 {
-  font-size: 1rem;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
   margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border-light);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
 }
 
 .config-options {
@@ -280,27 +381,39 @@
 .config-group {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: 6px;
 }
 
 .config-group label {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--color-text-light);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
 }
 
 .config-select {
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  font-size: 0.875rem;
+  font-size: var(--font-size-body-sm);
   background-color: var(--color-white);
   color: var(--color-text);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+  cursor: pointer;
+}
+
+.config-select:hover {
+  border-color: var(--color-border-hover);
 }
 
 .config-select:focus {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
 }
 
 .config-divider {
@@ -309,17 +422,65 @@
   margin: var(--spacing-xs) 0;
 }
 
+/* Apply button uses shared Button component, but keep fallback */
 .config-apply-btn {
   width: 100%;
   padding: 10px 16px;
   background-color: var(--color-primary);
   color: var(--color-white);
   border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: background-color var(--transition-fast);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
+  cursor: pointer;
+  border: none;
 }
 
 .config-apply-btn:hover {
   background-color: var(--color-primary-hover);
+  box-shadow: 0 2px 8px rgba(255, 0, 119, 0.25);
+}
+
+.config-apply-btn:active {
+  background-color: var(--color-primary-active);
+}
+
+/* ============================================
+   Detail Loading State
+   ============================================ */
+.chart-detail-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  gap: var(--spacing-md);
+}
+
+.chart-detail-loading p {
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 900px) {
+  .chart-detail-content {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-config-panel {
+    position: static;
+    order: -1;
+  }
+
+  .pie-chart-container {
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+
+  .chart-summary {
+    grid-template-columns: 1fr;
+  }
 }

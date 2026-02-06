@@ -1,31 +1,113 @@
+/* ============================================
+   Dashboard Detail Page - GWI Platform Design
+   KPI cards, widget grid, data visualization
+   ============================================ */
+
+/* --- Page Container --- */
 .dashboard-detail-page {
   padding: var(--spacing-xl);
+  max-width: var(--content-max-width);
+  animation: fadeIn 200ms ease;
 }
 
+/* --- Header --- */
 .dashboard-detail-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.back-link:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-tertiary);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.header-actions .icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-white);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.header-actions .icon-btn:hover {
+  background-color: var(--color-surface-secondary);
+  border-color: var(--color-border-hover);
+  color: var(--color-text);
+  box-shadow: var(--shadow-xs);
+}
+
+/* --- Content Area --- */
+.dashboard-detail-content {
+  position: relative;
+}
+
+/* --- Title Input --- */
 .dashboard-title-input {
   width: 100%;
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
   border: none;
   outline: none;
   background: transparent;
   color: var(--color-text);
-  padding: 0;
-  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-xs) 0;
+  margin-bottom: var(--spacing-lg);
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  transition: border-color var(--transition-fast);
 }
 
 .dashboard-title-input:focus {
   border-bottom: 2px solid var(--color-primary);
 }
 
-/* KPI Grid */
+.dashboard-title-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* --- Dashboard Meta Line --- */
+.dashboard-detail-content .dashboard-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* ============================================
+   KPI Cards with Sparklines
+   ============================================ */
+
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -36,56 +118,99 @@
 .kpi-card {
   background-color: var(--color-white);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--transition-fast),
+              box-shadow var(--transition-normal),
+              transform var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card:hover {
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* Subtle accent line at top of KPI card */
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-chart-6) 100%);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.kpi-card:hover::before {
+  opacity: 1;
 }
 
 .kpi-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
 }
 
 .kpi-title {
-  font-size: 0.8125rem;
-  color: var(--color-text-light);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
 }
 
 .sparkline-svg {
-  width: 60px;
+  width: 64px;
   height: 24px;
+  flex-shrink: 0;
 }
 
 .kpi-value {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
   color: var(--color-text);
-  margin-bottom: var(--spacing-xs);
+  line-height: var(--line-height-tight);
+  margin-bottom: var(--spacing-sm);
+  letter-spacing: var(--letter-spacing-tight);
 }
 
 .kpi-change {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
 }
 
 .kpi-change.positive {
   color: var(--color-success);
+  background-color: var(--color-success-light);
 }
 
 .kpi-change.negative {
   color: var(--color-error);
+  background-color: var(--color-error-light);
 }
 
 .kpi-period {
   color: var(--color-text-muted);
-  font-weight: 400;
+  font-weight: var(--font-weight-regular);
+  margin-left: var(--spacing-xs);
 }
 
-/* Widget Grid */
+/* ============================================
+   Widget Grid Layout
+   ============================================ */
+
 .widget-grid-2col {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -93,51 +218,81 @@
   margin-bottom: var(--spacing-lg);
 }
 
+/* --- Large Widget Card --- */
 .large-widget {
   background-color: var(--color-white);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding: var(--spacing-lg);
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--transition-fast),
+              box-shadow var(--transition-normal);
 }
 
+.large-widget:hover {
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+/* --- Widget Header Bar --- */
 .widget-header-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .widget-header-bar h3 {
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0;
+  letter-spacing: var(--letter-spacing-normal);
 }
 
 .widget-badge {
-  font-size: 0.6875rem;
-  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: 3px 10px;
   border-radius: var(--radius-full);
-  background: var(--color-border-light);
-  color: var(--color-text-light);
+  background: var(--color-surface-tertiary);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--letter-spacing-wide);
 }
 
+/* --- Chart SVG Container --- */
 .widget-svg {
   width: 100%;
   height: auto;
+  display: block;
 }
 
-/* Donut */
+/* --- Widget Legend (inside SVG charts) --- */
+.widget-legend text {
+  font-family: var(--font-family);
+}
+
+/* ============================================
+   Donut Chart Widget
+   ============================================ */
+
 .donut-widget-container {
   display: flex;
   align-items: center;
   gap: var(--spacing-xl);
   justify-content: center;
-  padding: var(--spacing-md) 0;
+  padding: var(--spacing-lg) var(--spacing-md);
 }
 
 .donut-svg {
   width: 160px;
   height: 160px;
   flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.06));
 }
 
 .donut-legend {
@@ -150,7 +305,8 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-size: 0.8125rem;
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-normal);
 }
 
 .donut-legend-dot {
@@ -158,57 +314,191 @@
   height: 10px;
   border-radius: var(--radius-full);
   flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
 }
 
 .donut-legend-label {
   color: var(--color-text);
   min-width: 50px;
+  font-weight: var(--font-weight-medium);
 }
 
 .donut-legend-value {
-  color: var(--color-text-light);
-  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
 }
 
-/* Widget Table */
+/* ============================================
+   Widget Table
+   ============================================ */
+
 .widget-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .widget-table th,
 .widget-table td {
-  padding: 10px 12px;
+  padding: 10px 14px;
   text-align: left;
-  font-size: 0.8125rem;
+  font-size: var(--font-size-body-sm);
   border-bottom: 1px solid var(--color-border-light);
 }
 
 .widget-table th {
-  font-weight: 600;
-  color: var(--color-text-light);
-  font-size: 0.75rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--letter-spacing-wider);
+  background-color: var(--color-surface-secondary);
+  white-space: nowrap;
+}
+
+.widget-table th:first-child {
+  border-top-left-radius: var(--radius-md);
+}
+
+.widget-table th:last-child {
+  border-top-right-radius: var(--radius-md);
+}
+
+.widget-table td {
+  font-variant-numeric: tabular-nums;
 }
 
 .widget-table .wt-market {
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   color: var(--color-text);
 }
 
 .widget-table .wt-trend {
-  font-weight: 500;
+  font-weight: var(--font-weight-semibold);
 }
 
 .widget-table .wt-trend.positive {
   color: var(--color-success);
 }
 
-.widget-table tr:hover td {
-  background-color: var(--color-border-light);
+.widget-table .wt-trend.negative {
+  color: var(--color-error);
 }
 
-.widget-table tr:last-child td {
+.widget-table tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+.widget-table tbody tr:hover td {
+  background-color: var(--color-surface-secondary);
+}
+
+.widget-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+/* ============================================
+   Empty / Loading States (reused from listing)
+   ============================================ */
+
+.dashboard-detail-page .dashboards-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--spacing-4xl) var(--spacing-xl);
+  color: var(--color-text-muted);
+}
+
+.dashboard-detail-page .dashboards-empty p {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.dashboard-detail-page .dashboards-empty-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  background: var(--color-white);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.dashboard-detail-page .dashboards-empty-btn:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+}
+
+/* --- Spinner --- */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+
+@media (max-width: 1200px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-detail-page {
+    padding: var(--spacing-lg);
+  }
+
+  .dashboard-detail-header {
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-sm);
+  }
+
+  .kpi-value {
+    font-size: var(--font-size-2xl);
+  }
+
+  .widget-grid-2col {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .donut-widget-container {
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+
+  .dashboard-title-input {
+    font-size: var(--font-size-xl);
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }

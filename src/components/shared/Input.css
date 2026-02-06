@@ -1,7 +1,7 @@
 .input-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .input-field--full {
@@ -9,8 +9,8 @@
 }
 
 .input-field__label {
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text);
 }
 
@@ -20,13 +20,19 @@
   background: var(--color-input-bg);
   border: 1px solid var(--color-input-border);
   border-radius: var(--radius-md);
-  transition: border-color var(--transition-fast);
+  transition: all var(--transition-fast);
   overflow: hidden;
+}
+
+.input-field__wrapper:hover {
+  background: var(--color-input-bg-hover);
+  border-color: var(--color-border-hover);
 }
 
 .input-field__wrapper:focus-within {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(227, 28, 121, 0.1);
+  box-shadow: var(--shadow-focus);
+  background: var(--color-white);
 }
 
 .input-field__wrapper--error {
@@ -34,16 +40,16 @@
 }
 
 .input-field__wrapper--error:focus-within {
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.12);
 }
 
 .input-field__input {
   flex: 1;
-  height: 40px;
+  height: 36px;
   padding: 0 12px;
   background: none;
   border: none;
-  font-size: 0.875rem;
+  font-size: var(--font-size-body);
   color: var(--color-text);
   outline: none;
 }
@@ -60,8 +66,8 @@
 }
 
 .input-field__icon svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .input-field__icon--right {
@@ -70,11 +76,14 @@
 }
 
 .input-field__error {
-  font-size: 0.75rem;
+  font-size: var(--font-size-sm);
   color: var(--color-error);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .input-field__hint {
-  font-size: 0.75rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }

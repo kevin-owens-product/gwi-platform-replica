@@ -1,3 +1,5 @@
+/* Canvas Page - GWI Design System */
+
 .canvas-page {
   padding: var(--spacing-xl);
   max-width: 900px;
@@ -11,10 +13,11 @@
 
 .page-subtitle {
   font-size: 0.9375rem;
-  color: var(--color-text-light);
+  color: var(--color-text-secondary);
   margin-top: var(--spacing-xs);
 }
 
+/* Step Wizard */
 .canvas-steps {
   display: flex;
   align-items: center;
@@ -30,8 +33,9 @@
   padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--color-white);
   border: 2px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   transition: all var(--transition-fast);
+  box-shadow: var(--shadow-card);
 }
 
 .step:hover {
@@ -53,12 +57,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-border-light);
+  background-color: var(--color-surface-tertiary);
   border-radius: var(--radius-full);
-  font-weight: 700;
-  font-size: 0.875rem;
-  color: var(--color-text-light);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
   flex-shrink: 0;
+  transition: all var(--transition-fast);
 }
 
 .step.active .step-number {
@@ -73,36 +78,40 @@
 
 .step-info h3 {
   font-size: 0.9375rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   margin-bottom: 2px;
 }
 
 .step-info p {
-  font-size: 0.8125rem;
-  color: var(--color-text-light);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
 }
 
 .step-connector {
   width: 40px;
   height: 2px;
   background-color: var(--color-border);
+  flex-shrink: 0;
 }
 
+/* Content Card */
 .canvas-content {
   background-color: var(--color-white);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding: var(--spacing-xl);
+  box-shadow: var(--shadow-card);
 }
 
+/* Goals */
 .goals-section h2 {
-  font-size: 1.25rem;
+  font-size: var(--font-size-xl);
   margin-bottom: var(--spacing-xs);
 }
 
 .goals-section > p {
   font-size: 0.9375rem;
-  color: var(--color-text-light);
+  color: var(--color-text-secondary);
   margin-bottom: var(--spacing-lg);
 }
 
@@ -121,20 +130,23 @@
   gap: var(--spacing-sm);
   padding: var(--spacing-lg);
   border: 2px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   text-align: center;
   transition: all var(--transition-fast);
+  cursor: pointer;
 }
 
 .goal-card:hover {
   border-color: var(--color-primary);
   background-color: var(--color-primary-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .goal-card.selected {
   border-color: var(--color-primary);
   background-color: var(--color-primary);
   color: var(--color-white);
+  box-shadow: var(--shadow-md);
 }
 
 .goal-icon {
@@ -143,9 +155,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-border-light);
-  border-radius: var(--radius-md);
-  color: var(--color-text-light);
+  background-color: var(--color-surface-tertiary);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
 }
 
 .goal-card.selected .goal-icon {
@@ -155,12 +168,13 @@
 
 .goal-label {
   font-size: 0.9375rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .goal-desc {
-  font-size: 0.75rem;
-  color: var(--color-text-light);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
 }
 
 .goal-card.selected .goal-desc {
@@ -178,8 +192,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   color: var(--color-white);
 }
 
@@ -188,16 +202,17 @@
   justify-content: flex-end;
 }
 
+/* Shared Button Styles */
 .btn-primary {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: 10px 20px;
+  padding: var(--spacing-5) var(--spacing-10);
   background-color: var(--color-primary);
   color: var(--color-white);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
   transition: background-color var(--transition-fast);
 }
 
@@ -215,28 +230,30 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: 10px 20px;
+  padding: var(--spacing-5) var(--spacing-10);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text);
   background-color: var(--color-white);
+  transition: all var(--transition-fast);
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-border-light);
+  background-color: var(--color-surface-secondary);
+  border-color: var(--color-border-hover);
 }
 
-/* Canvas Audiences (shared styles) */
+/* Audiences (shared with Canvas Audiences step) */
 .audiences-section h2 {
-  font-size: 1.25rem;
+  font-size: var(--font-size-xl);
   margin-bottom: var(--spacing-xs);
 }
 
 .audiences-section > p {
   font-size: 0.9375rem;
-  color: var(--color-text-light);
+  color: var(--color-text-secondary);
   margin-bottom: var(--spacing-lg);
 }
 
@@ -253,7 +270,7 @@
   gap: var(--spacing-md);
   padding: var(--spacing-md);
   border: 2px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   text-align: left;
   transition: all var(--transition-fast);
 }
@@ -296,12 +313,12 @@
 
 .audience-name {
   font-size: 0.9375rem;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .audience-size {
-  font-size: 0.8125rem;
-  color: var(--color-text-light);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
 }
 
 .add-custom-btn {
@@ -310,13 +327,14 @@
   gap: var(--spacing-sm);
   padding: var(--spacing-md);
   color: var(--color-primary);
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
   width: 100%;
   justify-content: center;
   border: 2px dashed var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   margin-bottom: var(--spacing-xl);
+  transition: all var(--transition-fast);
 }
 
 .add-custom-btn:hover {

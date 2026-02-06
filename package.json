@@ -2,6 +2,8 @@
   "name": "gwi-platform-replica",
   "private": true,
   "version": "0.0.0",
+  "description": "GWI Platform UI replica with mock data layer for AI training",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,6 +24,9 @@
     "recharts": "^3.7.0",
     "zod": "^4.3.6",
     "zustand": "^5.0.11"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

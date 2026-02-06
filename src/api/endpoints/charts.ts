@@ -9,21 +9,21 @@ import type {
 
 export const chartsApi = {
   list: (params?: ChartListParams) =>
-    apiClient.get('v1/charts', { searchParams: params as Record<string, string> })
+    apiClient.get('v3/charts', { searchParams: params as Record<string, string> })
       .json<PaginatedResponse<Chart>>(),
 
   get: (id: string) =>
-    apiClient.get(`v1/charts/${id}`).json<Chart>(),
+    apiClient.get(`v3/charts/${id}`).json<Chart>(),
 
   create: (data: CreateChartRequest) =>
-    apiClient.post('v1/charts', { json: data }).json<Chart>(),
+    apiClient.post('v3/charts', { json: data }).json<Chart>(),
 
   update: (id: string, data: UpdateChartRequest) =>
-    apiClient.patch(`v1/charts/${id}`, { json: data }).json<Chart>(),
+    apiClient.patch(`v3/charts/${id}`, { json: data }).json<Chart>(),
 
   delete: (id: string) =>
-    apiClient.delete(`v1/charts/${id}`).json<void>(),
+    apiClient.delete(`v3/charts/${id}`).json<void>(),
 
   duplicate: (id: string) =>
-    apiClient.post(`v1/charts/${id}/duplicate`).json<Chart>(),
+    apiClient.post(`v3/charts/${id}/duplicate`).json<Chart>(),
 }

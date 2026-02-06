@@ -8,21 +8,21 @@ import type {
 
 export const crosstabsApi = {
   list: (params?: { page?: number; per_page?: number; search?: string }) =>
-    apiClient.get('crosstabs', { searchParams: params as Record<string, string> })
+    apiClient.get('v3/crosstabs', { searchParams: params as Record<string, string> })
       .json<PaginatedResponse<Crosstab>>(),
 
   get: (id: string) =>
-    apiClient.get(`crosstabs/${id}`).json<Crosstab>(),
+    apiClient.get(`v3/crosstabs/${id}`).json<Crosstab>(),
 
   create: (data: CreateCrosstabRequest) =>
-    apiClient.post('crosstabs', { json: data }).json<Crosstab>(),
+    apiClient.post('v3/crosstabs', { json: data }).json<Crosstab>(),
 
   update: (id: string, data: UpdateCrosstabRequest) =>
-    apiClient.patch(`crosstabs/${id}`, { json: data }).json<Crosstab>(),
+    apiClient.patch(`v3/crosstabs/${id}`, { json: data }).json<Crosstab>(),
 
   delete: (id: string) =>
-    apiClient.delete(`crosstabs/${id}`).json<void>(),
+    apiClient.delete(`v3/crosstabs/${id}`).json<void>(),
 
   duplicate: (id: string) =>
-    apiClient.post(`crosstabs/${id}/duplicate`).json<Crosstab>(),
+    apiClient.post(`v3/crosstabs/${id}/duplicate`).json<Crosstab>(),
 }

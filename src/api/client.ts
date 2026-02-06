@@ -2,6 +2,7 @@ import ky from 'ky'
 import { useAuthStore } from '@/stores/auth'
 
 const API_BASE_URL = import.meta.env.VITE_GWI_API_BASE_URL || 'https://api.globalwebindex.com'
+const API_KEY = import.meta.env.VITE_GWI_API_KEY || ''
 
 export const apiClient = ky.create({
   prefixUrl: API_BASE_URL,
@@ -14,6 +15,9 @@ export const apiClient = ky.create({
           request.headers.set('Authorization', `Bearer ${token}`)
         }
         request.headers.set('Content-Type', 'application/json')
+        if (API_KEY) {
+          request.headers.set('X-Api-Key', API_KEY)
+        }
       },
     ],
     afterResponse: [
@@ -34,7 +38,7 @@ export const apiClient = ky.create({
           const refreshToken = useAuthStore.getState().refreshToken
           if (refreshToken) {
             try {
-              const refreshResponse = await ky.post(`${API_BASE_URL}/auth/refresh`, {
+              const refreshResponse = await ky.post(`${API_BASE_URL}/v3/auth/refresh`, {
                 json: { refresh_token: refreshToken },
               }).json<{ access_token: string; refresh_token: string; expires_in: number }>()
 

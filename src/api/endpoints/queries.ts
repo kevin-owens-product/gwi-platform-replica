@@ -10,17 +10,17 @@ import type {
 
 export const queriesApi = {
   stats: (data: StatsQueryRequest) =>
-    apiClient.post('data/stats', { json: data }).json<StatsQueryResponse>(),
+    apiClient.post('v3/data/stats', { json: data }).json<StatsQueryResponse>(),
 
   statsStream: (data: StatsQueryRequest) =>
-    streamJsonLines<StatsQueryResponse['results'][0]>('data/stats', {
+    streamJsonLines<StatsQueryResponse['results'][0]>('v3/data/stats', {
       method: 'post',
       json: data,
     }),
 
   crosstab: (data: CrosstabQueryRequest) =>
-    apiClient.post('data/crosstab', { json: data }).json<CrosstabQueryResult>(),
+    apiClient.post('v3/data/crosstab', { json: data }).json<CrosstabQueryResult>(),
 
   intersection: (data: IntersectionQueryRequest) =>
-    apiClient.post('data/intersection', { json: data }).json<IntersectionResult>(),
+    apiClient.post('v3/data/intersection', { json: data }).json<IntersectionResult>(),
 }

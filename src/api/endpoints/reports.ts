@@ -7,12 +7,12 @@ import type {
 
 export const reportsApi = {
   list: (params?: ReportListParams) =>
-    apiClient.get('reports', { searchParams: params as Record<string, string> })
+    apiClient.get('v3/reports', { searchParams: params as Record<string, string> })
       .json<PaginatedResponse<Report>>(),
 
   get: (id: string) =>
-    apiClient.get(`reports/${id}`).json<Report>(),
+    apiClient.get(`v3/reports/${id}`).json<Report>(),
 
   download: (id: string) =>
-    apiClient.get(`reports/${id}/download`).blob(),
+    apiClient.get(`v3/reports/${id}/download`).blob(),
 }

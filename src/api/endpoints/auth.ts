@@ -10,30 +10,30 @@ import type {
 
 export const authApi = {
   login: (data: LoginRequest) =>
-    apiClient.post('auth/login', { json: data }).json<LoginResponse>(),
+    apiClient.post('v3/auth/login', { json: data }).json<LoginResponse>(),
 
   signup: (data: SignUpRequest) =>
-    apiClient.post('auth/signup', { json: data }).json<LoginResponse>(),
+    apiClient.post('v3/auth/signup', { json: data }).json<LoginResponse>(),
 
   logout: () =>
-    apiClient.post('auth/logout').json<void>(),
+    apiClient.post('v3/auth/logout').json<void>(),
 
   refreshToken: (refreshToken: string) =>
-    apiClient.post('auth/refresh', { json: { refresh_token: refreshToken } })
+    apiClient.post('v3/auth/refresh', { json: { refresh_token: refreshToken } })
       .json<{ access_token: string; refresh_token: string; expires_in: number }>(),
 
   getProfile: () =>
-    apiClient.get('auth/me').json<User>(),
+    apiClient.get('v3/auth/me').json<User>(),
 
   updateProfile: (data: Partial<User>) =>
-    apiClient.patch('auth/me', { json: data }).json<User>(),
+    apiClient.patch('v3/auth/me', { json: data }).json<User>(),
 
   requestPasswordReset: (data: PasswordResetRequest) =>
-    apiClient.post('auth/password-reset', { json: data }).json<void>(),
+    apiClient.post('v3/auth/password-reset', { json: data }).json<void>(),
 
   confirmPasswordReset: (data: PasswordResetConfirmRequest) =>
-    apiClient.post('auth/password-reset/confirm', { json: data }).json<void>(),
+    apiClient.post('v3/auth/password-reset/confirm', { json: data }).json<void>(),
 
   resendConfirmation: (email: string) =>
-    apiClient.post('auth/resend-confirmation', { json: { email } }).json<void>(),
+    apiClient.post('v3/auth/resend-confirmation', { json: { email } }).json<void>(),
 }

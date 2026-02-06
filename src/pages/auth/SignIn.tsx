@@ -34,9 +34,10 @@ export default function SignIn(): React.JSX.Element {
   })
 
   const onSubmit = (data: SignInForm): void => {
-    // In dev mode, allow any credentials to bypass API auth
+    // In dev mode, use the API token from env vars for real API access
     if (import.meta.env.DEV) {
-      setTokens('dev-token', 'dev-refresh-token')
+      const envToken = import.meta.env.VITE_GWI_API_TOKEN || ''
+      setTokens(envToken || 'dev-token', 'dev-refresh-token')
       setUser({
         id: 'dev-user',
         email: data.email,

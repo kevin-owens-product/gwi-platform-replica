@@ -1,32 +1,44 @@
+import { Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
 
-// Auth Pages
+// Auth Pages (small, load eagerly for fast first paint)
 import SignIn from './pages/auth/SignIn'
 import SignUp from './pages/auth/SignUp'
 import CantLogin from './pages/auth/CantLogin'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResendConfirmation from './pages/auth/ResendConfirmation'
 
-// App Pages
+// Layout + ProtectedRoute (needed immediately)
 import AppLayout from './components/layout/AppLayout'
 import ProtectedRoute from './components/auth/ProtectedRoute'
-import Home from './pages/app/Home'
-import AgentSpark from './pages/app/AgentSpark'
-import Audiences from './pages/app/Audiences'
-import AudienceDetail from './pages/app/AudienceDetail'
-import Charts from './pages/app/Charts'
-import ChartDetail from './pages/app/ChartDetail'
-import Crosstabs from './pages/app/Crosstabs'
-import CrosstabDetail from './pages/app/CrosstabDetail'
-import Dashboards from './pages/app/Dashboards'
-import DashboardDetail from './pages/app/DashboardDetail'
-import Canvas from './pages/app/Canvas'
-import CanvasAudiences from './pages/app/CanvasAudiences'
-import Reports from './pages/app/Reports'
-import Questions from './pages/app/Questions'
-import TvStudy from './pages/app/TvStudy'
-import PrintRF from './pages/app/PrintRF'
-import Settings from './pages/app/Settings'
+
+// Lazy-loaded App Pages
+const Home = lazy(() => import('./pages/app/Home'))
+const AgentSpark = lazy(() => import('./pages/app/AgentSpark'))
+const Audiences = lazy(() => import('./pages/app/Audiences'))
+const AudienceDetail = lazy(() => import('./pages/app/AudienceDetail'))
+const Charts = lazy(() => import('./pages/app/Charts'))
+const ChartDetail = lazy(() => import('./pages/app/ChartDetail'))
+const Crosstabs = lazy(() => import('./pages/app/Crosstabs'))
+const CrosstabDetail = lazy(() => import('./pages/app/CrosstabDetail'))
+const Dashboards = lazy(() => import('./pages/app/Dashboards'))
+const DashboardDetail = lazy(() => import('./pages/app/DashboardDetail'))
+const Canvas = lazy(() => import('./pages/app/Canvas'))
+const CanvasAudiences = lazy(() => import('./pages/app/CanvasAudiences'))
+const Reports = lazy(() => import('./pages/app/Reports'))
+const Questions = lazy(() => import('./pages/app/Questions'))
+const TvStudy = lazy(() => import('./pages/app/TvStudy'))
+const PrintRF = lazy(() => import('./pages/app/PrintRF'))
+const Settings = lazy(() => import('./pages/app/Settings'))
+
+function PageLoader() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '200px' }}>
+      <Loader2 size={28} className="spin" style={{ opacity: 0.5 }} />
+    </div>
+  )
+}
 
 function App() {
   return (
@@ -41,27 +53,28 @@ function App() {
 
         {/* App Routes */}
         <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-          <Route index element={<Home />} />
-          <Route path="agent-spark" element={<AgentSpark />} />
-          <Route path="audiences" element={<Audiences />} />
-          <Route path="audiences/new" element={<AudienceDetail isNew />} />
-          <Route path="audiences/:id" element={<AudienceDetail />} />
-          <Route path="chart-builder" element={<Charts />} />
-          <Route path="chart-builder/questions" element={<Questions />} />
-          <Route path="chart-builder/chart/:id" element={<ChartDetail />} />
-          <Route path="crosstabs" element={<Crosstabs />} />
-          <Route path="crosstabs/new" element={<CrosstabDetail isNew />} />
-          <Route path="crosstabs/:id" element={<CrosstabDetail />} />
-          <Route path="dashboards" element={<Dashboards />} />
-          <Route path="dashboards/:id" element={<DashboardDetail />} />
-          <Route path="canvas" element={<Canvas />} />
-          <Route path="canvas/goals" element={<Canvas />} />
-          <Route path="canvas/audiences" element={<CanvasAudiences />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="tv-study" element={<TvStudy />} />
-          <Route path="printrf" element={<PrintRF />} />
-          <Route path="account-settings" element={<Settings />} />
-          <Route path="account-settings/:tab" element={<Settings />} />
+          <Route index element={<Suspense fallback={<PageLoader />}><Home /></Suspense>} />
+          <Route path="agent-spark" element={<Suspense fallback={<PageLoader />}><AgentSpark /></Suspense>} />
+          <Route path="agent-spark/:id" element={<Suspense fallback={<PageLoader />}><AgentSpark /></Suspense>} />
+          <Route path="audiences" element={<Suspense fallback={<PageLoader />}><Audiences /></Suspense>} />
+          <Route path="audiences/new" element={<Suspense fallback={<PageLoader />}><AudienceDetail isNew /></Suspense>} />
+          <Route path="audiences/:id" element={<Suspense fallback={<PageLoader />}><AudienceDetail /></Suspense>} />
+          <Route path="chart-builder" element={<Suspense fallback={<PageLoader />}><Charts /></Suspense>} />
+          <Route path="chart-builder/questions" element={<Suspense fallback={<PageLoader />}><Questions /></Suspense>} />
+          <Route path="chart-builder/chart/:id" element={<Suspense fallback={<PageLoader />}><ChartDetail /></Suspense>} />
+          <Route path="crosstabs" element={<Suspense fallback={<PageLoader />}><Crosstabs /></Suspense>} />
+          <Route path="crosstabs/new" element={<Suspense fallback={<PageLoader />}><CrosstabDetail isNew /></Suspense>} />
+          <Route path="crosstabs/:id" element={<Suspense fallback={<PageLoader />}><CrosstabDetail /></Suspense>} />
+          <Route path="dashboards" element={<Suspense fallback={<PageLoader />}><Dashboards /></Suspense>} />
+          <Route path="dashboards/:id" element={<Suspense fallback={<PageLoader />}><DashboardDetail /></Suspense>} />
+          <Route path="canvas" element={<Suspense fallback={<PageLoader />}><Canvas /></Suspense>} />
+          <Route path="canvas/goals" element={<Suspense fallback={<PageLoader />}><Canvas /></Suspense>} />
+          <Route path="canvas/audiences" element={<Suspense fallback={<PageLoader />}><CanvasAudiences /></Suspense>} />
+          <Route path="reports" element={<Suspense fallback={<PageLoader />}><Reports /></Suspense>} />
+          <Route path="tv-study" element={<Suspense fallback={<PageLoader />}><TvStudy /></Suspense>} />
+          <Route path="printrf" element={<Suspense fallback={<PageLoader />}><PrintRF /></Suspense>} />
+          <Route path="account-settings" element={<Suspense fallback={<PageLoader />}><Settings /></Suspense>} />
+          <Route path="account-settings/:tab" element={<Suspense fallback={<PageLoader />}><Settings /></Suspense>} />
         </Route>
 
         {/* Fallback */}

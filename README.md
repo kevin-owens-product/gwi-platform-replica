@@ -108,10 +108,6 @@ src/
 | `npm run lint` | Run ESLint |
 | `npm run preview` | Preview the production build locally |
 
-## Deployment
-
-The repo includes a `render.yaml` that deploys the app as a static site on Render. Push to the configured branch and Render will build and publish automatically.
-
 ## Tech Stack
 
 React 19 · Vite · TypeScript · TanStack Query · Zustand · Recharts · React Router 7 · Ky · Lucide Icons · Zod · React Hook Form

@@ -3,7 +3,16 @@
 }
 
 .reports-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
+}
+
+.reports-tabs {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-left: auto;
 }
 
 .reports-filters {
@@ -43,10 +52,12 @@
   align-items: center;
   justify-content: center;
   color: var(--color-primary);
+  flex-shrink: 0;
 }
 
 .report-info {
   flex: 1;
+  min-width: 0;
 }
 
 .report-name {
@@ -56,15 +67,84 @@
   margin-bottom: 4px;
 }
 
-.report-meta {
+.report-meta-row {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
   font-size: 0.8125rem;
   color: var(--color-text-light);
+  margin-bottom: var(--spacing-xs);
+}
+
+.report-meta-dot {
+  color: var(--color-text-muted);
+}
+
+.report-tags {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.report-tag {
+  font-size: 0.6875rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-border-light);
+  color: var(--color-text-light);
 }
 
 .report-actions {
   display: flex;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.report-download-btn {
+  display: flex;
+  align-items: center;
   gap: var(--spacing-xs);
+  padding: 8px 14px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  background: var(--color-white);
+  transition: all var(--transition-fast);
+}
+
+.report-download-btn:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.report-download-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.reports-empty {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-text-muted);
+}
+
+.reports-empty p {
+  font-size: 0.9375rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.reports-empty-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  color: var(--color-primary);
+  background: var(--color-white);
+  transition: all var(--transition-fast);
+}
+
+.reports-empty-btn:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
 }

@@ -1,0 +1,76 @@
+.crosstab-grid__wrapper {
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  max-height: 600px;
+}
+
+.crosstab-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.crosstab-grid__corner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  background: #f8f9fb;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  min-width: 180px;
+}
+
+.crosstab-grid__col-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f8f9fb;
+  padding: 10px 16px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-light);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+  min-width: 100px;
+}
+
+.crosstab-grid__row-header {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--color-white);
+  padding: 10px 16px;
+  text-align: left;
+  font-weight: 500;
+  color: var(--color-text);
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-light);
+  white-space: nowrap;
+  min-width: 180px;
+}
+
+.crosstab-grid__cell {
+  padding: 10px 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--color-border-light);
+  font-variant-numeric: tabular-nums;
+  transition: background var(--transition-fast);
+}
+
+.crosstab-grid__cell:hover {
+  background: #f0f4ff !important;
+}
+
+.crosstab-grid__cell--significant {
+  font-weight: 700;
+}
+
+.crosstab-grid tr:last-child td,
+.crosstab-grid tr:last-child th {
+  border-bottom: none;
+}

@@ -1,0 +1,126 @@
+.dashboard-grid {
+  display: grid;
+  gap: 16px;
+  min-height: 400px;
+  grid-auto-rows: 80px;
+}
+
+.dashboard-grid__widget {
+  background: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-grid__widget--editable {
+  cursor: move;
+  border-style: dashed;
+}
+
+.dashboard-grid__widget--editable:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(227, 28, 121, 0.1);
+}
+
+.dashboard-grid__widget-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.dashboard-grid__drag-handle {
+  color: var(--color-text-muted);
+  cursor: grab;
+}
+
+.dashboard-grid__widget-title {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.dashboard-grid__widget-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.dashboard-grid__widget-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  transition: all var(--transition-fast);
+}
+
+.dashboard-grid__widget-actions button:hover {
+  background: var(--color-border-light);
+  color: var(--color-text);
+}
+
+.dashboard-grid__widget-body {
+  flex: 1;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.dashboard-grid__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 4px;
+}
+
+.dashboard-grid__stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.dashboard-grid__stat-label {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.dashboard-grid__text {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.dashboard-grid__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+
+.dashboard-grid__image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  background: var(--color-border-light);
+  border-radius: var(--radius-md);
+}
+
+.dashboard-grid__empty {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}

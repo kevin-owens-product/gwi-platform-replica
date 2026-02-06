@@ -27,7 +27,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--color-white);
   border: 2px solid var(--color-border-light);
   border-radius: var(--radius-lg);
@@ -47,23 +47,26 @@
   border-color: var(--color-success);
 }
 
-.step-icon {
-  width: 48px;
-  height: 48px;
+.step-number {
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: var(--color-border-light);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: 0.875rem;
   color: var(--color-text-light);
+  flex-shrink: 0;
 }
 
-.step.active .step-icon {
+.step.active .step-number {
   background-color: var(--color-primary);
   color: var(--color-white);
 }
 
-.step.completed .step-icon {
+.step.completed .step-number {
   background-color: var(--color-success);
   color: var(--color-white);
 }
@@ -71,7 +74,7 @@
 .step-info h3 {
   font-size: 0.9375rem;
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .step-info p {
@@ -111,11 +114,14 @@
 }
 
 .goal-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
   padding: var(--spacing-lg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 0.9375rem;
-  font-weight: 500;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
   text-align: center;
   transition: all var(--transition-fast);
 }
@@ -131,7 +137,189 @@
   color: var(--color-white);
 }
 
+.goal-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-border-light);
+  border-radius: var(--radius-md);
+  color: var(--color-text-light);
+}
+
+.goal-card.selected .goal-icon {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: var(--color-white);
+}
+
+.goal-label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.goal-desc {
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+}
+
+.goal-card.selected .goal-desc {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.goal-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-white);
+}
+
 .canvas-actions {
   display: flex;
   justify-content: flex-end;
+}
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 10px 20px;
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color var(--transition-fast);
+}
+
+.btn-primary:hover:not(.btn-disabled) {
+  background-color: var(--color-primary-hover);
+}
+
+.btn-primary.btn-disabled {
+  background-color: var(--color-button-disabled);
+  color: var(--color-button-disabled-text);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 10px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+  background-color: var(--color-white);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-border-light);
+}
+
+/* Canvas Audiences (shared styles) */
+.audiences-section h2 {
+  font-size: 1.25rem;
+  margin-bottom: var(--spacing-xs);
+}
+
+.audiences-section > p {
+  font-size: 0.9375rem;
+  color: var(--color-text-light);
+  margin-bottom: var(--spacing-lg);
+}
+
+.audiences-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.audience-option {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.audience-option:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+}
+
+.audience-option.selected {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+}
+
+.audience-checkbox {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.audience-option.selected .audience-checkbox {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.audience-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.audience-name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.audience-size {
+  font-size: 0.8125rem;
+  color: var(--color-text-light);
+}
+
+.add-custom-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  width: 100%;
+  justify-content: center;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.add-custom-btn:hover {
+  background-color: var(--color-primary-light);
+  border-color: var(--color-primary);
 }

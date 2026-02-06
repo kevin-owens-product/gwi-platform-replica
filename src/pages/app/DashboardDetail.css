@@ -6,68 +6,91 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--spacing-xl);
-}
-
-.dashboard-title {
-  font-size: 1.5rem;
   margin-bottom: var(--spacing-lg);
 }
 
-.widgets-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-lg);
+.dashboard-title-input {
+  width: 100%;
+  font-size: 1.5rem;
+  font-weight: 700;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  padding: 0;
   margin-bottom: var(--spacing-xl);
 }
 
-.widget-card {
+.dashboard-title-input:focus {
+  border-bottom: 2px solid var(--color-primary);
+}
+
+/* KPI Grid */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.kpi-card {
   background-color: var(--color-white);
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
 }
 
-.widget-header {
+.kpi-top {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
+  justify-content: space-between;
+  margin-bottom: var(--spacing-sm);
 }
 
-.widget-icon {
-  color: var(--color-primary);
-}
-
-.widget-title {
-  font-size: 0.875rem;
+.kpi-title {
+  font-size: 0.8125rem;
   color: var(--color-text-light);
 }
 
-.widget-value {
-  font-size: 2rem;
+.sparkline-svg {
+  width: 60px;
+  height: 24px;
+}
+
+.kpi-value {
+  font-size: 1.75rem;
   font-weight: 700;
   color: var(--color-text);
   margin-bottom: var(--spacing-xs);
 }
 
-.widget-change {
-  font-size: 0.875rem;
+.kpi-change {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.8125rem;
   font-weight: 500;
 }
 
-.widget-change.positive {
+.kpi-change.positive {
   color: var(--color-success);
 }
 
-.widget-change.negative {
+.kpi-change.negative {
   color: var(--color-error);
 }
 
-.chart-widgets {
+.kpi-period {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+/* Widget Grid */
+.widget-grid-2col {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
 }
 
 .large-widget {
@@ -77,19 +100,115 @@
   padding: var(--spacing-lg);
 }
 
-.large-widget h3 {
-  font-size: 1rem;
-  margin-bottom: var(--spacing-lg);
+.widget-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
 }
 
-.widget-placeholder {
-  height: 250px;
-  background-color: var(--color-border-light);
-  border-radius: var(--radius-md);
+.widget-header-bar h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.widget-badge {
+  font-size: 0.6875rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-border-light);
+  color: var(--color-text-light);
+}
+
+.widget-svg {
+  width: 100%;
+  height: auto;
+}
+
+/* Donut */
+.donut-widget-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xl);
+  justify-content: center;
+  padding: var(--spacing-md) 0;
+}
+
+.donut-svg {
+  width: 160px;
+  height: 160px;
+  flex-shrink: 0;
+}
+
+.donut-legend {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-muted);
   gap: var(--spacing-sm);
+}
+
+.donut-legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 0.8125rem;
+}
+
+.donut-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.donut-legend-label {
+  color: var(--color-text);
+  min-width: 50px;
+}
+
+.donut-legend-value {
+  color: var(--color-text-light);
+  font-weight: 600;
+}
+
+/* Widget Table */
+.widget-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.widget-table th,
+.widget-table td {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 0.8125rem;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.widget-table th {
+  font-weight: 600;
+  color: var(--color-text-light);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.widget-table .wt-market {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.widget-table .wt-trend {
+  font-weight: 500;
+}
+
+.widget-table .wt-trend.positive {
+  color: var(--color-success);
+}
+
+.widget-table tr:hover td {
+  background-color: var(--color-border-light);
+}
+
+.widget-table tr:last-child td {
+  border-bottom: none;
 }

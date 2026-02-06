@@ -6,18 +6,84 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
 }
 
-.crosstab-title {
+.crosstab-title-input {
+  width: 100%;
   font-size: 1.5rem;
+  font-weight: 700;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  padding: 0;
   margin-bottom: var(--spacing-lg);
+}
+
+.crosstab-title-input:focus {
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.crosstab-config-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--color-border-light);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border: 1px solid var(--color-border-light);
+  border-bottom: none;
+}
+
+.crosstab-config-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.crosstab-config-item label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.crosstab-config-select {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  background-color: var(--color-white);
+  color: var(--color-text);
+}
+
+.crosstab-config-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.crosstab-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  padding: 8px 0;
+}
+
+.crosstab-toggle-label input[type="checkbox"] {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
 }
 
 .crosstab-table-container {
   background-color: var(--color-white);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   overflow: auto;
 }
 
@@ -28,9 +94,12 @@
 
 .crosstab-table th,
 .crosstab-table td {
-  padding: var(--spacing-md);
+  padding: 12px 16px;
   text-align: left;
   border-bottom: 1px solid var(--color-border-light);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
 }
 
 .crosstab-table th {
@@ -38,17 +107,63 @@
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--color-text-light);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
-.crosstab-table td {
-  font-size: 0.875rem;
+.crosstab-table th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
 }
 
 .crosstab-table .row-header {
   font-weight: 500;
   background-color: var(--color-border-light);
+  position: sticky;
+  left: 0;
 }
 
-.crosstab-table tr:hover td {
-  background-color: var(--color-primary-light);
+.crosstab-table tr:hover td:not(.row-header) {
+  filter: brightness(0.97);
+}
+
+.crosstab-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--spacing-lg);
+}
+
+.crosstab-stats {
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.crosstab-stat {
+  font-size: 0.8125rem;
+  color: var(--color-text-light);
+}
+
+.crosstab-stat strong {
+  color: var(--color-text);
+}
+
+.crosstab-color-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.color-legend-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.color-legend-bar {
+  width: 100px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.3), transparent 40%, transparent 60%, rgba(227, 28, 121, 0.3));
 }

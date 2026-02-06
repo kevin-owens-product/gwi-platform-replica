@@ -1,0 +1,241 @@
+.spark-chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-white);
+}
+
+.spark-chat--compact {
+  max-height: 500px;
+}
+
+.spark-chat__messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.spark-chat__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  text-align: center;
+  color: var(--color-text-muted);
+  gap: 12px;
+  padding: 48px;
+}
+
+.spark-chat__empty svg {
+  color: var(--color-primary);
+}
+
+.spark-chat__empty h3 {
+  font-size: 1.25rem;
+  color: var(--color-text);
+}
+
+.spark-chat__empty p {
+  font-size: 0.875rem;
+  max-width: 360px;
+}
+
+.spark-chat__message {
+  display: flex;
+  gap: 12px;
+  max-width: 800px;
+}
+
+.spark-chat__message--user {
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+
+.spark-chat__message-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.spark-chat__message--assistant .spark-chat__message-avatar {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.spark-chat__message--user .spark-chat__message-avatar {
+  background: var(--color-secondary);
+  color: white;
+}
+
+.spark-chat__message-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.spark-chat__message-text {
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.spark-chat__message--assistant .spark-chat__message-text {
+  background: #f8f9fb;
+  color: var(--color-text);
+}
+
+.spark-chat__message--user .spark-chat__message-text {
+  background: var(--color-secondary);
+  color: white;
+}
+
+.spark-chat__citations {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 16px;
+}
+
+.spark-chat__citation {
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.spark-chat__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.spark-chat__action-btn {
+  padding: 6px 14px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.spark-chat__action-btn:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.spark-chat__message-tools {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.spark-chat__message:hover .spark-chat__message-tools {
+  opacity: 1;
+}
+
+.spark-chat__message-tools button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  transition: all var(--transition-fast);
+}
+
+.spark-chat__message-tools button:hover {
+  background: var(--color-border-light);
+  color: var(--color-text);
+}
+
+/* Typing indicator */
+.spark-chat__typing {
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px;
+}
+
+.spark-chat__typing span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  animation: typing-bounce 1.4s infinite ease-in-out;
+}
+
+.spark-chat__typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.spark-chat__typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* Input area */
+.spark-chat__input-area {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.spark-chat__input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-input-bg);
+  font-size: 0.875rem;
+  color: var(--color-text);
+  resize: none;
+  outline: none;
+  min-height: 40px;
+  max-height: 120px;
+  line-height: 1.5;
+  font-family: inherit;
+}
+
+.spark-chat__input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(227, 28, 121, 0.1);
+}
+
+.spark-chat__send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: white;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.spark-chat__send:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.spark-chat__send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

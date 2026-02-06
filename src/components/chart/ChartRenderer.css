@@ -1,0 +1,31 @@
+.chart-renderer__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.chart-renderer__table {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Recharts overrides */
+.recharts-default-legend {
+  padding-top: 16px !important;
+}
+
+.recharts-legend-item-text {
+  font-size: 0.8125rem !important;
+  color: var(--color-text) !important;
+}
+
+.recharts-cartesian-axis-tick-value {
+  fill: var(--color-text-light) !important;
+}

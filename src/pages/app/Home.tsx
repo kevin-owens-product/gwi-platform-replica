@@ -1,17 +1,14 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Users, ChevronDown, Send, ExternalLink, LucideIcon } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Users, ChevronDown, Send, ExternalLink, Loader2, LucideIcon } from 'lucide-react';
+import { useAuthStore } from '@/stores/auth';
+import { useSparkChat, useSparkConversations } from '@/hooks/useSpark';
+import { formatRelativeDate } from '@/utils/format';
 import './Home.css';
 
 interface ExamplePrompt {
   label: string;
   icon: LucideIcon;
-}
-
-interface RecentChat {
-  id: number;
-  title: string;
-  date: string;
 }
 
 const examplePrompts: ExamplePrompt[] = [
@@ -21,13 +18,35 @@ const examplePrompts: ExamplePrompt[] = [
   { label: 'Competitive positioning', icon: ExternalLink },
 ];
 
-const recentChats: RecentChat[] = [
-  { id: 1, title: 'Chat', date: '120 days ago' },
-];
-
 export default function Home(): React.JSX.Element {
   const [question, setQuestion] = useState<string>('');
   const [dataset, setDataset] = useState<string>('GWI Core');
+  const navigate = useNavigate();
+
+  const user = useAuthStore((state) => state.user);
+  const sparkChat = useSparkChat();
+  const { data: conversations, isLoading: conversationsLoading } = useSparkConversations();
+
+  const firstName = user?.name?.split(' ')[0] ?? 'there';
+
+  const handleSend = () => {
+    if (!question.trim() || sparkChat.isPending) return;
+
+    sparkChat.mutate(
+      { message: question.trim() },
+      {
+        onSuccess: (response) => {
+          navigate(`/app/agent-spark/${response.conversation_id}`);
+        },
+      }
+    );
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSend();
+    }
+  };
 
   return (
     <div className="home-page">
@@ -38,7 +57,7 @@ export default function Home(): React.JSX.Element {
             <span className="wave-emoji">👋</span>
           </div>
           <h1 className="agent-spark-title">
-            Hi Kevin, what can<br />
+            Hi {firstName}, what can<br />
             <span className="highlight">Agent Spark</span> help you with today?
           </h1>
 
@@ -50,6 +69,8 @@ export default function Home(): React.JSX.Element {
               placeholder="Ask Agent Spark a question"
               value={question}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuestion(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={sparkChat.isPending}
             />
             <div className="agent-spark-input-actions">
               <button className="add-audience-btn">
@@ -61,8 +82,16 @@ export default function Home(): React.JSX.Element {
                   <span>{dataset}</span>
                   <ChevronDown size={16} />
                 </button>
-                <button className="send-btn" disabled={!question}>
-                  <Send size={18} />
+                <button
+                  className="send-btn"
+                  disabled={!question.trim() || sparkChat.isPending}
+                  onClick={handleSend}
+                >
+                  {sparkChat.isPending ? (
+                    <Loader2 size={18} className="spin" />
+                  ) : (
+                    <Send size={18} />
+                  )}
                 </button>
               </div>
             </div>
@@ -93,17 +122,29 @@ export default function Home(): React.JSX.Element {
         <div className="recent-section">
           <h2 className="recent-title">Most Recent</h2>
           <div className="recent-list">
-            {recentChats.map((chat: RecentChat) => (
-              <Link key={chat.id} to={`/app/agent-spark/${chat.id}`} className="recent-item">
-                <div className="recent-item-icon">
-                  <span className="sparkle-icon small">✨</span>
-                </div>
+            {conversationsLoading ? (
+              <div className="recent-item" style={{ justifyContent: 'center' }}>
+                <Loader2 size={20} className="spin" />
+              </div>
+            ) : conversations && conversations.length > 0 ? (
+              conversations.slice(0, 5).map((chat) => (
+                <Link key={chat.id} to={`/app/agent-spark/${chat.id}`} className="recent-item">
+                  <div className="recent-item-icon">
+                    <span className="sparkle-icon small">✨</span>
+                  </div>
+                  <div className="recent-item-content">
+                    <h3 className="recent-item-title">{chat.title}</h3>
+                    <p className="recent-item-date">{formatRelativeDate(chat.updated_at)}</p>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="recent-item">
                 <div className="recent-item-content">
-                  <h3 className="recent-item-title">{chat.title}</h3>
-                  <p className="recent-item-date">{chat.date}</p>
+                  <p className="recent-item-date">No recent conversations yet. Ask a question above to get started.</p>
                 </div>
-              </Link>
-            ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

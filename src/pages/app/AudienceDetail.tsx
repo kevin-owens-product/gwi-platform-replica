@@ -1,50 +1,112 @@
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, ChevronDown, X, Save } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { useAudience, useCreateAudience, useUpdateAudience } from '@/hooks/useAudiences';
+import AudienceBuilder from '@/components/audience/AudienceBuilder';
+import { Button } from '@/components/shared';
+import { formatCompactNumber } from '@/utils/format';
+import type { AudienceExpression } from '@/api/types';
 import './AudienceDetail.css';
 
 interface AudienceDetailProps {
   isNew?: boolean;
 }
 
-interface Condition {
-  id: number;
-  attribute: string;
-  operator: string;
-  value: string;
-}
-
 export default function AudienceDetail({ isNew = false }: AudienceDetailProps): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
-  const [audienceName, setAudienceName] = useState<string>(isNew ? '' : 'Sample Audience');
-  const [conditions, setConditions] = useState<Condition[]>([
-    { id: 1, attribute: 'Age', operator: 'is', value: '25-34' }
-  ]);
+  const navigate = useNavigate();
 
-  const addCondition = (): void => {
-    setConditions([...conditions, {
-      id: Date.now(),
-      attribute: '',
-      operator: 'is',
-      value: ''
-    }]);
+  const { data: audience, isLoading: audienceLoading } = useAudience(isNew ? '' : (id ?? ''));
+  const createAudience = useCreateAudience();
+  const updateAudience = useUpdateAudience();
+
+  const [audienceName, setAudienceName] = useState<string>('');
+  const [expression, setExpression] = useState<AudienceExpression | undefined>(undefined);
+
+  // Populate form when existing audience data loads
+  useEffect(() => {
+    if (audience && !isNew) {
+      setAudienceName(audience.name);
+      setExpression(audience.expression);
+    }
+  }, [audience, isNew]);
+
+  const isSaving = createAudience.isPending || updateAudience.isPending;
+
+  const handleSave = () => {
+    if (!audienceName.trim()) return;
+
+    if (isNew) {
+      createAudience.mutate(
+        {
+          name: audienceName.trim(),
+          expression: expression ?? { and: [] },
+        },
+        {
+          onSuccess: () => {
+            navigate('/app/audiences');
+          },
+        }
+      );
+    } else if (id) {
+      updateAudience.mutate(
+        {
+          id,
+          data: {
+            name: audienceName.trim(),
+            expression,
+          },
+        },
+        {
+          onSuccess: () => {
+            navigate('/app/audiences');
+          },
+        }
+      );
+    }
   };
+
+  const handleCancel = () => {
+    navigate('/app/audiences');
+  };
+
+  // Loading state for existing audience
+  if (!isNew && audienceLoading) {
+    return (
+      <div className="audience-detail-page">
+        <div className="audience-detail-header">
+          <button className="back-link" onClick={() => navigate('/app/audiences')}>
+            <ArrowLeft size={18} />
+            <span>Back to Audiences</span>
+          </button>
+        </div>
+        <div className="audience-detail-content" style={{ display: 'flex', justifyContent: 'center', padding: '64px' }}>
+          <Loader2 size={32} className="spin" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="audience-detail-page">
       <div className="audience-detail-header">
-        <Link to="/app/audiences" className="back-link">
+        <button className="back-link" onClick={() => navigate('/app/audiences')}>
           <ArrowLeft size={18} />
           <span>Back to Audiences</span>
-        </Link>
+        </button>
         <div className="header-actions">
-          <button className="btn-secondary">
-            <span>Cancel</span>
-          </button>
-          <button className="btn-primary">
-            <Save size={16} />
-            <span>{isNew ? 'Create Audience' : 'Save Changes'}</span>
-          </button>
+          <Button variant="secondary" onClick={handleCancel} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            icon={<Save size={16} />}
+            onClick={handleSave}
+            loading={isSaving}
+            disabled={!audienceName.trim()}
+          >
+            {isNew ? 'Create Audience' : 'Save Changes'}
+          </Button>
         </div>
       </div>
 
@@ -66,38 +128,10 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
           </p>
 
           <div className="conditions-builder">
-            {conditions.map((condition: Condition, index: number) => (
-              <div key={condition.id} className="condition-row">
-                {index > 0 && (
-                  <span className="condition-connector">AND</span>
-                )}
-                <div className="condition-fields">
-                  <button className="condition-select">
-                    <span>{condition.attribute || 'Select attribute'}</span>
-                    <ChevronDown size={16} />
-                  </button>
-                  <button className="condition-select operator">
-                    <span>{condition.operator}</span>
-                    <ChevronDown size={16} />
-                  </button>
-                  <button className="condition-select">
-                    <span>{condition.value || 'Select value'}</span>
-                    <ChevronDown size={16} />
-                  </button>
-                  <button
-                    className="remove-condition-btn"
-                    onClick={() => setConditions(conditions.filter((c: Condition) => c.id !== condition.id))}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            <button className="add-condition-btn" onClick={addCondition}>
-              <Plus size={16} />
-              <span>Add condition</span>
-            </button>
+            <AudienceBuilder
+              expression={expression}
+              onChange={setExpression}
+            />
           </div>
         </div>
 
@@ -105,11 +139,19 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
           <h3 className="section-title">Audience Preview</h3>
           <div className="preview-card">
             <div className="preview-stat">
-              <span className="stat-value">--</span>
+              <span className="stat-value">
+                {audience?.sample_size != null
+                  ? formatCompactNumber(audience.sample_size)
+                  : '--'}
+              </span>
               <span className="stat-label">Estimated size</span>
             </div>
             <div className="preview-stat">
-              <span className="stat-value">--</span>
+              <span className="stat-value">
+                {audience?.population_size != null && audience?.sample_size != null && audience.population_size > 0
+                  ? `${((audience.sample_size / audience.population_size) * 100).toFixed(1)}%`
+                  : '--'}
+              </span>
               <span className="stat-label">% of total</span>
             </div>
           </div>

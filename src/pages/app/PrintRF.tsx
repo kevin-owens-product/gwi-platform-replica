@@ -1,5 +1,9 @@
-import { useState } from 'react';
-import { ChevronDown, Play, Plus, Trash2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { ChevronDown, Play, Plus, Trash2, Loader2 } from 'lucide-react';
+import { useLocations } from '@/hooks/useTaxonomy';
+import { useWorkspaceStore } from '@/stores/workspace';
+import { Button, Input } from '@/components/shared';
+import type { Location } from '@/api/types';
 import './PrintRF.css';
 
 interface Publication {
@@ -19,7 +23,7 @@ interface ResultItem {
   value: string;
 }
 
-const publications: Publication[] = [
+const fallbackPublications: Publication[] = [
   { name: 'The Times', type: 'Daily Newspaper', circulation: '365,880' },
   { name: 'The Guardian', type: 'Daily Newspaper', circulation: '105,134' },
   { name: 'Daily Mail', type: 'Daily Newspaper', circulation: '1,134,184' },
@@ -36,7 +40,7 @@ const audiences: string[] = [
   'Adults 16-64', 'Adults 18-34', 'Adults 25-54', 'Adults 35-64', 'All Adults 16+',
 ];
 
-const markets: string[] = [
+const fallbackMarkets: string[] = [
   'United Kingdom', 'United States', 'Germany', 'France', 'Spain',
   'Italy', 'Australia', 'Japan', 'Brazil', 'Canada',
 ];
@@ -44,11 +48,28 @@ const markets: string[] = [
 const periods: string[] = ['Daily', 'Weekly', 'Monthly'];
 
 export default function PrintRF(): React.JSX.Element {
+  // API hooks
+  const { data: apiLocations, isLoading: locationsLoading } = useLocations();
+  const { selectedLocationIds } = useWorkspaceStore();
+
+  // Derive market names from API locations, falling back to hardcoded list
+  const marketNames = useMemo(() => {
+    if (apiLocations && apiLocations.length > 0) {
+      return apiLocations.map((loc: Location) => loc.name);
+    }
+    return fallbackMarkets;
+  }, [apiLocations]);
+
+  // Publications remain client-side (print-specific, not in taxonomy API)
+  const publications = fallbackPublications;
+
   const [selectedPublications, setSelectedPublications] = useState<string[]>(['The Times', 'Vogue UK']);
   const [pubsOpen, setPubsOpen] = useState<boolean>(false);
   const [selectedAudience, setSelectedAudience] = useState<string>('Adults 16-64');
   const [audienceOpen, setAudienceOpen] = useState<boolean>(false);
-  const [selectedMarket, setSelectedMarket] = useState<string>('United Kingdom');
+  const [selectedMarket, setSelectedMarket] = useState<string>(
+    selectedLocationIds.length > 0 ? selectedLocationIds[0] : 'United Kingdom'
+  );
   const [marketOpen, setMarketOpen] = useState<boolean>(false);
   const [insertionRows, setInsertionRows] = useState<InsertionRow[]>([
     { publication: 'The Times', insertions: 3, period: 'Weekly' },
@@ -95,6 +116,12 @@ export default function PrintRF(): React.JSX.Element {
     <div className="printrf-page">
       <div className="printrf-header">
         <h1 className="page-title">Print Reach & Frequency</h1>
+        {locationsLoading && (
+          <div className="printrf-loading-indicator">
+            <Loader2 size={16} className="printrf-spinner" />
+            <span>Loading data...</span>
+          </div>
+        )}
       </div>
 
       <div className="printrf-content">
@@ -152,7 +179,7 @@ export default function PrintRF(): React.JSX.Element {
               </div>
             </div>
 
-            {/* Market */}
+            {/* Market - populated from API locations */}
             <div className="printrf-field">
               <label className="printrf-label">Market</label>
               <div className="printrf-select-wrapper">
@@ -162,7 +189,13 @@ export default function PrintRF(): React.JSX.Element {
                 </button>
                 {marketOpen && (
                   <div className="printrf-dropdown">
-                    {markets.map((m: string) => (
+                    {locationsLoading && (
+                      <div className="printrf-dropdown-loading">
+                        <Loader2 size={14} className="printrf-spinner" />
+                        <span>Loading markets...</span>
+                      </div>
+                    )}
+                    {marketNames.map((m: string) => (
                       <button
                         key={m}
                         className={`printrf-dropdown-item ${m === selectedMarket ? 'selected' : ''}`}
@@ -204,12 +237,12 @@ export default function PrintRF(): React.JSX.Element {
                       </select>
                     </td>
                     <td>
-                      <input
+                      <Input
                         type="number"
                         className="printrf-table-input"
                         value={row.insertions}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateRow(idx, 'insertions', e.target.value)}
-                        min="1"
+                        min={1}
                       />
                     </td>
                     <td>
@@ -224,33 +257,40 @@ export default function PrintRF(): React.JSX.Element {
                       </select>
                     </td>
                     <td>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="printrf-remove-btn"
                         onClick={() => removeRow(idx)}
                         disabled={insertionRows.length <= 1}
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                        icon={<Trash2 size={14} />}
+                      />
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <button className="printrf-add-row-btn" onClick={addRow}>
-              <Plus size={14} />
-              <span>Add row</span>
-            </button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="printrf-add-row-btn"
+              onClick={addRow}
+              icon={<Plus size={14} />}
+            >
+              Add row
+            </Button>
           </div>
 
           <div className="printrf-actions">
-            <button
+            <Button
+              variant="primary"
+              icon={<Play size={16} />}
               className="printrf-run-btn"
               onClick={() => setShowResults(true)}
               disabled={insertionRows.length === 0}
             >
-              <Play size={16} />
-              <span>Run Analysis</span>
-            </button>
+              Run Analysis
+            </Button>
           </div>
         </div>
 

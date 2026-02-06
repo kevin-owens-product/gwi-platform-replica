@@ -1,6 +1,8 @@
-import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Target, Users, ArrowRight, BarChart2, TrendingUp, ShoppingCart, Tv, Shield, Globe, LucideIcon } from 'lucide-react';
+import { Button } from '@/components/shared';
+import { useAuthStore } from '@/stores/auth';
+import { useWorkspaceStore } from '@/stores/workspace';
 import './Canvas.css';
 
 interface Goal {
@@ -22,20 +24,25 @@ const goals: Goal[] = [
 export default function Canvas(): React.JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canvasGoals = useWorkspaceStore((state) => state.canvasGoals);
+  const setCanvasGoals = useWorkspaceStore((state) => state.setCanvasGoals);
   const isGoalsStep: boolean = location.pathname.includes('goals') || location.pathname === '/app/canvas';
-  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+
+  const greeting = user?.name ? `Welcome, ${user.name.split(' ')[0]}` : 'Welcome';
 
   const toggleGoal = (id: string): void => {
-    setSelectedGoals((prev: string[]) =>
-      prev.includes(id) ? prev.filter((g: string) => g !== id) : [...prev, id]
-    );
+    const next = canvasGoals.includes(id)
+      ? canvasGoals.filter((g) => g !== id)
+      : [...canvasGoals, id];
+    setCanvasGoals(next);
   };
 
   return (
     <div className="canvas-page">
       <div className="canvas-header">
         <h1 className="page-title">Canvas</h1>
-        <p className="page-subtitle">Define your research objectives and target audiences</p>
+        <p className="page-subtitle">{greeting} -- Define your research objectives and target audiences</p>
       </div>
 
       <div className="canvas-steps">
@@ -60,11 +67,11 @@ export default function Canvas(): React.JSX.Element {
         <div className="canvas-content">
           <div className="goals-section">
             <h2>What are your research goals?</h2>
-            <p>Select the topics you want to explore ({selectedGoals.length} selected)</p>
+            <p>Select the topics you want to explore ({canvasGoals.length} selected)</p>
 
             <div className="goals-grid">
               {goals.map((goal: Goal) => {
-                const isSelected: boolean = selectedGoals.includes(goal.id);
+                const isSelected: boolean = canvasGoals.includes(goal.id);
                 return (
                   <button
                     key={goal.id}
@@ -83,14 +90,14 @@ export default function Canvas(): React.JSX.Element {
             </div>
 
             <div className="canvas-actions">
-              <button
-                className={`btn-primary ${selectedGoals.length === 0 ? 'btn-disabled' : ''}`}
-                disabled={selectedGoals.length === 0}
+              <Button
+                variant="primary"
+                iconRight={<ArrowRight size={18} />}
+                disabled={canvasGoals.length === 0}
                 onClick={() => navigate('/app/canvas/audiences')}
               >
-                <span>Continue to Audiences</span>
-                <ArrowRight size={18} />
-              </button>
+                Continue to Audiences
+              </Button>
             </div>
           </div>
         </div>

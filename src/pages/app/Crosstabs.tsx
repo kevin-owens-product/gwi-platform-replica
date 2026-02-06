@@ -1,88 +1,54 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, ChevronDown, Check, Globe, Grid3X3, Users, LucideIcon } from 'lucide-react';
+import { Plus, Globe, Grid3X3 } from 'lucide-react';
+import { useCrosstabs } from '@/hooks/useCrosstabs';
+import { SearchInput, Tabs, Pagination, EmptyState, Badge } from '@/components/shared';
+import { formatRelativeDate } from '@/utils/format';
+import type { Crosstab } from '@/api/types';
 import './Crosstabs.css';
 
-interface Tab {
-  id: string;
-  label: string;
-  icon?: LucideIcon;
-}
-
-interface SortOption {
-  id: string;
-  label: string;
-}
-
-interface Crosstab {
-  id: number;
-  name: string;
-  rows: number;
-  columns: number;
-  lastUpdated: string;
-  owner: string;
-  tab: string;
-  dataset: string;
-}
-
-const tabs: Tab[] = [
+const tabs = [
   { id: 'all', label: 'All' },
   { id: 'my', label: 'My Crosstabs' },
   { id: 'shared', label: 'Shared' },
-  { id: 'gwi', label: 'GWI Crosstabs', icon: Globe },
-];
-
-const sortOptions: SortOption[] = [
-  { id: 'recently', label: 'Recently edited' },
-  { id: 'frequently', label: 'Frequently used' },
-  { id: 'atoz', label: 'A to Z' },
-  { id: 'ztoa', label: 'Z to A' },
-];
-
-const sampleCrosstabs: Crosstab[] = [
-  { id: 1, name: 'Demographics Overview', rows: 12, columns: 8, lastUpdated: '3 hours ago', owner: 'Kevin Owens', tab: 'my', dataset: 'GWI Core' },
-  { id: 2, name: 'Media Consumption Q1 2025', rows: 24, columns: 15, lastUpdated: '2 days ago', owner: 'Kevin Owens', tab: 'my', dataset: 'GWI Core' },
-  { id: 3, name: 'Brand Comparison - Tech', rows: 8, columns: 6, lastUpdated: '1 week ago', owner: 'Sarah Chen', tab: 'shared', dataset: 'GWI Core' },
-  { id: 4, name: 'Social Media by Age Group', rows: 16, columns: 10, lastUpdated: '1 week ago', owner: 'Kevin Owens', tab: 'my', dataset: 'GWI Core' },
-  { id: 5, name: 'Purchase Behavior by Region', rows: 20, columns: 12, lastUpdated: '2 weeks ago', owner: 'Mike Johnson', tab: 'shared', dataset: 'GWI USA' },
-  { id: 6, name: 'GWI Standard - Demographics', rows: 32, columns: 18, lastUpdated: '1 month ago', owner: '', tab: 'gwi', dataset: 'GWI Core' },
-  { id: 7, name: 'Gaming Habits by Gender', rows: 14, columns: 8, lastUpdated: '3 weeks ago', owner: 'Emily Davis', tab: 'shared', dataset: 'GWI Core' },
-  { id: 8, name: 'GWI Standard - Media Matrix', rows: 28, columns: 20, lastUpdated: '2 months ago', owner: '', tab: 'gwi', dataset: 'GWI Core' },
+  { id: 'gwi', label: 'GWI Crosstabs', icon: <Globe size={16} /> },
 ];
 
 export default function Crosstabs(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedSort, setSelectedSort] = useState<string>('recently');
-  const [showSortDropdown, setShowSortDropdown] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
 
-  const filtered = sampleCrosstabs.filter((ct: Crosstab) => {
-    const matchesTab = activeTab === 'all' || ct.tab === activeTab;
-    const matchesSearch = !searchQuery || ct.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
+  const { data: crosstabsResponse, isLoading, isError } = useCrosstabs({
+    page,
+    per_page: 20,
+    search: searchQuery || undefined,
   });
 
-  const sorted = [...filtered].sort((a: Crosstab, b: Crosstab) => {
-    if (selectedSort === 'atoz') return a.name.localeCompare(b.name);
-    if (selectedSort === 'ztoa') return b.name.localeCompare(a.name);
-    return 0;
+  const crosstabs = crosstabsResponse?.data ?? [];
+  const meta = crosstabsResponse?.meta;
+  const totalPages = meta?.total_pages ?? 1;
+
+  // Client-side tab filtering
+  const filtered = crosstabs.filter((ct: Crosstab) => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'my') return !ct.is_shared;
+    if (activeTab === 'shared') return ct.is_shared;
+    if (activeTab === 'gwi') return !ct.user_id;
+    return true;
   });
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setPage(1);
+  };
 
   return (
     <div className="crosstabs-page">
       <div className="crosstabs-header">
         <h1 className="page-title">Crosstabs</h1>
         <div className="crosstabs-tabs">
-          {tabs.map((tab: Tab) => (
-            <button
-              key={tab.id}
-              className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.icon && <tab.icon size={16} />}
-              <span>{tab.label}</span>
-            </button>
-          ))}
+          <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
         </div>
         <Link to="/app/crosstabs/new" className="btn-create">
           <span>Create new crosstab</span>
@@ -91,74 +57,92 @@ export default function Crosstabs(): React.JSX.Element {
       </div>
 
       <div className="crosstabs-filters">
-        <div className="search-input-wrapper">
-          <Search size={18} className="search-icon" />
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search crosstabs"
-            value={searchQuery}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div className="filter-dropdown">
-          <button
-            className={`filter-btn ${showSortDropdown ? 'open' : ''}`}
-            onClick={() => setShowSortDropdown(!showSortDropdown)}
-          >
-            <span className="filter-label">Sort by</span>
-            <span className="filter-value">{sortOptions.find(s => s.id === selectedSort)?.label}</span>
-            <ChevronDown size={16} />
-          </button>
-          {showSortDropdown && (
-            <div className="dropdown-menu">
-              {sortOptions.map((option: SortOption) => (
-                <button
-                  key={option.id}
-                  className={`dropdown-option-btn ${selectedSort === option.id ? 'selected' : ''}`}
-                  onClick={() => { setSelectedSort(option.id); setShowSortDropdown(false); }}
-                >
-                  {selectedSort === option.id && <Check size={16} className="check-icon" />}
-                  <span>{option.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={handleSearchChange}
+          placeholder="Search crosstabs"
+        />
       </div>
 
-      {sorted.length === 0 ? (
-        <div className="crosstabs-empty">
-          <p>No crosstabs match your filters</p>
-          <button className="crosstabs-empty-btn" onClick={() => { setSearchQuery(''); setActiveTab('all'); }}>Clear filters</button>
+      {isLoading ? (
+        <div className="crosstabs-loading">
+          <div className="charts-loading-spinner" />
+          <p>Loading crosstabs...</p>
         </div>
+      ) : isError ? (
+        <EmptyState
+          title="Failed to load crosstabs"
+          description="Something went wrong while loading your crosstabs. Please try again."
+          action={
+            <button className="crosstabs-empty-btn" onClick={() => window.location.reload()}>
+              Retry
+            </button>
+          }
+        />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={<Grid3X3 size={48} />}
+          title="No crosstabs found"
+          description={searchQuery ? 'No crosstabs match your search' : 'Create your first crosstab to get started'}
+          action={
+            <button className="crosstabs-empty-btn" onClick={() => { setSearchQuery(''); setActiveTab('all'); }}>
+              Clear filters
+            </button>
+          }
+        />
       ) : (
-        <div className="crosstabs-table">
-          <div className="ct-table-header">
-            <div className="ct-cell ct-name-cell">Name</div>
-            <div className="ct-cell">Size</div>
-            <div className="ct-cell">Dataset</div>
-            <div className="ct-cell">Last updated</div>
+        <>
+          <div className="crosstabs-table">
+            <div className="ct-table-header">
+              <div className="ct-cell ct-name-cell">Name</div>
+              <div className="ct-cell">Size</div>
+              <div className="ct-cell">Dataset</div>
+              <div className="ct-cell">Last updated</div>
+            </div>
+            <div className="ct-table-body">
+              {filtered.map((ct: Crosstab) => {
+                const rowCount = ct.config?.rows?.length ?? 0;
+                const colCount = ct.config?.columns?.length ?? 0;
+
+                return (
+                  <Link key={ct.id} to={`/app/crosstabs/${ct.id}`} className="ct-table-row">
+                    <div className="ct-cell ct-name-cell">
+                      <div className="ct-icon-wrapper">
+                        <Grid3X3 size={18} />
+                      </div>
+                      <div>
+                        <span className="ct-row-name">{ct.name}</span>
+                        {ct.is_shared && (
+                          <Badge variant="default" className="ct-shared-badge">Shared</Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="ct-cell ct-size">
+                      {rowCount > 0 || colCount > 0
+                        ? `${rowCount} rows x ${colCount} cols`
+                        : '-'
+                      }
+                    </div>
+                    <div className="ct-cell">
+                      <span className="ct-dataset-badge">
+                        {ct.project_id ?? 'GWI Core'}
+                      </span>
+                    </div>
+                    <div className="ct-cell ct-date">
+                      {ct.updated_at ? formatRelativeDate(ct.updated_at) : 'Unknown'}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-          <div className="ct-table-body">
-            {sorted.map((ct: Crosstab) => (
-              <Link key={ct.id} to={`/app/crosstabs/${ct.id}`} className="ct-table-row">
-                <div className="ct-cell ct-name-cell">
-                  <div className="ct-icon-wrapper">
-                    <Grid3X3 size={18} />
-                  </div>
-                  <div>
-                    <span className="ct-row-name">{ct.name}</span>
-                    {ct.owner && <span className="ct-row-owner">{ct.owner}</span>}
-                  </div>
-                </div>
-                <div className="ct-cell ct-size">{ct.rows} rows x {ct.columns} cols</div>
-                <div className="ct-cell"><span className="ct-dataset-badge">{ct.dataset}</span></div>
-                <div className="ct-cell ct-date">{ct.lastUpdated}</div>
-              </Link>
-            ))}
-          </div>
-        </div>
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        </>
       )}
     </div>
   );

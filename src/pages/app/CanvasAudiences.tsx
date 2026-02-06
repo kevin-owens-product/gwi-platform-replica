@@ -1,37 +1,67 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Users, ArrowLeft, Plus, Check } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Users, ArrowLeft, Plus, Check, Loader2 } from 'lucide-react';
+import { useAudiences } from '@/hooks/useAudiences';
+import { Button, SearchInput, EmptyState } from '@/components/shared';
+import { formatCompactNumber } from '@/utils/format';
+import type { Audience } from '@/api/types';
+import toast from 'react-hot-toast';
 import './Canvas.css';
 
-interface Audience {
-  id: number;
-  name: string;
-  size: string;
-  desc: string;
-}
-
-const audiences: Audience[] = [
-  { id: 1, name: 'Gen Z (18-24)', size: '245M', desc: 'Digital natives, social-first generation' },
-  { id: 2, name: 'Millennials (25-34)', size: '312M', desc: 'Experience-driven, brand-conscious consumers' },
-  { id: 3, name: 'Gen X (35-44)', size: '298M', desc: 'Established professionals with spending power' },
-  { id: 4, name: 'Heavy Social Media Users', size: '156M', desc: '3+ hours daily on social platforms' },
-  { id: 5, name: 'Online Shoppers', size: '428M', desc: 'Made 5+ online purchases in past month' },
-  { id: 6, name: 'Health-Conscious Consumers', size: '189M', desc: 'Prioritize wellness in purchase decisions' },
+// Fallback audiences used when the API returns no data
+const fallbackAudiences = [
+  { id: 'fallback-1', name: 'Gen Z (18-24)', population_size: 245000000, description: 'Digital natives, social-first generation' },
+  { id: 'fallback-2', name: 'Millennials (25-34)', population_size: 312000000, description: 'Experience-driven, brand-conscious consumers' },
+  { id: 'fallback-3', name: 'Gen X (35-44)', population_size: 298000000, description: 'Established professionals with spending power' },
+  { id: 'fallback-4', name: 'Heavy Social Media Users', population_size: 156000000, description: '3+ hours daily on social platforms' },
+  { id: 'fallback-5', name: 'Online Shoppers', population_size: 428000000, description: 'Made 5+ online purchases in past month' },
+  { id: 'fallback-6', name: 'Health-Conscious Consumers', population_size: 189000000, description: 'Prioritize wellness in purchase decisions' },
 ];
 
 export default function CanvasAudiences(): React.JSX.Element {
-  const [selectedAudiences, setSelectedAudiences] = useState<number[]>([]);
+  const navigate = useNavigate();
+  const [selectedAudiences, setSelectedAudiences] = useState<string[]>([]);
   const [generating, setGenerating] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const toggleAudience = (id: number): void => {
-    setSelectedAudiences((prev: number[]) =>
-      prev.includes(id) ? prev.filter((a: number) => a !== id) : [...prev, id]
+  const { data: audiencesData, isLoading, isError } = useAudiences({ search: searchQuery || undefined });
+
+  const apiAudiences = audiencesData?.data ?? [];
+  const hasApiData = apiAudiences.length > 0;
+
+  // Build the display list -- use API data if available, otherwise fallback
+  const displayAudiences = useMemo(() => {
+    if (hasApiData) {
+      return apiAudiences.map((a: Audience) => ({
+        id: a.id,
+        name: a.name,
+        population_size: a.population_size ?? 0,
+        description: a.description ?? '',
+      }));
+    }
+    // Apply local search filter on fallback data
+    if (searchQuery) {
+      return fallbackAudiences.filter(a =>
+        a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        a.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    return fallbackAudiences;
+  }, [apiAudiences, hasApiData, searchQuery]);
+
+  const toggleAudience = (id: string): void => {
+    setSelectedAudiences((prev: string[]) =>
+      prev.includes(id) ? prev.filter((a: string) => a !== id) : [...prev, id]
     );
   };
 
   const handleGenerate = (): void => {
     setGenerating(true);
-    setTimeout(() => setGenerating(false), 2000);
+    toast.success('Generating insights for selected audiences...');
+    setTimeout(() => {
+      setGenerating(false);
+      navigate('/app/dashboards');
+    }, 2000);
   };
 
   return (
@@ -64,47 +94,105 @@ export default function CanvasAudiences(): React.JSX.Element {
           <h2>Select your target audiences</h2>
           <p>Choose the audiences you want to analyze ({selectedAudiences.length} selected)</p>
 
-          <div className="audiences-list">
-            {audiences.map((audience: Audience) => {
-              const isSelected: boolean = selectedAudiences.includes(audience.id);
-              return (
-                <button
-                  key={audience.id}
-                  className={`audience-option ${isSelected ? 'selected' : ''}`}
-                  onClick={() => toggleAudience(audience.id)}
-                >
-                  <div className="audience-checkbox">
-                    {isSelected && <Check size={14} />}
-                  </div>
-                  <div className="audience-info">
-                    <span className="audience-name">{audience.name}</span>
-                    <span className="audience-size">{audience.size} people &middot; {audience.desc}</span>
-                  </div>
-                </button>
-              );
-            })}
+          <div style={{ marginBottom: 'var(--spacing-md)' }}>
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search audiences..."
+            />
           </div>
 
-          <button className="add-custom-btn">
-            <Plus size={16} />
-            <span>Create custom audience</span>
-          </button>
+          {isLoading ? (
+            <div className="dashboards-empty">
+              <Loader2 size={32} className="spin" />
+              <p>Loading audiences...</p>
+            </div>
+          ) : isError && !hasApiData ? (
+            // Show fallback data even on error
+            <AudienceList
+              audiences={fallbackAudiences}
+              selectedAudiences={selectedAudiences}
+              onToggle={toggleAudience}
+            />
+          ) : displayAudiences.length === 0 ? (
+            <EmptyState
+              icon={<Users size={40} />}
+              title="No audiences found"
+              description={searchQuery ? 'No audiences match your search' : 'Create a custom audience to get started'}
+            />
+          ) : (
+            <AudienceList
+              audiences={displayAudiences}
+              selectedAudiences={selectedAudiences}
+              onToggle={toggleAudience}
+            />
+          )}
+
+          <Button variant="ghost" icon={<Plus size={16} />} className="add-custom-btn">
+            Create custom audience
+          </Button>
 
           <div className="canvas-actions" style={{ justifyContent: 'space-between' }}>
-            <Link to="/app/canvas" className="btn-secondary">
-              <ArrowLeft size={18} />
-              <span>Back to Goals</span>
-            </Link>
-            <button
-              className={`btn-primary ${selectedAudiences.length === 0 ? 'btn-disabled' : ''}`}
+            <Button
+              variant="secondary"
+              icon={<ArrowLeft size={18} />}
+              onClick={() => navigate('/app/canvas')}
+            >
+              Back to Goals
+            </Button>
+            <Button
+              variant="primary"
               disabled={selectedAudiences.length === 0 || generating}
+              loading={generating}
               onClick={handleGenerate}
             >
-              <span>{generating ? 'Generating...' : 'Generate Insights'}</span>
-            </button>
+              {generating ? 'Generating...' : 'Generate Insights'}
+            </Button>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// --- Sub-component for the audience list ---
+
+interface AudienceDisplayItem {
+  id: string;
+  name: string;
+  population_size: number;
+  description: string;
+}
+
+interface AudienceListProps {
+  audiences: AudienceDisplayItem[];
+  selectedAudiences: string[];
+  onToggle: (id: string) => void;
+}
+
+function AudienceList({ audiences, selectedAudiences, onToggle }: AudienceListProps): React.JSX.Element {
+  return (
+    <div className="audiences-list">
+      {audiences.map((audience) => {
+        const isSelected: boolean = selectedAudiences.includes(audience.id);
+        return (
+          <button
+            key={audience.id}
+            className={`audience-option ${isSelected ? 'selected' : ''}`}
+            onClick={() => onToggle(audience.id)}
+          >
+            <div className="audience-checkbox">
+              {isSelected && <Check size={14} />}
+            </div>
+            <div className="audience-info">
+              <span className="audience-name">{audience.name}</span>
+              <span className="audience-size">
+                {audience.population_size > 0 ? `${formatCompactNumber(audience.population_size)} people` : ''}{audience.population_size > 0 && audience.description ? ' \u00B7 ' : ''}{audience.description}
+              </span>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -1,54 +1,19 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Plus, Search, ChevronDown, Check, Globe, LayoutDashboard, LucideIcon } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, Globe, LayoutDashboard, MoreVertical, Edit, Copy, Trash2, LucideIcon, Loader2 } from 'lucide-react';
+import { useDashboards, useDeleteDashboard } from '@/hooks/useDashboards';
+import { SearchInput, Tabs, Pagination, EmptyState, Badge, Dropdown } from '@/components/shared';
+import { formatRelativeDate } from '@/utils/format';
+import type { Dashboard } from '@/api/types';
 import './Dashboards.css';
-
-interface Tab {
-  id: string;
-  label: string;
-  icon?: LucideIcon;
-}
-
-interface SortOption {
-  id: string;
-  label: string;
-}
 
 type PreviewType = 'bars' | 'line' | 'pie' | 'mixed';
 
-interface Dashboard {
-  id: number;
-  name: string;
-  widgets: number;
-  lastUpdated: string;
-  owner: string;
-  tab: string;
-  previewType: PreviewType;
-}
-
-const tabs: Tab[] = [
+const tabItems = [
   { id: 'all', label: 'All' },
   { id: 'my', label: 'My Dashboards' },
   { id: 'shared', label: 'Shared' },
-  { id: 'gwi', label: 'GWI Dashboards', icon: Globe },
-];
-
-const sortOptions: SortOption[] = [
-  { id: 'recently', label: 'Recently edited' },
-  { id: 'frequently', label: 'Frequently used' },
-  { id: 'atoz', label: 'A to Z' },
-  { id: 'ztoa', label: 'Z to A' },
-];
-
-const sampleDashboards: Dashboard[] = [
-  { id: 1, name: 'Q4 Performance Overview', widgets: 8, lastUpdated: '1 hour ago', owner: 'Kevin Owens', tab: 'my', previewType: 'mixed' },
-  { id: 2, name: 'Social Media Insights', widgets: 6, lastUpdated: '5 hours ago', owner: 'Kevin Owens', tab: 'my', previewType: 'bars' },
-  { id: 3, name: 'Brand Health Dashboard', widgets: 12, lastUpdated: '2 days ago', owner: 'Sarah Chen', tab: 'shared', previewType: 'line' },
-  { id: 4, name: 'Customer Segments Analysis', widgets: 10, lastUpdated: '1 week ago', owner: 'Mike Johnson', tab: 'shared', previewType: 'pie' },
-  { id: 5, name: 'GWI Market Overview', widgets: 15, lastUpdated: '2 weeks ago', owner: '', tab: 'gwi', previewType: 'mixed' },
-  { id: 6, name: 'Competitive Landscape', widgets: 9, lastUpdated: '3 weeks ago', owner: 'Emily Davis', tab: 'shared', previewType: 'bars' },
-  { id: 7, name: 'Media Consumption Tracker', widgets: 7, lastUpdated: '1 month ago', owner: 'Kevin Owens', tab: 'my', previewType: 'line' },
-  { id: 8, name: 'GWI Demographics Dashboard', widgets: 14, lastUpdated: '1 month ago', owner: '', tab: 'gwi', previewType: 'pie' },
+  { id: 'gwi', label: 'GWI Dashboards', icon: <Globe size={16} /> },
 ];
 
 function PreviewBars(): React.JSX.Element {
@@ -97,41 +62,66 @@ function PreviewMixed(): React.JSX.Element {
   );
 }
 
-const previews: Record<PreviewType, React.FC> = { bars: PreviewBars, line: PreviewLine, pie: PreviewPie, mixed: PreviewMixed };
+const previewComponents: Record<PreviewType, React.FC> = { bars: PreviewBars, line: PreviewLine, pie: PreviewPie, mixed: PreviewMixed };
+
+function getPreviewType(dashboard: Dashboard): PreviewType {
+  const widgetCount = dashboard.widgets?.length ?? 0;
+  if (widgetCount === 0) return 'mixed';
+  const chartTypes = dashboard.widgets
+    ?.filter(w => w.type === 'chart')
+    .map(w => w.chart_type) ?? [];
+  if (chartTypes.includes('line')) return 'line';
+  if (chartTypes.includes('pie') || chartTypes.includes('donut')) return 'pie';
+  if (chartTypes.includes('bar')) return 'bars';
+  return 'mixed';
+}
+
+const dropdownActions = [
+  { label: 'Edit', value: 'edit', icon: <Edit size={14} /> },
+  { label: 'Duplicate', value: 'duplicate', icon: <Copy size={14} /> },
+  { label: 'Delete', value: 'delete', icon: <Trash2 size={14} />, danger: true },
+];
 
 export default function Dashboards(): React.JSX.Element {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedSort, setSelectedSort] = useState<string>('recently');
-  const [showSortDropdown, setShowSortDropdown] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
 
-  const filtered = sampleDashboards.filter((d: Dashboard) => {
-    const matchesTab = activeTab === 'all' || d.tab === activeTab;
-    const matchesSearch = !searchQuery || d.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
+  const { data, isLoading, isError } = useDashboards({ page, per_page: 20, search: searchQuery || undefined });
+  const deleteDashboard = useDeleteDashboard();
+
+  const dashboards = data?.data ?? [];
+  const meta = data?.meta;
+  const totalPages = meta?.total_pages ?? 1;
+
+  const filtered = dashboards.filter((d: Dashboard) => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'shared') return d.is_shared;
+    if (activeTab === 'my') return !d.is_shared;
+    return true;
   });
 
-  const sorted = [...filtered].sort((a: Dashboard, b: Dashboard) => {
-    if (selectedSort === 'atoz') return a.name.localeCompare(b.name);
-    if (selectedSort === 'ztoa') return b.name.localeCompare(a.name);
-    return 0;
-  });
+  const handleDropdownAction = (dashboardId: string, action: string) => {
+    switch (action) {
+      case 'edit':
+        navigate(`/app/dashboards/${dashboardId}`);
+        break;
+      case 'duplicate':
+        // Duplicate is not wired to a mutation since there's no duplicate endpoint
+        break;
+      case 'delete':
+        deleteDashboard.mutate(dashboardId);
+        break;
+    }
+  };
 
   return (
     <div className="dashboards-page">
       <div className="dashboards-header">
         <h1 className="page-title">Dashboards</h1>
         <div className="dashboards-tabs">
-          {tabs.map((tab: Tab) => (
-            <button
-              key={tab.id}
-              className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.icon && <tab.icon size={16} />}
-              <span>{tab.label}</span>
-            </button>
-          ))}
+          <Tabs tabs={tabItems} activeTab={activeTab} onChange={setActiveTab} />
         </div>
         <Link to="/app/dashboards/new" className="btn-create">
           <span>Create new dashboard</span>
@@ -140,68 +130,75 @@ export default function Dashboards(): React.JSX.Element {
       </div>
 
       <div className="dashboards-filters">
-        <div className="search-input-wrapper">
-          <Search size={18} className="search-icon" />
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search dashboards"
-            value={searchQuery}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div className="filter-dropdown">
-          <button
-            className={`filter-btn ${showSortDropdown ? 'open' : ''}`}
-            onClick={() => setShowSortDropdown(!showSortDropdown)}
-          >
-            <span className="filter-label">Sort by</span>
-            <span className="filter-value">{sortOptions.find(s => s.id === selectedSort)?.label}</span>
-            <ChevronDown size={16} />
-          </button>
-          {showSortDropdown && (
-            <div className="dropdown-menu">
-              {sortOptions.map((option: SortOption) => (
-                <button
-                  key={option.id}
-                  className={`dropdown-option-btn ${selectedSort === option.id ? 'selected' : ''}`}
-                  onClick={() => { setSelectedSort(option.id); setShowSortDropdown(false); }}
-                >
-                  {selectedSort === option.id && <Check size={16} className="check-icon" />}
-                  <span>{option.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={(value) => { setSearchQuery(value); setPage(1); }}
+          placeholder="Search dashboards"
+        />
       </div>
 
-      {sorted.length === 0 ? (
+      {isLoading ? (
         <div className="dashboards-empty">
-          <p>No dashboards match your filters</p>
-          <button className="dashboards-empty-btn" onClick={() => { setSearchQuery(''); setActiveTab('all'); }}>Clear filters</button>
+          <Loader2 size={32} className="spin" />
+          <p>Loading dashboards...</p>
         </div>
-      ) : (
-        <div className="dashboards-grid">
-          {sorted.map((dashboard: Dashboard) => {
-            const Preview = previews[dashboard.previewType] || PreviewMixed;
-            return (
-              <Link key={dashboard.id} to={`/app/dashboards/${dashboard.id}`} className="dashboard-card">
-                <div className="dashboard-preview">
-                  <Preview />
-                </div>
-                <div className="dashboard-info">
-                  <h3 className="dashboard-name">{dashboard.name}</h3>
-                  <p className="dashboard-meta">
-                    <span>{dashboard.widgets} widgets</span>
-                    <span className="meta-dot">&middot;</span>
-                    <span>{dashboard.lastUpdated}</span>
-                  </p>
-                </div>
+      ) : isError ? (
+        <EmptyState
+          title="Failed to load dashboards"
+          description="Something went wrong. Please try again later."
+        />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={<LayoutDashboard size={40} />}
+          title="No dashboards found"
+          description={searchQuery ? 'No dashboards match your search' : 'Create your first dashboard to get started'}
+          action={
+            searchQuery ? (
+              <button className="dashboards-empty-btn" onClick={() => { setSearchQuery(''); setActiveTab('all'); }}>Clear filters</button>
+            ) : (
+              <Link to="/app/dashboards/new" className="btn-create">
+                <span>Create new dashboard</span>
+                <Plus size={18} />
               </Link>
-            );
-          })}
-        </div>
+            )
+          }
+        />
+      ) : (
+        <>
+          <div className="dashboards-grid">
+            {filtered.map((dashboard: Dashboard) => {
+              const previewType = getPreviewType(dashboard);
+              const Preview = previewComponents[previewType];
+              return (
+                <div key={dashboard.id} className="dashboard-card">
+                  <Link to={`/app/dashboards/${dashboard.id}`} className="dashboard-card-link">
+                    <div className="dashboard-preview">
+                      <Preview />
+                    </div>
+                    <div className="dashboard-info">
+                      <h3 className="dashboard-name">{dashboard.name}</h3>
+                      <p className="dashboard-meta">
+                        <span>{dashboard.widgets?.length ?? 0} widgets</span>
+                        <span className="meta-dot">&middot;</span>
+                        <span>{formatRelativeDate(dashboard.updated_at)}</span>
+                      </p>
+                      {dashboard.is_shared && <Badge variant="info">Shared</Badge>}
+                    </div>
+                  </Link>
+                  <div className="dashboard-card-actions">
+                    <Dropdown
+                      trigger={<button className="icon-btn" onClick={(e) => e.preventDefault()}><MoreVertical size={16} /></button>}
+                      items={dropdownActions}
+                      onSelect={(action) => handleDropdownAction(dashboard.id, action)}
+                      align="right"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
       )}
     </div>
   );

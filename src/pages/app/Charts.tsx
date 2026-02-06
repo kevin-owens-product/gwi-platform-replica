@@ -1,72 +1,28 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, ChevronDown, Check, Globe, LucideIcon } from 'lucide-react';
+import { Plus, Globe, BarChart3 } from 'lucide-react';
+import { useCharts } from '@/hooks/useCharts';
+import { SearchInput, Tabs, Pagination, EmptyState, Badge } from '@/components/shared';
+import { formatRelativeDate } from '@/utils/format';
+import type { Chart, ChartType } from '@/api/types';
 import './Charts.css';
 
-interface Tab {
-  id: string;
-  label: string;
-  icon?: LucideIcon;
-}
-
-interface SortOption {
-  id: string;
-  label: string;
-}
-
-interface TypeOption {
-  id: string;
-  label: string;
-}
-
-type ChartType = 'bar' | 'line' | 'pie' | 'stacked';
-
-interface SampleChart {
-  id: number;
-  name: string;
-  type: ChartType;
-  owner: string;
-  lastUpdated: string;
-  tab: string;
-  dataset: string;
-}
-
-const tabs: Tab[] = [
+const tabs = [
   { id: 'all', label: 'All' },
   { id: 'my', label: 'My Charts' },
   { id: 'shared', label: 'Shared' },
-  { id: 'gwi', label: 'GWI Charts', icon: Globe },
+  { id: 'gwi', label: 'GWI Charts', icon: <Globe size={16} /> },
 ];
 
-const sortOptions: SortOption[] = [
-  { id: 'recently', label: 'Recently edited' },
-  { id: 'frequently', label: 'Frequently used' },
-  { id: 'atoz', label: 'A to Z' },
-  { id: 'ztoa', label: 'Z to A' },
-];
-
-const typeOptions: TypeOption[] = [
-  { id: 'all', label: 'All types' },
-  { id: 'bar', label: 'Bar Chart' },
-  { id: 'line', label: 'Line Chart' },
-  { id: 'pie', label: 'Pie Chart' },
-  { id: 'stacked', label: 'Stacked Bar' },
-];
-
-const sampleCharts: SampleChart[] = [
-  { id: 1, name: 'Social Media Usage by Age', type: 'bar', owner: 'Kevin Owens', lastUpdated: '2 hours ago', tab: 'my', dataset: 'GWI Core' },
-  { id: 2, name: 'Device Preferences Q4 2024', type: 'pie', owner: 'Kevin Owens', lastUpdated: '1 day ago', tab: 'my', dataset: 'GWI Core' },
-  { id: 3, name: 'Brand Awareness Trends', type: 'line', owner: 'Sarah Chen', lastUpdated: '3 days ago', tab: 'shared', dataset: 'GWI Zeitgeist' },
-  { id: 4, name: 'Purchase Intent by Region', type: 'bar', owner: 'Kevin Owens', lastUpdated: '1 week ago', tab: 'my', dataset: 'GWI Core' },
-  { id: 5, name: 'Streaming Platform Market Share', type: 'pie', owner: 'Sarah Chen', lastUpdated: '1 week ago', tab: 'shared', dataset: 'GWI Core' },
-  { id: 6, name: 'Consumer Confidence Index', type: 'line', owner: 'Mike Johnson', lastUpdated: '2 weeks ago', tab: 'shared', dataset: 'GWI Zeitgeist' },
-  { id: 7, name: 'Gen Z vs Millennials - Media', type: 'stacked', owner: 'Kevin Owens', lastUpdated: '2 weeks ago', tab: 'my', dataset: 'GWI Core' },
-  { id: 8, name: 'Ad Recall by Channel', type: 'bar', owner: '', lastUpdated: '3 weeks ago', tab: 'gwi', dataset: 'GWI Core' },
-  { id: 9, name: 'Sustainability Attitudes by Region', type: 'stacked', owner: '', lastUpdated: '1 month ago', tab: 'gwi', dataset: 'GWI Zeitgeist' },
-  { id: 10, name: 'Online Shopping Frequency', type: 'line', owner: 'Emily Davis', lastUpdated: '1 month ago', tab: 'shared', dataset: 'GWI USA' },
-  { id: 11, name: 'Health & Wellness Priorities', type: 'bar', owner: '', lastUpdated: '1 month ago', tab: 'gwi', dataset: 'GWI Core' },
-  { id: 12, name: 'Podcast Listening Habits', type: 'line', owner: 'Kevin Owens', lastUpdated: '6 weeks ago', tab: 'my', dataset: 'GWI Core' },
-];
+const chartTypeLabels: Record<string, string> = {
+  bar: 'Bar Chart',
+  stacked_bar: 'Stacked Bar',
+  line: 'Line Chart',
+  pie: 'Pie Chart',
+  donut: 'Donut Chart',
+  scatter: 'Scatter Plot',
+  table: 'Table',
+};
 
 function MiniBar(): React.JSX.Element {
   const bars: number[] = [65, 45, 80, 35, 60, 50, 72];
@@ -122,44 +78,53 @@ function MiniStacked(): React.JSX.Element {
   );
 }
 
-const miniCharts: Record<ChartType, () => React.JSX.Element> = { bar: MiniBar, line: MiniLine, pie: MiniPie, stacked: MiniStacked };
+const miniCharts: Record<string, () => React.JSX.Element> = {
+  bar: MiniBar,
+  line: MiniLine,
+  pie: MiniPie,
+  donut: MiniPie,
+  stacked_bar: MiniStacked,
+  scatter: MiniBar,
+  table: MiniBar,
+};
 
 export default function Charts(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedSort, setSelectedSort] = useState<string>('recently');
-  const [showSortDropdown, setShowSortDropdown] = useState<boolean>(false);
-  const [selectedType, setSelectedType] = useState<string>('all');
-  const [showTypeDropdown, setShowTypeDropdown] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
 
-  const filtered: SampleChart[] = sampleCharts.filter((chart: SampleChart) => {
-    const matchesTab = activeTab === 'all' || chart.tab === activeTab;
-    const matchesSearch = !searchQuery || chart.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = selectedType === 'all' || chart.type === selectedType;
-    return matchesTab && matchesSearch && matchesType;
+  const { data: chartsResponse, isLoading, isError } = useCharts({
+    page,
+    per_page: 20,
+    search: searchQuery || undefined,
+    sort_by: 'updated_at',
+    sort_order: 'desc',
   });
 
-  const sorted: SampleChart[] = [...filtered].sort((a: SampleChart, b: SampleChart) => {
-    if (selectedSort === 'atoz') return a.name.localeCompare(b.name);
-    if (selectedSort === 'ztoa') return b.name.localeCompare(a.name);
-    return 0;
+  const charts = chartsResponse?.data ?? [];
+  const meta = chartsResponse?.meta;
+  const totalPages = meta?.total_pages ?? 1;
+
+  // Client-side tab filtering (tabs represent ownership, not a server filter)
+  const filtered = charts.filter((chart: Chart) => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'my') return !chart.is_shared;
+    if (activeTab === 'shared') return chart.is_shared;
+    if (activeTab === 'gwi') return !chart.user_id;
+    return true;
   });
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setPage(1);
+  };
 
   return (
     <div className="charts-page">
       <div className="charts-header">
         <h1 className="page-title">Charts</h1>
         <div className="charts-tabs">
-          {tabs.map((tab: Tab) => (
-            <button
-              key={tab.id}
-              className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.icon && <tab.icon size={16} />}
-              <span>{tab.label}</span>
-            </button>
-          ))}
+          <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
         </div>
         <Link to="/app/chart-builder/chart/new" className="btn-create">
           <span>Create new chart</span>
@@ -168,96 +133,76 @@ export default function Charts(): React.JSX.Element {
       </div>
 
       <div className="charts-filters">
-        <div className="search-input-wrapper">
-          <Search size={18} className="search-icon" />
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search charts"
-            value={searchQuery}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        <div className="filter-dropdown">
-          <button
-            className={`filter-btn ${showTypeDropdown ? 'open' : ''}`}
-            onClick={() => { setShowTypeDropdown(!showTypeDropdown); setShowSortDropdown(false); }}
-          >
-            <span className="filter-label">Type:</span>
-            <span className="filter-value">{typeOptions.find((t: TypeOption) => t.id === selectedType)?.label}</span>
-            <ChevronDown size={16} />
-          </button>
-          {showTypeDropdown && (
-            <div className="dropdown-menu">
-              {typeOptions.map((option: TypeOption) => (
-                <button
-                  key={option.id}
-                  className={`dropdown-option-btn ${selectedType === option.id ? 'selected' : ''}`}
-                  onClick={() => { setSelectedType(option.id); setShowTypeDropdown(false); }}
-                >
-                  {selectedType === option.id && <Check size={16} className="check-icon" />}
-                  <span>{option.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="filter-dropdown">
-          <button
-            className={`filter-btn ${showSortDropdown ? 'open' : ''}`}
-            onClick={() => { setShowSortDropdown(!showSortDropdown); setShowTypeDropdown(false); }}
-          >
-            <span className="filter-label">Sort by</span>
-            <span className="filter-value">{sortOptions.find((s: SortOption) => s.id === selectedSort)?.label}</span>
-            <ChevronDown size={16} />
-          </button>
-          {showSortDropdown && (
-            <div className="dropdown-menu">
-              {sortOptions.map((option: SortOption) => (
-                <button
-                  key={option.id}
-                  className={`dropdown-option-btn ${selectedSort === option.id ? 'selected' : ''}`}
-                  onClick={() => { setSelectedSort(option.id); setShowSortDropdown(false); }}
-                >
-                  {selectedSort === option.id && <Check size={16} className="check-icon" />}
-                  <span>{option.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={handleSearchChange}
+          placeholder="Search charts"
+        />
       </div>
 
-      {sorted.length === 0 ? (
-        <div className="charts-empty">
-          <p>No charts match your filters</p>
-          <button className="charts-empty-btn" onClick={() => { setSearchQuery(''); setSelectedType('all'); setActiveTab('all'); }}>
-            Clear filters
-          </button>
+      {isLoading ? (
+        <div className="charts-loading">
+          <div className="charts-loading-spinner" />
+          <p>Loading charts...</p>
         </div>
+      ) : isError ? (
+        <EmptyState
+          title="Failed to load charts"
+          description="Something went wrong while loading your charts. Please try again."
+          action={
+            <button className="charts-empty-btn" onClick={() => window.location.reload()}>
+              Retry
+            </button>
+          }
+        />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={<BarChart3 size={48} />}
+          title="No charts found"
+          description={searchQuery ? 'No charts match your search' : 'Create your first chart to get started'}
+          action={
+            <button className="charts-empty-btn" onClick={() => { setSearchQuery(''); setActiveTab('all'); }}>
+              Clear filters
+            </button>
+          }
+        />
       ) : (
-        <div className="charts-grid">
-          {sorted.map((chart: SampleChart) => {
-            const MiniChart = miniCharts[chart.type] || MiniBar;
-            return (
-              <Link key={chart.id} to={`/app/chart-builder/chart/${chart.id}`} className="chart-card">
-                <div className="chart-preview">
-                  <MiniChart />
-                </div>
-                <div className="chart-info">
-                  <h3 className="chart-name">{chart.name}</h3>
-                  <p className="chart-meta">
-                    <span className="chart-type-badge">{typeOptions.find((t: TypeOption) => t.id === chart.type)?.label}</span>
-                    <span className="chart-dataset">{chart.dataset}</span>
-                  </p>
-                  <p className="chart-updated">{chart.lastUpdated}</p>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+        <>
+          <div className="charts-grid">
+            {filtered.map((chart: Chart) => {
+              const MiniChart = miniCharts[chart.chart_type] || MiniBar;
+              return (
+                <Link key={chart.id} to={`/app/chart-builder/chart/${chart.id}`} className="chart-card">
+                  <div className="chart-preview">
+                    {chart.thumbnail_url ? (
+                      <img src={chart.thumbnail_url} alt={chart.name} className="chart-thumbnail" />
+                    ) : (
+                      <MiniChart />
+                    )}
+                  </div>
+                  <div className="chart-info">
+                    <h3 className="chart-name">{chart.name}</h3>
+                    <p className="chart-meta">
+                      <Badge variant="info" className="chart-type-badge">
+                        {chartTypeLabels[chart.chart_type] ?? chart.chart_type}
+                      </Badge>
+                      {chart.is_shared && <Badge variant="default">Shared</Badge>}
+                    </p>
+                    <p className="chart-updated">
+                      {chart.updated_at ? formatRelativeDate(chart.updated_at) : 'Unknown'}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        </>
       )}
     </div>
   );

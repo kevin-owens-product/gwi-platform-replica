@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Plus, TrendingUp, TrendingDown, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Plus, TrendingUp, TrendingDown, Edit, Save, Loader2 } from 'lucide-react';
+import { useDashboard, useUpdateDashboard } from '@/hooks/useDashboards';
+import DashboardGrid from '@/components/dashboard/DashboardGrid';
+import { Button, Modal } from '@/components/shared';
+import { formatRelativeDate } from '@/utils/format';
+import type { DashboardWidget } from '@/api/types';
 import './DashboardDetail.css';
+
+// --- Mock data used as fallback when API returns no widgets ---
 
 interface KpiItem {
   id: number;
@@ -92,6 +99,8 @@ const tableData: TableRow[] = [
   { market: 'France', reach: '198K', engagement: '4.1%', awareness: '58%', trend: '+1.9%' },
   { market: 'Japan', reach: '178K', engagement: '3.5%', awareness: '52%', trend: '+5.2%' },
 ];
+
+// --- Static chart sub-components for fallback display ---
 
 function SparkLine({ data, positive }: SparkLineProps): React.JSX.Element {
   const max = Math.max(...data);
@@ -207,9 +216,143 @@ function DonutWidget(): React.JSX.Element {
   );
 }
 
+// --- Fallback content rendered when there are no widgets from the API ---
+
+function FallbackDashboardContent(): React.JSX.Element {
+  return (
+    <>
+      <div className="kpi-grid">
+        {kpiData.map((kpi: KpiItem) => (
+          <div key={kpi.id} className="kpi-card">
+            <div className="kpi-top">
+              <span className="kpi-title">{kpi.title}</span>
+              <SparkLine data={kpi.sparkline} positive={kpi.positive} />
+            </div>
+            <div className="kpi-value">{kpi.value}</div>
+            <div className={`kpi-change ${kpi.positive ? 'positive' : 'negative'}`}>
+              {kpi.positive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+              <span>{kpi.change}</span>
+              <span className="kpi-period">vs last quarter</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="widget-grid-2col">
+        <div className="large-widget">
+          <div className="widget-header-bar">
+            <h3>Reach Over Time</h3>
+            <span className="widget-badge">Monthly</span>
+          </div>
+          <LineWidget />
+        </div>
+        <div className="large-widget">
+          <div className="widget-header-bar">
+            <h3>Platform Usage</h3>
+            <span className="widget-badge">Q4 2024</span>
+          </div>
+          <BarWidget />
+        </div>
+      </div>
+
+      <div className="widget-grid-2col">
+        <div className="large-widget">
+          <div className="widget-header-bar">
+            <h3>Audience Age Distribution</h3>
+            <span className="widget-badge">All Markets</span>
+          </div>
+          <DonutWidget />
+        </div>
+        <div className="large-widget">
+          <div className="widget-header-bar">
+            <h3>Performance by Market</h3>
+            <span className="widget-badge">Top 5</span>
+          </div>
+          <table className="widget-table">
+            <thead>
+              <tr>
+                <th>Market</th>
+                <th>Reach</th>
+                <th>Engagement</th>
+                <th>Awareness</th>
+                <th>Trend</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tableData.map((row: TableRow) => (
+                <tr key={row.market}>
+                  <td className="wt-market">{row.market}</td>
+                  <td>{row.reach}</td>
+                  <td>{row.engagement}</td>
+                  <td>{row.awareness}</td>
+                  <td className="wt-trend positive">{row.trend}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// --- Main component ---
+
 export default function DashboardDetail(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
-  const [dashboardName, setDashboardName] = useState<string>('Q4 Performance Overview');
+  const { data: dashboard, isLoading, isError } = useDashboard(id ?? '');
+  const updateDashboard = useUpdateDashboard();
+
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [dashboardName, setDashboardName] = useState<string>('');
+  const [showShareModal, setShowShareModal] = useState<boolean>(false);
+
+  // Sync name from API data when it loads
+  const displayName = dashboardName || dashboard?.name || 'Untitled Dashboard';
+
+  const hasApiWidgets = (dashboard?.widgets?.length ?? 0) > 0;
+
+  const handleSave = () => {
+    if (!id) return;
+    updateDashboard.mutate(
+      { id, data: { name: dashboardName || undefined } },
+      { onSuccess: () => setIsEditing(false) }
+    );
+  };
+
+  const handleRemoveWidget = (widgetId: string) => {
+    if (!id || !dashboard) return;
+    const updatedWidgets = dashboard.widgets.filter((w: DashboardWidget) => w.id !== widgetId);
+    updateDashboard.mutate({ id, data: { widgets: updatedWidgets } });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="dashboard-detail-page">
+        <div className="dashboards-empty">
+          <Loader2 size={32} className="spin" />
+          <p>Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="dashboard-detail-page">
+        <div className="dashboard-detail-header">
+          <Link to="/app/dashboards" className="back-link">
+            <ArrowLeft size={18} />
+            <span>Back to Dashboards</span>
+          </Link>
+        </div>
+        <div className="dashboards-empty">
+          <p>Failed to load dashboard. It may have been deleted or you don't have access.</p>
+          <Link to="/app/dashboards" className="dashboards-empty-btn">Go to Dashboards</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-detail-page">
@@ -219,95 +362,78 @@ export default function DashboardDetail(): React.JSX.Element {
           <span>Back to Dashboards</span>
         </Link>
         <div className="header-actions">
+          {isEditing ? (
+            <Button
+              variant="primary"
+              icon={<Save size={16} />}
+              loading={updateDashboard.isPending}
+              onClick={handleSave}
+            >
+              Save
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              icon={<Edit size={16} />}
+              onClick={() => {
+                setDashboardName(dashboard?.name ?? '');
+                setIsEditing(true);
+              }}
+            >
+              Edit
+            </Button>
+          )}
           <button className="icon-btn"><Download size={18} /></button>
-          <button className="icon-btn"><Share2 size={18} /></button>
-          <button className="btn-primary">
-            <Plus size={16} />
-            <span>Add widget</span>
-          </button>
+          <button className="icon-btn" onClick={() => setShowShareModal(true)}><Share2 size={18} /></button>
+          <Button variant="primary" icon={<Plus size={16} />}>
+            Add widget
+          </Button>
         </div>
       </div>
 
       <div className="dashboard-detail-content">
-        <input
-          type="text"
-          className="dashboard-title-input"
-          value={dashboardName}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDashboardName(e.target.value)}
-        />
+        {isEditing ? (
+          <input
+            type="text"
+            className="dashboard-title-input"
+            value={dashboardName}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDashboardName(e.target.value)}
+            placeholder="Dashboard name"
+          />
+        ) : (
+          <h1 className="dashboard-title-input" style={{ cursor: 'default' }}>{displayName}</h1>
+        )}
 
-        <div className="kpi-grid">
-          {kpiData.map((kpi: KpiItem) => (
-            <div key={kpi.id} className="kpi-card">
-              <div className="kpi-top">
-                <span className="kpi-title">{kpi.title}</span>
-                <SparkLine data={kpi.sparkline} positive={kpi.positive} />
-              </div>
-              <div className="kpi-value">{kpi.value}</div>
-              <div className={`kpi-change ${kpi.positive ? 'positive' : 'negative'}`}>
-                {kpi.positive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                <span>{kpi.change}</span>
-                <span className="kpi-period">vs last quarter</span>
-              </div>
-            </div>
-          ))}
-        </div>
+        {dashboard?.updated_at && (
+          <p className="dashboard-meta" style={{ marginBottom: 'var(--spacing-lg)' }}>
+            Last updated {formatRelativeDate(dashboard.updated_at)}
+          </p>
+        )}
 
-        <div className="widget-grid-2col">
-          <div className="large-widget">
-            <div className="widget-header-bar">
-              <h3>Reach Over Time</h3>
-              <span className="widget-badge">Monthly</span>
-            </div>
-            <LineWidget />
-          </div>
-          <div className="large-widget">
-            <div className="widget-header-bar">
-              <h3>Platform Usage</h3>
-              <span className="widget-badge">Q4 2024</span>
-            </div>
-            <BarWidget />
-          </div>
-        </div>
-
-        <div className="widget-grid-2col">
-          <div className="large-widget">
-            <div className="widget-header-bar">
-              <h3>Audience Age Distribution</h3>
-              <span className="widget-badge">All Markets</span>
-            </div>
-            <DonutWidget />
-          </div>
-          <div className="large-widget">
-            <div className="widget-header-bar">
-              <h3>Performance by Market</h3>
-              <span className="widget-badge">Top 5</span>
-            </div>
-            <table className="widget-table">
-              <thead>
-                <tr>
-                  <th>Market</th>
-                  <th>Reach</th>
-                  <th>Engagement</th>
-                  <th>Awareness</th>
-                  <th>Trend</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tableData.map((row: TableRow) => (
-                  <tr key={row.market}>
-                    <td className="wt-market">{row.market}</td>
-                    <td>{row.reach}</td>
-                    <td>{row.engagement}</td>
-                    <td>{row.awareness}</td>
-                    <td className="wt-trend positive">{row.trend}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {hasApiWidgets ? (
+          <DashboardGrid
+            widgets={dashboard!.widgets}
+            editable={isEditing}
+            onWidgetRemove={handleRemoveWidget}
+          />
+        ) : (
+          <FallbackDashboardContent />
+        )}
       </div>
+
+      <Modal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        title="Share Dashboard"
+        footer={
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <Button variant="secondary" onClick={() => setShowShareModal(false)}>Cancel</Button>
+            <Button variant="primary" onClick={() => setShowShareModal(false)}>Share</Button>
+          </div>
+        }
+      >
+        <p>Share this dashboard with your team by sending them a link or inviting specific members.</p>
+      </Modal>
     </div>
   );
 }

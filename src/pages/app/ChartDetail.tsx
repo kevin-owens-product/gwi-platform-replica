@@ -1,304 +1,224 @@
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, MoreHorizontal, ChevronDown } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Download, Share2, MoreHorizontal, Save } from 'lucide-react';
+import { useChart, useUpdateChart, useCreateChart } from '@/hooks/useCharts';
+import { useAudiences } from '@/hooks/useAudiences';
+import { useStudies, useWaves } from '@/hooks/useTaxonomy';
+import { useStatsQuery } from '@/hooks/useQueries';
+import ChartRenderer from '@/components/chart/ChartRenderer';
+import { Button, Dropdown } from '@/components/shared';
+import { formatRelativeDate } from '@/utils/format';
+import type { ChartType, MetricType, StatsQueryRequest, StatsDatapoint } from '@/api/types';
+
+interface ChartDataPoint {
+  name: string;
+  [key: string]: string | number;
+}
 import './ChartDetail.css';
 
-type ChartType = 'bar' | 'pie' | 'line';
-
-interface ChartInfo {
-  name: string;
-  type: ChartType;
-  updated: string;
-  dataset: string;
-}
-
-interface BarDataGroup {
-  label: string;
-  values: number[];
-}
-
-interface PieDataSlice {
-  label: string;
-  value: number;
-  color: string;
-}
-
-interface LineDataPoint {
-  label: string;
-  values: number[];
-}
-
-interface PieSlice extends PieDataSlice {
-  path: string;
-}
-
-interface ChartLegendProps {
-  type: ChartType;
-}
-
-interface DataTableProps {
-  type: ChartType;
-}
-
-const chartData: Record<string, ChartInfo> = {
-  1: { name: 'Social Media Usage by Age', type: 'bar', updated: '2 hours ago', dataset: 'GWI Core' },
-  2: { name: 'Device Preferences Q4 2024', type: 'pie', updated: '1 day ago', dataset: 'GWI Core' },
-  3: { name: 'Brand Awareness Trends', type: 'line', updated: '3 days ago', dataset: 'GWI Zeitgeist' },
-  new: { name: 'Untitled Chart', type: 'bar', updated: 'Just now', dataset: 'GWI Core' },
-};
-
-const barData: BarDataGroup[] = [
-  { label: '18-24', values: [78, 65, 45, 42] },
-  { label: '25-34', values: [72, 52, 62, 48] },
-  { label: '35-44', values: [58, 35, 68, 44] },
-  { label: '45-54', values: [42, 18, 72, 38] },
-  { label: '55-64', values: [28, 8, 75, 32] },
-];
-const barSeries: string[] = ['Instagram', 'TikTok', 'Facebook', 'Twitter/X'];
-const barColors: string[] = ['#E31C79', '#0ea5e9', '#22c55e', '#8b5cf6'];
-
-const pieData: PieDataSlice[] = [
-  { label: 'Smartphone', value: 42, color: '#E31C79' },
-  { label: 'Laptop', value: 28, color: '#0ea5e9' },
-  { label: 'Tablet', value: 15, color: '#22c55e' },
-  { label: 'Desktop', value: 10, color: '#8b5cf6' },
-  { label: 'Smart TV', value: 5, color: '#f59e0b' },
+const chartTypeOptions: { value: ChartType; label: string }[] = [
+  { value: 'bar', label: 'Bar Chart' },
+  { value: 'stacked_bar', label: 'Stacked Bar' },
+  { value: 'line', label: 'Line Chart' },
+  { value: 'pie', label: 'Pie / Donut' },
+  { value: 'donut', label: 'Donut' },
+  { value: 'scatter', label: 'Scatter Plot' },
 ];
 
-const lineData: LineDataPoint[] = [
-  { label: 'Q1 23', values: [45, 38, 52] },
-  { label: 'Q2 23', values: [48, 40, 50] },
-  { label: 'Q3 23', values: [52, 42, 48] },
-  { label: 'Q4 23', values: [55, 45, 46] },
-  { label: 'Q1 24', values: [58, 48, 45] },
-  { label: 'Q2 24', values: [62, 52, 44] },
-  { label: 'Q3 24', values: [65, 55, 43] },
-  { label: 'Q4 24', values: [68, 58, 42] },
+const metricOptions: { value: MetricType; label: string }[] = [
+  { value: 'audience_percentage', label: 'Percentage' },
+  { value: 'audience_index', label: 'Index' },
+  { value: 'audience_size', label: 'Audience Size' },
+  { value: 'positive_size', label: 'Sample Count' },
 ];
-const lineSeries: string[] = ['Brand A', 'Brand B', 'Brand C'];
-const lineColors: string[] = ['#E31C79', '#0ea5e9', '#22c55e'];
 
-const audiences: string[] = ['All Adults 16+', 'Adults 18-34', 'Adults 25-54', 'Gen Z', 'Millennials'];
-const dataSources: string[] = ['GWI Core', 'GWI Zeitgeist', 'GWI USA', 'GWI Work'];
-
-function BarChart(): React.JSX.Element {
-  const maxVal = 80;
-  const chartW = 600, chartH = 300, padL = 40, padB = 40, padT = 20, padR = 20;
-  const plotW = chartW - padL - padR;
-  const plotH = chartH - padT - padB;
-  const groupW = plotW / barData.length;
-  const barW = (groupW - 12) / barSeries.length;
-
-  return (
-    <svg viewBox={`0 0 ${chartW} ${chartH}`} className="chart-svg">
-      {[0, 20, 40, 60, 80].map((v: number) => {
-        const y = padT + plotH - (v / maxVal) * plotH;
-        return (
-          <g key={v}>
-            <line x1={padL} y1={y} x2={chartW - padR} y2={y} stroke="#e5e7eb" strokeWidth="1" />
-            <text x={padL - 8} y={y + 4} textAnchor="end" fontSize="11" fill="#9ca3af">{v}%</text>
-          </g>
-        );
-      })}
-      {barData.map((group: BarDataGroup, gi: number) => {
-        const gx = padL + gi * groupW + 6;
-        return (
-          <g key={gi}>
-            <text x={gx + (groupW - 12) / 2} y={chartH - 10} textAnchor="middle" fontSize="11" fill="#6b7280">{group.label}</text>
-            {group.values.map((val: number, si: number) => {
-              const h = (val / maxVal) * plotH;
-              return (
-                <rect key={si} x={gx + si * barW} y={padT + plotH - h} width={barW - 2} height={h} rx="3" fill={barColors[si]} opacity="0.85">
-                  <title>{barSeries[si]}: {val}%</title>
-                </rect>
-              );
-            })}
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-function PieChartViz(): React.JSX.Element {
-  const total: number = pieData.reduce((s: number, d: PieDataSlice) => s + d.value, 0);
-  const cx = 150, cy = 150, r = 120, ir = 65;
-  let cumAngle = -90;
-  const slices: PieSlice[] = pieData.map((d: PieDataSlice) => {
-    const angle = (d.value / total) * 360;
-    const startAngle = cumAngle;
-    const endAngle = cumAngle + angle;
-    cumAngle = endAngle;
-    const startRad = (startAngle * Math.PI) / 180;
-    const endRad = (endAngle * Math.PI) / 180;
-    const x1o = cx + r * Math.cos(startRad), y1o = cy + r * Math.sin(startRad);
-    const x2o = cx + r * Math.cos(endRad), y2o = cy + r * Math.sin(endRad);
-    const x1i = cx + ir * Math.cos(endRad), y1i = cy + ir * Math.sin(endRad);
-    const x2i = cx + ir * Math.cos(startRad), y2i = cy + ir * Math.sin(startRad);
-    const largeArc = angle > 180 ? 1 : 0;
-    const path = `M ${x1o} ${y1o} A ${r} ${r} 0 ${largeArc} 1 ${x2o} ${y2o} L ${x1i} ${y1i} A ${ir} ${ir} 0 ${largeArc} 0 ${x2i} ${y2i} Z`;
-    return { ...d, path };
-  });
-
-  return (
-    <div className="pie-chart-container">
-      <svg viewBox="0 0 300 300" className="chart-svg chart-svg-pie">
-        {slices.map((s: PieSlice, i: number) => (
-          <path key={i} d={s.path} fill={s.color} opacity="0.85">
-            <title>{s.label}: {s.value}%</title>
-          </path>
-        ))}
-        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="22" fontWeight="700" fill="#191530">100%</text>
-        <text x={cx} y={cy + 14} textAnchor="middle" fontSize="11" fill="#9ca3af">Total</text>
-      </svg>
-      <div className="pie-legend">
-        {pieData.map((d: PieDataSlice, i: number) => (
-          <div key={i} className="pie-legend-item">
-            <span className="pie-legend-dot" style={{ backgroundColor: d.color }} />
-            <span className="pie-legend-label">{d.label}</span>
-            <span className="pie-legend-value">{d.value}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function LineChartViz(): React.JSX.Element {
-  const maxVal = 80;
-  const chartW = 600, chartH = 300, padL = 40, padB = 40, padT = 20, padR = 20;
-  const plotW = chartW - padL - padR;
-  const plotH = chartH - padT - padB;
-
-  const getX = (i: number): number => padL + (i / (lineData.length - 1)) * plotW;
-  const getY = (v: number): number => padT + plotH - (v / maxVal) * plotH;
-
-  return (
-    <svg viewBox={`0 0 ${chartW} ${chartH}`} className="chart-svg">
-      {[0, 20, 40, 60, 80].map((v: number) => {
-        const y = getY(v);
-        return (
-          <g key={v}>
-            <line x1={padL} y1={y} x2={chartW - padR} y2={y} stroke="#e5e7eb" strokeWidth="1" />
-            <text x={padL - 8} y={y + 4} textAnchor="end" fontSize="11" fill="#9ca3af">{v}%</text>
-          </g>
-        );
-      })}
-      {lineData.map((d: LineDataPoint, i: number) => (
-        <text key={i} x={getX(i)} y={chartH - 10} textAnchor="middle" fontSize="10" fill="#6b7280">{d.label}</text>
-      ))}
-      {lineSeries.map((_: string, si: number) => {
-        const points = lineData.map((d: LineDataPoint, i: number) => `${getX(i)},${getY(d.values[si])}`).join(' ');
-        return (
-          <polyline key={si} points={points} fill="none" stroke={lineColors[si]} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        );
-      })}
-      {lineSeries.map((_: string, si: number) =>
-        lineData.map((d: LineDataPoint, i: number) => (
-          <circle key={`${si}-${i}`} cx={getX(i)} cy={getY(d.values[si])} r="3.5" fill={lineColors[si]} stroke="white" strokeWidth="2">
-            <title>{lineSeries[si]}: {d.values[si]}%</title>
-          </circle>
-        ))
-      )}
-    </svg>
-  );
-}
-
-const chartComponents: Record<ChartType, () => React.JSX.Element> = { bar: BarChart, pie: PieChartViz, line: LineChartViz };
-
-function ChartLegend({ type }: ChartLegendProps): React.JSX.Element | null {
-  if (type === 'bar') {
-    return (
-      <div className="chart-legend">
-        {barSeries.map((s: string, i: number) => (
-          <div key={i} className="chart-legend-item">
-            <span className="chart-legend-dot" style={{ backgroundColor: barColors[i] }} />
-            <span>{s}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-  if (type === 'line') {
-    return (
-      <div className="chart-legend">
-        {lineSeries.map((s: string, i: number) => (
-          <div key={i} className="chart-legend-item">
-            <span className="chart-legend-dot" style={{ backgroundColor: lineColors[i] }} />
-            <span>{s}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return null;
-}
-
-function DataTable({ type }: DataTableProps): React.JSX.Element {
-  if (type === 'bar') {
-    return (
-      <table className="chart-data-table">
-        <thead>
-          <tr>
-            <th>Age Group</th>
-            {barSeries.map((s: string) => <th key={s}>{s}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {barData.map((row: BarDataGroup) => (
-            <tr key={row.label}>
-              <td className="row-label">{row.label}</td>
-              {row.values.map((v: number, i: number) => <td key={i}>{v}%</td>)}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
-  }
-  if (type === 'pie') {
-    return (
-      <table className="chart-data-table">
-        <thead>
-          <tr><th>Device</th><th>Share</th></tr>
-        </thead>
-        <tbody>
-          {pieData.map((d: PieDataSlice) => (
-            <tr key={d.label}><td className="row-label">{d.label}</td><td>{d.value}%</td></tr>
-          ))}
-        </tbody>
-      </table>
-    );
-  }
-  return (
-    <table className="chart-data-table">
-      <thead>
-        <tr>
-          <th>Quarter</th>
-          {lineSeries.map((s: string) => <th key={s}>{s}</th>)}
-        </tr>
-      </thead>
-      <tbody>
-        {lineData.map((row: LineDataPoint) => (
-          <tr key={row.label}>
-            <td className="row-label">{row.label}</td>
-            {row.values.map((v: number, i: number) => <td key={i}>{v}%</td>)}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
+const fallbackAudiences: string[] = ['All Adults 16+', 'Adults 18-34', 'Adults 25-54', 'Gen Z', 'Millennials'];
+const fallbackDataSources: string[] = ['GWI Core', 'GWI Zeitgeist', 'GWI USA', 'GWI Work'];
 
 export default function ChartDetail(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
-  const chart: ChartInfo = chartData[id ?? 'new'] || chartData['new'];
-  const [chartType, setChartType] = useState<ChartType>(chart.type);
+  const navigate = useNavigate();
+  const isNew = id === 'new';
+
+  // Fetch audience and study options from API
+  const { data: audienceResponse } = useAudiences({ per_page: 50 });
+  const { data: studies } = useStudies();
+  const { data: waves } = useWaves();
+
+  const audiences = useMemo(() => {
+    if (audienceResponse?.data && audienceResponse.data.length > 0) {
+      return audienceResponse.data.map((a) => a.name);
+    }
+    return fallbackAudiences;
+  }, [audienceResponse]);
+
+  const dataSources = useMemo(() => {
+    if (studies && studies.length > 0) {
+      return studies.map((s) => s.name);
+    }
+    return fallbackDataSources;
+  }, [studies]);
+
+  const waveOptions = useMemo(() => {
+    if (waves && waves.length > 0) {
+      return waves.map((w) => ({ label: w.name, value: w.id }));
+    }
+    return [
+      { label: 'Q4 2024', value: 'q4-2024' },
+      { label: 'Q3 2024', value: 'q3-2024' },
+      { label: 'Q2 2024', value: 'q2-2024' },
+      { label: 'Q1 2024', value: 'q1-2024' },
+    ];
+  }, [waves]);
+
+  // Fetch existing chart data
+  const { data: chart, isLoading: chartLoading } = useChart(isNew ? '' : (id ?? ''));
+  const updateChart = useUpdateChart();
+  const createChart = useCreateChart();
+
+  // Local editable state, seeded from API data
+  const [chartName, setChartName] = useState<string>('');
+  const [chartType, setChartType] = useState<ChartType>('bar');
+  const [selectedMetric, setSelectedMetric] = useState<MetricType>('audience_percentage');
   const [activeView, setActiveView] = useState<'chart' | 'table' | 'summary'>('chart');
   const [selectedAudience, setSelectedAudience] = useState<string>('All Adults 16+');
-  const [selectedSource, setSelectedSource] = useState<string>(chart.dataset);
-  const [chartName, setChartName] = useState<string>(chart.name);
+  const [selectedSource, setSelectedSource] = useState<string>('GWI Core');
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-  const ChartComponent = chartComponents[chartType] || BarChart;
+  // Seed local state from the fetched chart once
+  if (chart && !isInitialized) {
+    setChartName(chart.name);
+    setChartType(chart.chart_type);
+    if (chart.config.metrics?.[0]) {
+      setSelectedMetric(chart.config.metrics[0]);
+    }
+    setIsInitialized(true);
+  }
+
+  // Build stats query from the chart config
+  const statsRequest: StatsQueryRequest | null = useMemo(() => {
+    if (!chart?.config) return null;
+    const questionIds = chart.config.rows
+      ?.filter((d) => d.type === 'question' && d.question_id)
+      .map((d) => d.question_id!) ?? [];
+    if (questionIds.length === 0) return null;
+
+    return {
+      question_ids: questionIds,
+      metrics: chart.config.metrics ?? [selectedMetric],
+      wave_ids: chart.config.wave_ids ?? [],
+      location_ids: chart.config.location_ids ?? [],
+      base_audience: chart.config.base_audience,
+    };
+  }, [chart?.config, selectedMetric]);
+
+  const { data: statsData, isLoading: statsLoading } = useStatsQuery(statsRequest);
+
+  // Transform stats response into format ChartRenderer expects: array of {name, ...seriesValues}
+  const { chartData, series } = useMemo((): { chartData: ChartDataPoint[]; series: string[] } => {
+    if (!statsData?.results?.length) {
+      return { chartData: [], series: [] };
+    }
+
+    // For single-question charts: datapoints become rows, metrics/audiences become series
+    const result = statsData.results[0];
+    if (!result) return { chartData: [], series: [] };
+
+    const seriesNames = [metricOptions.find((m) => m.value === selectedMetric)?.label ?? selectedMetric];
+
+    const data: ChartDataPoint[] = result.datapoints.map((dp: StatsDatapoint) => ({
+      name: dp.datapoint_name,
+      [seriesNames[0]]: dp.metrics[selectedMetric] ?? 0,
+    }));
+
+    // If there are multiple results (multiple questions), build multi-series
+    if (statsData.results.length > 1) {
+      const multiSeries = statsData.results.map((r) => r.question_name);
+      const dpNames = new Set<string>();
+      statsData.results.forEach((r) =>
+        r.datapoints.forEach((dp: StatsDatapoint) => dpNames.add(dp.datapoint_name))
+      );
+
+      const multiData: ChartDataPoint[] = Array.from(dpNames).map((dpName) => {
+        const row: ChartDataPoint = { name: dpName };
+        statsData.results.forEach((r) => {
+          const dp = r.datapoints.find((d: StatsDatapoint) => d.datapoint_name === dpName);
+          row[r.question_name] = dp?.metrics[selectedMetric] ?? 0;
+        });
+        return row;
+      });
+
+      return { chartData: multiData, series: multiSeries };
+    }
+
+    return { chartData: data, series: seriesNames };
+  }, [statsData, selectedMetric]);
+
+  // Save handler
+  const handleSave = () => {
+    const configPayload = {
+      ...chart?.config,
+      metrics: [selectedMetric],
+    };
+
+    if (isNew) {
+      createChart.mutate(
+        {
+          name: chartName || 'Untitled Chart',
+          chart_type: chartType,
+          config: {
+            rows: [],
+            columns: [],
+            metrics: [selectedMetric],
+            wave_ids: [],
+            location_ids: [],
+          },
+        },
+        {
+          onSuccess: (newChart) => {
+            if (newChart?.id) navigate(`/app/chart-builder/chart/${newChart.id}`);
+          },
+        }
+      );
+    } else if (id) {
+      updateChart.mutate({
+        id,
+        data: {
+          name: chartName,
+          chart_type: chartType,
+          config: configPayload,
+        },
+      });
+    }
+  };
+
+  const isDataLoading = chartLoading || statsLoading;
+  const isSaving = updateChart.isPending || createChart.isPending;
+
+  // More actions dropdown
+  const moreActions = [
+    { label: 'Duplicate', value: 'duplicate' },
+    { label: 'Export as PNG', value: 'export-png' },
+    { label: 'Export as CSV', value: 'export-csv' },
+    { label: 'Delete', value: 'delete', danger: true },
+  ];
+
+  if (chartLoading && !isNew) {
+    return (
+      <div className="chart-detail-page">
+        <div className="chart-detail-header">
+          <Link to="/app/chart-builder" className="back-link">
+            <ArrowLeft size={18} />
+            <span>Back to Charts</span>
+          </Link>
+        </div>
+        <div className="chart-detail-loading">
+          <div className="charts-loading-spinner" />
+          <p>Loading chart...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="chart-detail-page">
@@ -310,7 +230,23 @@ export default function ChartDetail(): React.JSX.Element {
         <div className="header-actions">
           <button className="icon-btn"><Download size={18} /></button>
           <button className="icon-btn"><Share2 size={18} /></button>
-          <button className="icon-btn"><MoreHorizontal size={18} /></button>
+          <Dropdown
+            trigger={<button className="icon-btn"><MoreHorizontal size={18} /></button>}
+            items={moreActions}
+            onSelect={(value) => {
+              // Action handling placeholder
+              console.log('Action selected:', value);
+            }}
+            align="right"
+          />
+          <Button
+            variant="primary"
+            icon={<Save size={16} />}
+            loading={isSaving}
+            onClick={handleSave}
+          >
+            {isNew ? 'Create' : 'Save'}
+          </Button>
         </div>
       </div>
 
@@ -318,11 +254,13 @@ export default function ChartDetail(): React.JSX.Element {
         <input
           type="text"
           className="chart-title-input"
-          value={chartName}
+          value={chartName || (isNew ? '' : '')}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setChartName(e.target.value)}
           placeholder="Untitled Chart"
         />
-        <p className="chart-subtitle">Last updated {chart.updated}</p>
+        <p className="chart-subtitle">
+          {chart?.updated_at ? `Last updated ${formatRelativeDate(chart.updated_at)}` : isNew ? 'New chart' : ''}
+        </p>
       </div>
 
       <div className="chart-detail-content">
@@ -336,24 +274,64 @@ export default function ChartDetail(): React.JSX.Element {
           <div className="chart-canvas">
             {activeView === 'chart' && (
               <>
-                <ChartComponent />
-                <ChartLegend type={chartType} />
+                {isDataLoading ? (
+                  <div className="chart-detail-loading">
+                    <div className="charts-loading-spinner" />
+                    <p>Loading chart data...</p>
+                  </div>
+                ) : (
+                  <ChartRenderer
+                    type={chartType}
+                    data={chartData}
+                    series={series}
+                  />
+                )}
               </>
             )}
             {activeView === 'table' && (
               <div className="chart-table-wrapper">
-                <DataTable type={chartType} />
+                {isDataLoading ? (
+                  <div className="chart-detail-loading">
+                    <div className="charts-loading-spinner" />
+                    <p>Loading data...</p>
+                  </div>
+                ) : chartData.length > 0 ? (
+                  <table className="chart-data-table">
+                    <thead>
+                      <tr>
+                        <th>Label</th>
+                        {series.map((s: string) => <th key={s}>{s}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {chartData.map((row) => (
+                        <tr key={String(row.name)}>
+                          <td className="row-label">{String(row.name)}</td>
+                          {series.map((s: string) => (
+                            <td key={s}>{typeof row[s] === 'number' ? `${row[s]}%` : row[s] ?? '-'}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="chart-empty-message">No data to display. Configure chart questions first.</p>
+                )}
               </div>
             )}
             {activeView === 'summary' && (
               <div className="chart-summary">
                 <div className="summary-stat">
                   <span className="summary-label">Sample Size</span>
-                  <span className="summary-value">743,219</span>
+                  <span className="summary-value">{statsData?.meta?.base_size?.toLocaleString() ?? '-'}</span>
                 </div>
                 <div className="summary-stat">
-                  <span className="summary-label">Universe</span>
-                  <span className="summary-value">1,245,890,000</span>
+                  <span className="summary-label">Wave</span>
+                  <span className="summary-value">{statsData?.meta?.wave_name ?? '-'}</span>
+                </div>
+                <div className="summary-stat">
+                  <span className="summary-label">Location</span>
+                  <span className="summary-value">{statsData?.meta?.location_name ?? '-'}</span>
                 </div>
                 <div className="summary-stat">
                   <span className="summary-label">Data Source</span>
@@ -364,12 +342,8 @@ export default function ChartDetail(): React.JSX.Element {
                   <span className="summary-value">{selectedAudience}</span>
                 </div>
                 <div className="summary-stat">
-                  <span className="summary-label">Wave</span>
-                  <span className="summary-value">Q4 2024</span>
-                </div>
-                <div className="summary-stat">
-                  <span className="summary-label">Markets</span>
-                  <span className="summary-value">48 countries</span>
+                  <span className="summary-label">Execution Time</span>
+                  <span className="summary-value">{statsData?.meta?.execution_time_ms ? `${statsData.meta.execution_time_ms}ms` : '-'}</span>
                 </div>
               </div>
             )}
@@ -382,9 +356,17 @@ export default function ChartDetail(): React.JSX.Element {
             <div className="config-group">
               <label>Chart Type</label>
               <select className="config-select" value={chartType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setChartType(e.target.value as ChartType)}>
-                <option value="bar">Bar Chart</option>
-                <option value="line">Line Chart</option>
-                <option value="pie">Pie / Donut</option>
+                {chartTypeOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="config-group">
+              <label>Metric</label>
+              <select className="config-select" value={selectedMetric} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedMetric(e.target.value as MetricType)}>
+                {metricOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             </div>
             <div className="config-group">
@@ -401,23 +383,19 @@ export default function ChartDetail(): React.JSX.Element {
             </div>
             <div className="config-group">
               <label>Wave</label>
-              <select className="config-select" defaultValue="Q4 2024">
-                <option>Q4 2024</option>
-                <option>Q3 2024</option>
-                <option>Q2 2024</option>
-                <option>Q1 2024</option>
-              </select>
-            </div>
-            <div className="config-group">
-              <label>Display</label>
-              <select className="config-select" defaultValue="percentage">
-                <option value="percentage">Percentage</option>
-                <option value="index">Index</option>
-                <option value="count">Sample Count</option>
+              <select className="config-select" defaultValue={waveOptions[0]?.value}>
+                {waveOptions.map((w) => <option key={w.value} value={w.value}>{w.label}</option>)}
               </select>
             </div>
             <div className="config-divider" />
-            <button className="config-apply-btn">Apply Changes</button>
+            <Button
+              variant="primary"
+              fullWidth
+              loading={isSaving}
+              onClick={handleSave}
+            >
+              {isNew ? 'Create Chart' : 'Apply Changes'}
+            </Button>
           </div>
         </div>
       </div>

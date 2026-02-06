@@ -1,5 +1,9 @@
-import { useState } from 'react';
-import { ChevronDown, Play, X } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { ChevronDown, Play, X, Loader2 } from 'lucide-react';
+import { useWaves, useLocations } from '@/hooks/useTaxonomy';
+import { useWorkspaceStore } from '@/stores/workspace';
+import { Button, Input } from '@/components/shared';
+import type { Wave, Location } from '@/api/types';
 import './TvStudy.css';
 
 interface Daypart {
@@ -17,16 +21,17 @@ interface ResultItem {
   value: string;
 }
 
-const channels: string[] = [
+// Fallback data for when API is unavailable
+const fallbackChannels: string[] = [
   'BBC One', 'BBC Two', 'ITV', 'Channel 4', 'Channel 5',
   'Sky One', 'Sky Sports', 'Sky News', 'Dave', 'E4',
 ];
 
-const audiences: string[] = [
+const fallbackAudiences: string[] = [
   'Adults 16-64', 'Adults 18-34', 'Adults 25-54', 'Adults 35-64', 'All Adults 16+',
 ];
 
-const countries: string[] = [
+const fallbackCountries: string[] = [
   'United Kingdom', 'United States', 'Germany', 'France', 'Spain',
   'Italy', 'Netherlands', 'Belgium', 'Sweden', 'Norway',
   'Denmark', 'Finland', 'Poland', 'Czech Republic', 'Austria',
@@ -39,7 +44,7 @@ const countries: string[] = [
   'South Africa', 'Nigeria', 'Kenya',
 ];
 
-const generateWaves = (): string[] => {
+const generateFallbackWaves = (): string[] => {
   const waves: string[] = [];
   for (let y = 2025; y >= 2017; y--) {
     for (let q = 4; q >= 1; q--) {
@@ -48,7 +53,7 @@ const generateWaves = (): string[] => {
   }
   return waves;
 };
-const waves: string[] = generateWaves();
+const fallbackWaveNames: string[] = generateFallbackWaves();
 
 const dayparts: Daypart[] = [
   { name: 'Early Morning', time: '06:00 - 09:00' },
@@ -61,14 +66,44 @@ const dayparts: Daypart[] = [
 ];
 
 export default function TvStudy(): React.JSX.Element {
+  // API hooks
+  const { data: apiWaves, isLoading: wavesLoading } = useWaves();
+  const { data: apiLocations, isLoading: locationsLoading } = useLocations();
+  const { selectedLocationIds } = useWorkspaceStore();
+
+  // Derive wave names from API data, falling back to hardcoded list
+  const waveNames = useMemo(() => {
+    if (apiWaves && apiWaves.length > 0) {
+      return apiWaves.map((w: Wave) => w.name);
+    }
+    return fallbackWaveNames;
+  }, [apiWaves]);
+
+  // Derive country names from API data, falling back to hardcoded list
+  const countryNames = useMemo(() => {
+    if (apiLocations && apiLocations.length > 0) {
+      return apiLocations.map((loc: Location) => loc.name);
+    }
+    return fallbackCountries;
+  }, [apiLocations]);
+
+  // Channels remain client-side (TV-specific, not in taxonomy API)
+  const channels = fallbackChannels;
+  const audiences = fallbackAudiences;
+
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['BBC One', 'ITV']);
   const [channelsOpen, setChannelsOpen] = useState<boolean>(false);
   const [selectedAudience, setSelectedAudience] = useState<string>('Adults 16-64');
   const [audienceOpen, setAudienceOpen] = useState<boolean>(false);
-  const [selectedCountry, setSelectedCountry] = useState<string>('United Kingdom');
+  const [selectedCountry, setSelectedCountry] = useState<string>(
+    selectedLocationIds.length > 0 ? selectedLocationIds[0] : 'United Kingdom'
+  );
   const [countryOpen, setCountryOpen] = useState<boolean>(false);
   const [timezone, setTimezone] = useState<string>('local');
-  const [selectedWaves, setSelectedWaves] = useState<string[]>(['Q4 2025', 'Q3 2025', 'Q2 2025', 'Q1 2025']);
+  const [selectedWaves, setSelectedWaves] = useState<string[]>(() => {
+    // Default to first 4 waves from the list
+    return waveNames.slice(0, 4);
+  });
   const [wavesOpen, setWavesOpen] = useState<boolean>(false);
   const [daypartSlots, setDaypartSlots] = useState<DaypartSlot[]>(
     dayparts.map(() => ({ weekday: 1, weekend: 1 }))
@@ -105,10 +140,18 @@ export default function TvStudy(): React.JSX.Element {
     { label: 'GRP', value: '306.8' },
   ];
 
+  const isDataLoading = wavesLoading || locationsLoading;
+
   return (
     <div className="tv-study-page">
       <div className="tv-study-header">
         <h1 className="page-title">TV Reach & Frequency</h1>
+        {isDataLoading && (
+          <div className="tv-study-loading-indicator">
+            <Loader2 size={16} className="tv-study-spinner" />
+            <span>Loading data...</span>
+          </div>
+        )}
       </div>
 
       <div className="tv-study-content">
@@ -173,7 +216,7 @@ export default function TvStudy(): React.JSX.Element {
               </div>
             </div>
 
-            {/* Location */}
+            {/* Location - populated from API */}
             <div className="tv-study-field">
               <label className="tv-study-label">Location</label>
               <div className="tv-study-select-wrapper">
@@ -183,7 +226,13 @@ export default function TvStudy(): React.JSX.Element {
                 </button>
                 {countryOpen && (
                   <div className="tv-study-dropdown tv-study-dropdown-tall">
-                    {countries.map((c: string) => (
+                    {locationsLoading && (
+                      <div className="tv-study-dropdown-loading">
+                        <Loader2 size={14} className="tv-study-spinner" />
+                        <span>Loading locations...</span>
+                      </div>
+                    )}
+                    {countryNames.map((c: string) => (
                       <button
                         key={c}
                         className={`tv-study-dropdown-item ${c === selectedCountry ? 'selected' : ''}`}
@@ -201,22 +250,26 @@ export default function TvStudy(): React.JSX.Element {
             <div className="tv-study-field">
               <label className="tv-study-label">Timezone</label>
               <div className="tv-study-toggle">
-                <button
+                <Button
+                  variant={timezone === 'local' ? 'primary' : 'ghost'}
+                  size="sm"
                   className={`tv-study-toggle-btn ${timezone === 'local' ? 'active' : ''}`}
                   onClick={() => setTimezone('local')}
                 >
                   Local
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant={timezone === 'standardized' ? 'primary' : 'ghost'}
+                  size="sm"
                   className={`tv-study-toggle-btn ${timezone === 'standardized' ? 'active' : ''}`}
                   onClick={() => setTimezone('standardized')}
                 >
                   Standardized
-                </button>
+                </Button>
               </div>
             </div>
 
-            {/* Waves */}
+            {/* Waves - populated from API */}
             <div className="tv-study-field tv-study-field-full">
               <label className="tv-study-label">
                 Waves
@@ -229,7 +282,13 @@ export default function TvStudy(): React.JSX.Element {
                 </button>
                 {wavesOpen && (
                   <div className="tv-study-dropdown tv-study-dropdown-tall">
-                    {waves.map((w: string) => (
+                    {wavesLoading && (
+                      <div className="tv-study-dropdown-loading">
+                        <Loader2 size={14} className="tv-study-spinner" />
+                        <span>Loading waves...</span>
+                      </div>
+                    )}
+                    {waveNames.map((w: string) => (
                       <label key={w} className="tv-study-dropdown-option">
                         <input
                           type="checkbox"
@@ -273,21 +332,21 @@ export default function TvStudy(): React.JSX.Element {
                     <td className="tv-study-dp-name">{dp.name}</td>
                     <td className="tv-study-dp-time">{dp.time}</td>
                     <td>
-                      <input
+                      <Input
                         type="number"
                         className="tv-study-slot-input"
                         value={daypartSlots[idx].weekday}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSlot(idx, 'weekday', e.target.value)}
-                        min="0"
+                        min={0}
                       />
                     </td>
                     <td>
-                      <input
+                      <Input
                         type="number"
                         className="tv-study-slot-input"
                         value={daypartSlots[idx].weekend}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSlot(idx, 'weekend', e.target.value)}
-                        min="0"
+                        min={0}
                       />
                     </td>
                   </tr>
@@ -297,14 +356,15 @@ export default function TvStudy(): React.JSX.Element {
           </div>
 
           <div className="tv-study-actions">
-            <button
+            <Button
+              variant="primary"
+              icon={<Play size={16} />}
               className="tv-study-run-btn"
               onClick={() => setShowResults(true)}
               disabled={selectedWaves.length < 4 || selectedChannels.length === 0}
             >
-              <Play size={16} />
-              <span>Run Study</span>
-            </button>
+              Run Study
+            </Button>
           </div>
         </div>
 

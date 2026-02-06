@@ -1,40 +1,126 @@
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { User, Shield, Building2, Save, LucideIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { User, Shield, Building2, Save, Users, BarChart2, Settings2, Loader2 } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { useProfile } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/auth';
+import { authApi } from '@/api';
+import { Tabs, Button, Input } from '@/components/shared';
+import UserManagement from '@/components/admin/UserManagement';
+import UsageStats from '@/components/admin/UsageStats';
+import type { User as UserType } from '@/api/types';
 import './Settings.css';
 
-interface SettingsTab {
-  id: string;
-  label: string;
-  icon: LucideIcon;
-  path: string;
-}
-
-interface FormData {
-  firstName: string;
-  lastName: string;
+interface ProfileFormData {
+  name: string;
   email: string;
-  jobTitle: string;
-  company: string;
+  organization_name: string;
 }
 
-const tabs: SettingsTab[] = [
-  { id: 'account', label: 'Account details', icon: User, path: '/app/account-settings' },
-  { id: 'security', label: 'Security', icon: Shield, path: '/app/account-settings/security' },
-  { id: 'organisation', label: 'Organisation', icon: Building2, path: '/app/account-settings/organisation' },
+const settingsTabs = [
+  { id: 'profile', label: 'Profile', icon: <User size={16} /> },
+  { id: 'team', label: 'Team', icon: <Users size={16} /> },
+  { id: 'usage', label: 'Usage', icon: <BarChart2 size={16} /> },
+  { id: 'preferences', label: 'Preferences', icon: <Settings2 size={16} /> },
 ];
 
 export default function Settings(): React.JSX.Element {
-  const { tab = 'account' } = useParams<{ tab?: string }>();
-  const activeTab: string = tab || 'account';
+  const { tab } = useParams<{ tab?: string }>();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<string>(tab || 'profile');
 
-  const [formData, setFormData] = useState<FormData>({
-    firstName: 'Kevin',
-    lastName: 'Owens',
-    email: 'kevin.owens@gwi.com',
-    jobTitle: 'Product Manager',
-    company: 'GWI',
+  const { data: profile, isLoading: profileLoading, error: profileError } = useProfile();
+  const { user: storeUser } = useAuthStore();
+  const queryClient = useQueryClient();
+
+  // Merge profile API data with store data; prefer API, fall back to store, then defaults
+  const currentUser: Partial<UserType> = profile ?? storeUser ?? {};
+
+  const [formData, setFormData] = useState<ProfileFormData>({
+    name: '',
+    email: '',
+    organization_name: '',
   });
+
+  const [preferences, setPreferences] = useState({
+    theme: 'light' as 'light' | 'dark',
+    locale: 'en-US',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  });
+
+  // Sync form data when profile loads
+  useEffect(() => {
+    if (currentUser) {
+      setFormData({
+        name: currentUser.name || '',
+        email: currentUser.email || '',
+        organization_name: currentUser.organization_name || '',
+      });
+      if (currentUser.preferences) {
+        setPreferences((prev) => ({
+          theme: currentUser.preferences?.theme || prev.theme,
+          locale: currentUser.preferences?.locale || prev.locale,
+          timezone: currentUser.preferences?.timezone || prev.timezone,
+        }));
+      }
+    }
+  }, [currentUser?.id, currentUser?.name, currentUser?.email, currentUser?.organization_name]);
+
+  // Sync active tab when URL param changes
+  useEffect(() => {
+    if (tab && settingsTabs.some((t) => t.id === tab)) {
+      setActiveTab(tab);
+    }
+  }, [tab]);
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    navigate(`/app/account-settings/${tabId}`, { replace: true });
+  };
+
+  // Profile update mutation
+  const updateProfile = useMutation({
+    mutationFn: (data: Partial<UserType>) => authApi.updateProfile(data),
+    onSuccess: (updatedUser) => {
+      useAuthStore.getState().setUser(updatedUser);
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      toast.success('Profile updated successfully');
+    },
+    onError: () => {
+      toast.error('Failed to update profile');
+    },
+  });
+
+  // Preferences update mutation
+  const updatePreferences = useMutation({
+    mutationFn: (data: Partial<UserType>) => authApi.updateProfile(data),
+    onSuccess: (updatedUser) => {
+      useAuthStore.getState().setUser(updatedUser);
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      toast.success('Preferences saved');
+    },
+    onError: () => {
+      toast.error('Failed to save preferences');
+    },
+  });
+
+  const handleSaveProfile = () => {
+    updateProfile.mutate({
+      name: formData.name,
+      email: formData.email,
+    });
+  };
+
+  const handleSavePreferences = () => {
+    updatePreferences.mutate({
+      preferences: {
+        theme: preferences.theme,
+        locale: preferences.locale,
+        timezone: preferences.timezone,
+      },
+    });
+  };
 
   return (
     <div className="settings-page">
@@ -44,80 +130,83 @@ export default function Settings(): React.JSX.Element {
 
       <div className="settings-layout">
         <nav className="settings-nav">
-          {tabs.map((item: SettingsTab) => (
-            <Link
-              key={item.id}
-              to={item.path}
-              className={`settings-nav-item ${activeTab === item.id || (activeTab === 'account' && item.id === 'account') ? 'active' : ''}`}
-            >
-              <item.icon size={18} />
-              <span>{item.label}</span>
-            </Link>
-          ))}
+          <Tabs
+            tabs={settingsTabs}
+            activeTab={activeTab}
+            onChange={handleTabChange}
+          />
         </nav>
 
         <div className="settings-content">
-          {(activeTab === 'account' || !activeTab) && (
+          {/* Profile Tab */}
+          {activeTab === 'profile' && (
             <div className="settings-section">
-              <h2>Account Details</h2>
+              <h2>Profile Details</h2>
               <p className="section-description">Update your personal information</p>
 
-              <form className="settings-form">
+              {profileLoading && (
+                <div className="settings-loading">
+                  <Loader2 size={24} className="settings-spinner" />
+                  <span>Loading profile...</span>
+                </div>
+              )}
+
+              {profileError && (
+                <div className="settings-error">
+                  Failed to load profile. Showing cached data.
+                </div>
+              )}
+
+              <form className="settings-form" onSubmit={(e) => { e.preventDefault(); handleSaveProfile(); }}>
                 <div className="form-row">
-                  <div className="form-group">
-                    <label>First name</label>
-                    <input
-                      type="text"
-                      value={formData.firstName}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, firstName: e.target.value })}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Last name</label>
-                    <input
-                      type="text"
-                      value={formData.lastName}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, lastName: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Job title</label>
-                  <input
+                  <Input
+                    label="Full name"
                     type="text"
-                    value={formData.jobTitle}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, jobTitle: e.target.value })}
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    fullWidth
                   />
                 </div>
 
-                <div className="form-group">
-                  <label>Company</label>
-                  <input
-                    type="text"
-                    value={formData.company}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, company: e.target.value })}
-                  />
-                </div>
+                <Input
+                  label="Email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  fullWidth
+                />
 
-                <button type="button" className="btn-primary">
-                  <Save size={16} />
-                  <span>Save changes</span>
-                </button>
+                <Input
+                  label="Organisation"
+                  type="text"
+                  value={formData.organization_name}
+                  disabled
+                  hint="Contact your admin to change the organisation name"
+                  fullWidth
+                />
+
+                <Input
+                  label="Role"
+                  type="text"
+                  value={currentUser?.role || 'analyst'}
+                  disabled
+                  fullWidth
+                />
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  icon={<Save size={16} />}
+                  loading={updateProfile.isPending}
+                >
+                  Save changes
+                </Button>
               </form>
             </div>
           )}
 
-          {activeTab === 'security' && (
+          {/* Security Section (kept from original, nested under profile) */}
+          {activeTab === 'profile' && (
             <div className="settings-section">
               <h2>Security</h2>
               <p className="section-description">Manage your password and security settings</p>
@@ -127,7 +216,9 @@ export default function Settings(): React.JSX.Element {
                   <h3>Password</h3>
                   <p>Last changed 3 months ago</p>
                 </div>
-                <button className="btn-secondary">Change password</button>
+                <Button variant="secondary" icon={<Shield size={16} />}>
+                  Change password
+                </Button>
               </div>
 
               <div className="security-option">
@@ -135,30 +226,81 @@ export default function Settings(): React.JSX.Element {
                   <h3>Two-factor authentication</h3>
                   <p>Add an extra layer of security to your account</p>
                 </div>
-                <button className="btn-secondary">Enable</button>
+                <Button variant="secondary">Enable</Button>
               </div>
             </div>
           )}
 
-          {activeTab === 'organisation' && (
+          {/* Team Tab */}
+          {activeTab === 'team' && (
             <div className="settings-section">
-              <h2>Organisation</h2>
-              <p className="section-description">View your organisation details</p>
+              <UserManagement />
+            </div>
+          )}
 
-              <div className="org-info">
-                <div className="org-detail">
-                  <label>Organisation name</label>
-                  <p>GWI Internal</p>
+          {/* Usage Tab */}
+          {activeTab === 'usage' && (
+            <div className="settings-section">
+              <h2>Usage Statistics</h2>
+              <p className="section-description">Monitor your organisation's platform usage</p>
+              <UsageStats />
+            </div>
+          )}
+
+          {/* Preferences Tab */}
+          {activeTab === 'preferences' && (
+            <div className="settings-section">
+              <h2>Preferences</h2>
+              <p className="section-description">Customise your platform experience</p>
+
+              <form className="settings-form" onSubmit={(e) => { e.preventDefault(); handleSavePreferences(); }}>
+                <div className="form-group">
+                  <label className="input-field__label">Theme</label>
+                  <div className="settings-toggle-group">
+                    <button
+                      type="button"
+                      className={`settings-toggle-btn ${preferences.theme === 'light' ? 'active' : ''}`}
+                      onClick={() => setPreferences({ ...preferences, theme: 'light' })}
+                    >
+                      Light
+                    </button>
+                    <button
+                      type="button"
+                      className={`settings-toggle-btn ${preferences.theme === 'dark' ? 'active' : ''}`}
+                      onClick={() => setPreferences({ ...preferences, theme: 'dark' })}
+                    >
+                      Dark
+                    </button>
+                  </div>
                 </div>
-                <div className="org-detail">
-                  <label>Plan</label>
-                  <p>Enterprise</p>
-                </div>
-                <div className="org-detail">
-                  <label>Users</label>
-                  <p>47 active users</p>
-                </div>
-              </div>
+
+                <Input
+                  label="Locale"
+                  type="text"
+                  value={preferences.locale}
+                  onChange={(e) => setPreferences({ ...preferences, locale: e.target.value })}
+                  hint="e.g. en-US, en-GB, de-DE"
+                  fullWidth
+                />
+
+                <Input
+                  label="Timezone"
+                  type="text"
+                  value={preferences.timezone}
+                  onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
+                  hint="e.g. Europe/London, America/New_York"
+                  fullWidth
+                />
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  icon={<Save size={16} />}
+                  loading={updatePreferences.isPending}
+                >
+                  Save preferences
+                </Button>
+              </form>
             </div>
           )}
         </div>

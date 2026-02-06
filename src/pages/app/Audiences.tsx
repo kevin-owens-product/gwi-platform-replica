@@ -1,26 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, ChevronDown, Folder, Globe, Check, LucideIcon } from 'lucide-react';
+import { Plus, Folder, Globe, Check, ChevronDown, Loader2, Users } from 'lucide-react';
+import { useAudiences } from '@/hooks/useAudiences';
+import { SearchInput, Tabs, Pagination, Badge, EmptyState } from '@/components/shared';
+import { formatDate } from '@/utils/format';
+import type { AudienceListParams } from '@/api/types';
 import './Audiences.css';
 
-interface Tab {
-  id: string;
-  label: string;
-  icon: LucideIcon | null;
-}
-
-interface Audience {
-  id: number;
-  name: string;
-  owner: string;
-  dateCreated: string;
-  lastUpdated: string;
-  type: string;
-}
-
 interface SortOption {
-  id: string;
+  id: AudienceListParams['sort_by'] | 'frequently';
   label: string;
+  apiValue?: AudienceListParams['sort_by'];
 }
 
 interface DatasetOption {
@@ -28,30 +18,17 @@ interface DatasetOption {
   label: string;
 }
 
-const tabs: Tab[] = [
-  { id: 'all', label: 'All', icon: null },
-  { id: 'my', label: 'My Audiences', icon: null },
-  { id: 'shared', label: 'Shared', icon: null },
-  { id: 'gwi', label: 'GWI Audiences', icon: Globe },
-];
-
-const sampleAudiences: Audience[] = [
-  { id: 1, name: 'GWI Zeitgeist', owner: '', dateCreated: '11 Feb 2021', lastUpdated: '10 Mar 2025', type: 'folder' },
-  { id: 2, name: 'GWI Open Access/Bespoke Audiences', owner: '', dateCreated: '19 Feb 2024', lastUpdated: '11 Feb 2025', type: 'folder' },
-  { id: 3, name: 'GWI USA', owner: '', dateCreated: '29 Oct 2019', lastUpdated: '28 Jan 2025', type: 'folder' },
-  { id: 4, name: 'GWI Demographics & Segmentations', owner: '', dateCreated: '29 Oct 2019', lastUpdated: '6 Jan 2025', type: 'folder' },
-  { id: 5, name: 'GWI Travel', owner: '', dateCreated: '5 Oct 2022', lastUpdated: '30 Oct 2024', type: 'folder' },
-  { id: 6, name: 'GWI Work', owner: '', dateCreated: '4 Sep 2020', lastUpdated: '13 Sep 2024', type: 'folder' },
-  { id: 7, name: 'GWI Moments', owner: '', dateCreated: '6 Aug 2024', lastUpdated: '7 Aug 2024', type: 'folder' },
-  { id: 8, name: 'GWI Sports', owner: '', dateCreated: '27 Apr 2021', lastUpdated: '6 Aug 2024', type: 'folder' },
-  { id: 9, name: 'GWI Gaming', owner: '', dateCreated: '5 Oct 2022', lastUpdated: '22 Jul 2024', type: 'folder' },
+const tabItems = [
+  { id: 'all', label: 'All' },
+  { id: 'my', label: 'My Audiences' },
+  { id: 'shared', label: 'Shared' },
+  { id: 'gwi', label: 'GWI Audiences', icon: <Globe size={16} /> },
 ];
 
 const sortOptions: SortOption[] = [
-  { id: 'frequently', label: 'Frequently used' },
-  { id: 'recently', label: 'Recently edited' },
-  { id: 'atoz', label: 'A to Z' },
-  { id: 'ztoa', label: 'Z to A' },
+  { id: 'frequently', label: 'Frequently used', apiValue: undefined },
+  { id: 'updated_at', label: 'Recently edited', apiValue: 'updated_at' },
+  { id: 'name', label: 'A to Z', apiValue: 'name' },
 ];
 
 const datasetOptions: DatasetOption[] = [
@@ -65,26 +42,37 @@ const datasetOptions: DatasetOption[] = [
 export default function Audiences(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedSort, setSelectedSort] = useState<string>('recently');
+  const [selectedSort, setSelectedSort] = useState<string>('updated_at');
   const [selectedDataset, setSelectedDataset] = useState<string>('all');
   const [showSortDropdown, setShowSortDropdown] = useState<boolean>(false);
   const [showDatasetDropdown, setShowDatasetDropdown] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
+
+  const sortOption = sortOptions.find((s) => s.id === selectedSort);
+  const sortBy = sortOption?.apiValue ?? 'updated_at';
+
+  const { data, isLoading, isError } = useAudiences({
+    page,
+    per_page: 20,
+    search: searchQuery || undefined,
+    sort_by: sortBy,
+    sort_order: 'desc',
+  });
+
+  const audiences = data?.data ?? [];
+  const totalPages = data?.meta?.total_pages ?? 1;
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setPage(1);
+  };
 
   return (
     <div className="audiences-page">
       <div className="audiences-header">
         <h1 className="page-title">Audiences</h1>
         <div className="audiences-tabs">
-          {tabs.map((tab: Tab) => (
-            <button
-              key={tab.id}
-              className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.icon && <tab.icon size={16} />}
-              <span>{tab.label}</span>
-            </button>
-          ))}
+          <Tabs tabs={tabItems} activeTab={activeTab} onChange={setActiveTab} />
         </div>
         <Link to="/app/audiences/new" className="btn-create">
           <span>Create new audience</span>
@@ -94,13 +82,10 @@ export default function Audiences(): React.JSX.Element {
 
       <div className="audiences-filters">
         <div className="search-input-wrapper">
-          <Search size={18} className="search-icon" />
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search audiences"
+          <SearchInput
             value={searchQuery}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
+            placeholder="Search audiences"
           />
         </div>
 
@@ -153,8 +138,9 @@ export default function Audiences(): React.JSX.Element {
                   key={option.id}
                   className={`dropdown-option-btn ${selectedSort === option.id ? 'selected' : ''}`}
                   onClick={() => {
-                    setSelectedSort(option.id);
+                    setSelectedSort(option.id ?? 'updated_at');
                     setShowSortDropdown(false);
+                    setPage(1);
                   }}
                 >
                   {selectedSort === option.id && <Check size={16} className="check-icon" />}
@@ -166,32 +152,74 @@ export default function Audiences(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="audiences-table">
-        <div className="table-header">
-          <div className="table-cell name-cell">Name</div>
-          <div className="table-cell">Owned by</div>
-          <div className="table-cell">Date created</div>
-          <div className="table-cell">Last updated</div>
+      {isLoading ? (
+        <div className="audiences-table" style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
+          <Loader2 size={24} className="spin" />
         </div>
-        <div className="table-body">
-          {sampleAudiences.map((audience: Audience) => (
-            <Link
-              key={audience.id}
-              to={`/app/audiences/${audience.id}`}
-              className="table-row"
-            >
-              <div className="table-cell name-cell">
-                <Folder size={18} className="folder-icon" />
-                <Globe size={14} className="globe-icon" />
-                <span>{audience.name}</span>
-              </div>
-              <div className="table-cell">{audience.owner}</div>
-              <div className="table-cell">{audience.dateCreated}</div>
-              <div className="table-cell">{audience.lastUpdated}</div>
-            </Link>
-          ))}
+      ) : isError ? (
+        <div className="audiences-table" style={{ padding: '24px' }}>
+          <EmptyState
+            title="Failed to load audiences"
+            description="Something went wrong while loading your audiences. Please try again."
+          />
         </div>
-      </div>
+      ) : audiences.length === 0 ? (
+        <div className="audiences-table" style={{ padding: '24px' }}>
+          <EmptyState
+            icon={<Users size={32} />}
+            title="No audiences found"
+            description={
+              searchQuery
+                ? `No audiences match "${searchQuery}". Try a different search term.`
+                : 'Create your first audience to get started.'
+            }
+            action={
+              <Link to="/app/audiences/new" className="btn-create">
+                <span>Create new audience</span>
+                <Plus size={18} />
+              </Link>
+            }
+          />
+        </div>
+      ) : (
+        <>
+          <div className="audiences-table">
+            <div className="table-header">
+              <div className="table-cell name-cell">Name</div>
+              <div className="table-cell">Owned by</div>
+              <div className="table-cell">Date created</div>
+              <div className="table-cell">Last updated</div>
+            </div>
+            <div className="table-body">
+              {audiences.map((audience) => (
+                <Link
+                  key={audience.id}
+                  to={`/app/audiences/${audience.id}`}
+                  className="table-row"
+                >
+                  <div className="table-cell name-cell">
+                    <Folder size={18} className="folder-icon" />
+                    {audience.is_shared && <Globe size={14} className="globe-icon" />}
+                    <span>{audience.name}</span>
+                    {audience.is_shared && (
+                      <Badge variant="info">Shared</Badge>
+                    )}
+                  </div>
+                  <div className="table-cell">{audience.user_id}</div>
+                  <div className="table-cell">{formatDate(audience.created_at)}</div>
+                  <div className="table-cell">{formatDate(audience.updated_at)}</div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        </>
+      )}
     </div>
   );
 }

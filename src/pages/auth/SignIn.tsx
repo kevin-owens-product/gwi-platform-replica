@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useLogin } from '@/hooks/useAuth'
+import { useAuthStore } from '@/stores/auth'
 import type { LoginRequest } from '@/api/types'
 import './Auth.css'
 
@@ -16,6 +17,8 @@ type SignInForm = z.infer<typeof signInSchema>
 export default function SignIn(): React.JSX.Element {
   const [rememberMe, setRememberMe] = useState<boolean>(false)
   const login = useLogin()
+  const navigate = useNavigate()
+  const { setTokens, setUser } = useAuthStore()
 
   const {
     register,
@@ -31,6 +34,23 @@ export default function SignIn(): React.JSX.Element {
   })
 
   const onSubmit = (data: SignInForm): void => {
+    // In dev mode, allow any credentials to bypass API auth
+    if (import.meta.env.DEV) {
+      setTokens('dev-token', 'dev-refresh-token')
+      setUser({
+        id: 'dev-user',
+        email: data.email,
+        name: data.email.split('@')[0] || 'Dev User',
+        role: 'admin',
+        organization_id: 'dev-org',
+        organization_name: 'GWI Internal',
+        created_at: new Date().toISOString(),
+        last_login_at: new Date().toISOString(),
+        preferences: {},
+      })
+      navigate('/app')
+      return
+    }
     const request: LoginRequest = {
       email: data.email,
       password: data.password,

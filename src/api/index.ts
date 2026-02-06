@@ -1,12 +1,22 @@
 export { apiClient, streamJsonLines } from './client'
-export { authApi } from './endpoints/auth'
-export { audiencesApi } from './endpoints/audiences'
-export { chartsApi } from './endpoints/charts'
-export { crosstabsApi } from './endpoints/crosstabs'
-export { dashboardsApi } from './endpoints/dashboards'
-export { reportsApi } from './endpoints/reports'
-export { taxonomyApi } from './endpoints/taxonomy'
-export { queriesApi } from './endpoints/queries'
-export { sparkApi } from './endpoints/spark'
-export { adminApi } from './endpoints/admin'
 export type * from './types'
+
+const useMock = import.meta.env.VITE_USE_MOCK !== 'false'
+
+const real = () => import('./endpoints/_real')
+const mock = () => import('./mock')
+
+const source = useMock ? await mock() : await real()
+
+export const {
+  authApi,
+  audiencesApi,
+  chartsApi,
+  crosstabsApi,
+  dashboardsApi,
+  reportsApi,
+  taxonomyApi,
+  queriesApi,
+  sparkApi,
+  adminApi,
+} = source

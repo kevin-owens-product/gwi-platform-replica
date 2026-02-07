@@ -1,6 +1,7 @@
 // Dashboard types for the GWI Platform API
 
 import type { ChartConfig, ChartType } from './chart'
+import type { AudienceExpression } from './audience'
 
 export interface Dashboard {
   id: string
@@ -14,6 +15,7 @@ export interface Dashboard {
   project_id?: string
   is_shared: boolean
   thumbnail_url?: string
+  base_audience?: AudienceExpression
 }
 
 export interface DashboardWidget {
@@ -55,4 +57,5 @@ export interface UpdateDashboardRequest {
   widgets?: DashboardWidget[]
   layout?: DashboardLayout
   is_shared?: boolean
+  base_audience?: AudienceExpression
 }

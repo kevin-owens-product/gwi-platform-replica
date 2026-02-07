@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { GripVertical, Maximize2, Trash2, Settings } from 'lucide-react'
-import type { DashboardWidget, MetricType, StatsQueryRequest, StatsDatapoint } from '@/api/types'
+import type { DashboardWidget, MetricType, StatsQueryRequest, StatsDatapoint, AudienceExpression } from '@/api/types'
 import { useChart } from '@/hooks/useCharts'
 import { useStatsQuery } from '@/hooks/useQueries'
 import ChartRenderer from '@/components/chart/ChartRenderer'
@@ -67,6 +67,7 @@ interface DashboardGridProps {
   editable?: boolean
   onWidgetUpdate?: (widget: DashboardWidget) => void
   onWidgetRemove?: (widgetId: string) => void
+  baseAudience?: AudienceExpression
 }
 
 export default function DashboardGrid({
@@ -74,6 +75,8 @@ export default function DashboardGrid({
   columns = 12,
   editable = false,
   onWidgetRemove,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  baseAudience,
 }: DashboardGridProps) {
   const [hoveredWidget, setHoveredWidget] = useState<string | null>(null)
 

@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Plus, TrendingUp, TrendingDown, Edit, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Plus, TrendingUp, TrendingDown, Edit, Save, Loader2, Users } from 'lucide-react';
 import { useDashboard, useUpdateDashboard } from '@/hooks/useDashboards';
+import { useAudiences } from '@/hooks/useAudiences';
+import { useQuestions } from '@/hooks/useTaxonomy';
 import DashboardGrid from '@/components/dashboard/DashboardGrid';
-import { Button, Modal } from '@/components/shared';
+import { Button, Modal, BaseAudiencePicker, getBaseAudienceLabel } from '@/components/shared';
 import { formatRelativeDate } from '@/utils/format';
-import type { DashboardWidget } from '@/api/types';
+import type { DashboardWidget, AudienceExpression, AudienceQuestion, Audience } from '@/api/types';
 import './DashboardDetail.css';
 
 // --- Mock data used as fallback when API returns no widgets ---
@@ -303,19 +305,62 @@ export default function DashboardDetail(): React.JSX.Element {
   const { data: dashboard, isLoading, isError } = useDashboard(id ?? '');
   const updateDashboard = useUpdateDashboard();
 
+  // Fetch audience and question data for the picker
+  const { data: audienceResponse } = useAudiences({ per_page: 50 });
+  const { data: questionsResponse } = useQuestions({ per_page: 100 });
+  const audiences = useMemo(() => audienceResponse?.data ?? [], [audienceResponse]);
+  const questions = useMemo(() => questionsResponse?.data ?? [], [questionsResponse]);
+
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [dashboardName, setDashboardName] = useState<string>('');
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
+  const [baseAudience, setBaseAudience] = useState<AudienceExpression | undefined>(undefined);
+  const [audiencePickerOpen, setAudiencePickerOpen] = useState(false);
+
+  // Seed base audience from dashboard data when it loads
+  useEffect(() => {
+    if (dashboard?.base_audience) {
+      setBaseAudience(dashboard.base_audience);
+    }
+  }, [dashboard?.base_audience]);
 
   // Sync name from API data when it loads
   const displayName = dashboardName || dashboard?.name || 'Untitled Dashboard';
 
   const hasApiWidgets = (dashboard?.widgets?.length ?? 0) > 0;
 
+  // Derive display label for the current base audience
+  const baseAudienceLabel = useMemo(
+    () => getBaseAudienceLabel(baseAudience, audiences, questions),
+    [baseAudience, audiences, questions],
+  );
+
+  // Base audience picker handlers
+  const handleBaseSelectSaved = (aud: Audience) => {
+    setBaseAudience(aud.expression);
+    if (id) {
+      updateDashboard.mutate({ id, data: { base_audience: aud.expression } });
+    }
+  };
+
+  const handleBaseApplyQuestion = (expr: AudienceQuestion) => {
+    setBaseAudience(expr);
+    if (id) {
+      updateDashboard.mutate({ id, data: { base_audience: expr } });
+    }
+  };
+
+  const handleBaseClear = () => {
+    setBaseAudience(undefined);
+    if (id) {
+      updateDashboard.mutate({ id, data: { base_audience: undefined } });
+    }
+  };
+
   const handleSave = () => {
     if (!id) return;
     updateDashboard.mutate(
-      { id, data: { name: dashboardName || undefined } },
+      { id, data: { name: dashboardName || undefined, base_audience: baseAudience } },
       { onSuccess: () => setIsEditing(false) }
     );
   };
@@ -362,6 +407,13 @@ export default function DashboardDetail(): React.JSX.Element {
           <span>Back to Dashboards</span>
         </Link>
         <div className="header-actions">
+          <button
+            className="config-panel__control-select"
+            onClick={() => setAudiencePickerOpen(true)}
+          >
+            <Users size={14} />
+            {baseAudienceLabel}
+          </button>
           {isEditing ? (
             <Button
               variant="primary"
@@ -415,6 +467,7 @@ export default function DashboardDetail(): React.JSX.Element {
             widgets={dashboard!.widgets}
             editable={isEditing}
             onWidgetRemove={handleRemoveWidget}
+            baseAudience={baseAudience}
           />
         ) : (
           <FallbackDashboardContent />
@@ -434,6 +487,16 @@ export default function DashboardDetail(): React.JSX.Element {
       >
         <p>Share this dashboard with your team by sending them a link or inviting specific members.</p>
       </Modal>
+
+      <BaseAudiencePicker
+        open={audiencePickerOpen}
+        onClose={() => setAudiencePickerOpen(false)}
+        audiences={audiences}
+        questions={questions}
+        onSelectSaved={handleBaseSelectSaved}
+        onApplyQuestion={handleBaseApplyQuestion}
+        onClear={handleBaseClear}
+      />
     </div>
   );
 }

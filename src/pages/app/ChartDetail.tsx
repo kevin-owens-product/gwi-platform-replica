@@ -1,14 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, MoreHorizontal, Save } from 'lucide-react';
+import { ArrowLeft, Download, Share2, MoreHorizontal, Save, Users } from 'lucide-react';
 import { useChart, useUpdateChart, useCreateChart } from '@/hooks/useCharts';
 import { useAudiences } from '@/hooks/useAudiences';
-import { useStudies, useWaves } from '@/hooks/useTaxonomy';
+import { useStudies, useWaves, useQuestions } from '@/hooks/useTaxonomy';
 import { useStatsQuery } from '@/hooks/useQueries';
 import ChartRenderer from '@/components/chart/ChartRenderer';
-import { Button, Dropdown } from '@/components/shared';
+import { Button, Dropdown, BaseAudiencePicker, getBaseAudienceLabel } from '@/components/shared';
 import { formatRelativeDate } from '@/utils/format';
-import type { ChartType, MetricType, StatsQueryRequest, StatsDatapoint } from '@/api/types';
+import type { ChartType, MetricType, StatsQueryRequest, StatsDatapoint, AudienceExpression, AudienceQuestion, Audience } from '@/api/types';
 
 interface ChartDataPoint {
   name: string;
@@ -32,7 +32,6 @@ const metricOptions: { value: MetricType; label: string }[] = [
   { value: 'positive_size', label: 'Sample Count' },
 ];
 
-const fallbackAudiences: string[] = ['All Adults 16+', 'Adults 18-34', 'Adults 25-54', 'Gen Z', 'Millennials'];
 const fallbackDataSources: string[] = ['GWI Core', 'GWI Zeitgeist', 'GWI USA', 'GWI Work'];
 
 export default function ChartDetail(): React.JSX.Element {
@@ -40,17 +39,14 @@ export default function ChartDetail(): React.JSX.Element {
   const navigate = useNavigate();
   const isNew = id === 'new';
 
-  // Fetch audience and study options from API
+  // Fetch audience, study, and question data from API
   const { data: audienceResponse } = useAudiences({ per_page: 50 });
   const { data: studies } = useStudies();
   const { data: waves } = useWaves();
+  const { data: questionsResponse } = useQuestions({ per_page: 100 });
 
-  const audiences = useMemo(() => {
-    if (audienceResponse?.data && audienceResponse.data.length > 0) {
-      return audienceResponse.data.map((a) => a.name);
-    }
-    return fallbackAudiences;
-  }, [audienceResponse]);
+  const audiences = useMemo(() => audienceResponse?.data ?? [], [audienceResponse]);
+  const questions = useMemo(() => questionsResponse?.data ?? [], [questionsResponse]);
 
   const dataSources = useMemo(() => {
     if (studies && studies.length > 0) {
@@ -81,19 +77,31 @@ export default function ChartDetail(): React.JSX.Element {
   const [chartType, setChartType] = useState<ChartType>('bar');
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('audience_percentage');
   const [activeView, setActiveView] = useState<'chart' | 'table' | 'summary'>('chart');
-  const [selectedAudience, setSelectedAudience] = useState<string>('All Adults 16+');
+  const [baseAudience, setBaseAudience] = useState<AudienceExpression | undefined>(undefined);
+  const [audiencePickerOpen, setAudiencePickerOpen] = useState(false);
   const [selectedSource, setSelectedSource] = useState<string>('GWI Core');
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   // Seed local state from the fetched chart once
-  if (chart && !isInitialized) {
-    setChartName(chart.name);
-    setChartType(chart.chart_type);
-    if (chart.config.metrics?.[0]) {
-      setSelectedMetric(chart.config.metrics[0]);
+  useEffect(() => {
+    if (chart && !isInitialized) {
+      setChartName(chart.name);
+      setChartType(chart.chart_type);
+      if (chart.config.metrics?.[0]) {
+        setSelectedMetric(chart.config.metrics[0]);
+      }
+      if (chart.config.base_audience) {
+        setBaseAudience(chart.config.base_audience);
+      }
+      setIsInitialized(true);
     }
-    setIsInitialized(true);
-  }
+  }, [chart, isInitialized]);
+
+  // Derive display label for the current base audience
+  const baseAudienceLabel = useMemo(
+    () => getBaseAudienceLabel(baseAudience, audiences, questions),
+    [baseAudience, audiences, questions],
+  );
 
   // Build stats query from the chart config
   const statsRequest: StatsQueryRequest | null = useMemo(() => {
@@ -108,9 +116,9 @@ export default function ChartDetail(): React.JSX.Element {
       metrics: chart.config.metrics ?? [selectedMetric],
       wave_ids: chart.config.wave_ids ?? [],
       location_ids: chart.config.location_ids ?? [],
-      base_audience: chart.config.base_audience,
+      base_audience: baseAudience,
     };
-  }, [chart?.config, selectedMetric]);
+  }, [chart?.config, selectedMetric, baseAudience]);
 
   const { data: statsData, isLoading: statsLoading } = useStatsQuery(statsRequest);
 
@@ -154,11 +162,25 @@ export default function ChartDetail(): React.JSX.Element {
     return { chartData: data, series: seriesNames };
   }, [statsData, selectedMetric]);
 
+  // Base audience picker handlers
+  const handleBaseSelectSaved = (aud: Audience) => {
+    setBaseAudience(aud.expression);
+  };
+
+  const handleBaseApplyQuestion = (expr: AudienceQuestion) => {
+    setBaseAudience(expr);
+  };
+
+  const handleBaseClear = () => {
+    setBaseAudience(undefined);
+  };
+
   // Save handler
   const handleSave = () => {
     const configPayload = {
       ...chart?.config,
       metrics: [selectedMetric],
+      base_audience: baseAudience,
     };
 
     if (isNew) {
@@ -172,6 +194,7 @@ export default function ChartDetail(): React.JSX.Element {
             metrics: [selectedMetric],
             wave_ids: [],
             location_ids: [],
+            base_audience: baseAudience,
           },
         },
         {
@@ -234,7 +257,6 @@ export default function ChartDetail(): React.JSX.Element {
             trigger={<button className="icon-btn"><MoreHorizontal size={18} /></button>}
             items={moreActions}
             onSelect={(value) => {
-              // Action handling placeholder
               console.log('Action selected:', value);
             }}
             align="right"
@@ -339,7 +361,7 @@ export default function ChartDetail(): React.JSX.Element {
                 </div>
                 <div className="summary-stat">
                   <span className="summary-label">Audience</span>
-                  <span className="summary-value">{selectedAudience}</span>
+                  <span className="summary-value">{baseAudienceLabel}</span>
                 </div>
                 <div className="summary-stat">
                   <span className="summary-label">Execution Time</span>
@@ -377,9 +399,14 @@ export default function ChartDetail(): React.JSX.Element {
             </div>
             <div className="config-group">
               <label>Audience</label>
-              <select className="config-select" value={selectedAudience} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedAudience(e.target.value)}>
-                {audiences.map((a: string) => <option key={a} value={a}>{a}</option>)}
-              </select>
+              <button
+                className="config-select"
+                onClick={() => setAudiencePickerOpen(true)}
+                style={{ textAlign: 'left', width: '100%' }}
+              >
+                <Users size={14} />
+                {baseAudienceLabel}
+              </button>
             </div>
             <div className="config-group">
               <label>Wave</label>
@@ -399,6 +426,16 @@ export default function ChartDetail(): React.JSX.Element {
           </div>
         </div>
       </div>
+
+      <BaseAudiencePicker
+        open={audiencePickerOpen}
+        onClose={() => setAudiencePickerOpen(false)}
+        audiences={audiences}
+        questions={questions}
+        onSelectSaved={handleBaseSelectSaved}
+        onApplyQuestion={handleBaseApplyQuestion}
+        onClear={handleBaseClear}
+      />
     </div>
   );
 }

@@ -14,7 +14,7 @@ export function useQuestions(params?: QuestionFilterParams) {
   return useQuery({
     queryKey: ['questions', params],
     queryFn: () => taxonomyApi.getQuestions(params),
-    enabled: !!params?.category_id || !!params?.search,
+    enabled: !!params?.category_id || !!params?.search || !!params?.per_page,
   })
 }
 

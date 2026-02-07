@@ -1,127 +1,116 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Plus, Save } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Save, ChevronLeft } from 'lucide-react';
 import { useCrosstab, useUpdateCrosstab, useCreateCrosstab } from '@/hooks/useCrosstabs';
 import { useAudiences } from '@/hooks/useAudiences';
-import { useStudies } from '@/hooks/useTaxonomy';
+import { useStudies, useWaves, useQuestions } from '@/hooks/useTaxonomy';
+import { useCrosstabConfig } from '@/hooks/useCrosstabConfig';
 import { useCrosstabQuery } from '@/hooks/useQueries';
 import CrosstabGrid from '@/components/crosstab/CrosstabGrid';
-import { Button, Dropdown } from '@/components/shared';
+import CrosstabConfigPanel from '@/components/crosstab/CrosstabConfigPanel';
+import QuestionBrowser from '@/components/taxonomy/QuestionBrowser';
+import { Button, Modal, SearchInput } from '@/components/shared';
 import { formatRelativeDate } from '@/utils/format';
-import type { MetricType, CrosstabQueryRequest } from '@/api/types';
+import type { MetricType, CrosstabQueryRequest, Question, Study } from '@/api/types';
 import './CrosstabDetail.css';
 
 interface CrosstabDetailProps {
   isNew?: boolean;
 }
 
-const metricOptions: { value: MetricType; label: string }[] = [
-  { value: 'audience_percentage', label: 'Percentage' },
-  { value: 'audience_index', label: 'Index' },
-  { value: 'audience_size', label: 'Audience Size' },
-  { value: 'positive_size', label: 'Sample Count' },
-];
-
-const highlightOptions = [
-  { label: 'None', value: 'none' },
-  { label: 'Heatmap', value: 'heatmap' },
-  { label: 'Index coloring', value: 'index' },
-];
-
-const fallbackAudiences: string[] = ['All Adults 16+', 'Adults 18-34', 'Adults 25-54', 'Gen Z', 'Millennials'];
-const fallbackDataSources: string[] = ['GWI Core', 'GWI Zeitgeist', 'GWI USA', 'GWI Work'];
-
 export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDetailProps): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isNew = isNewProp || id === 'new';
 
-  // Fetch audience and study options from API
-  const { data: audienceResponse } = useAudiences({ per_page: 50 });
-  const { data: studies } = useStudies();
+  // Config state
+  const crosstabConfig = useCrosstabConfig();
+  const [crosstabName, setCrosstabName] = useState<string>('');
+  const [highlightMode, setHighlightMode] = useState<'none' | 'heatmap' | 'index'>('heatmap');
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const audiences = useMemo(() => {
-    if (audienceResponse?.data && audienceResponse.data.length > 0) {
-      return audienceResponse.data.map((a) => a.name);
-    }
-    return fallbackAudiences;
-  }, [audienceResponse]);
+  // Modal states
+  const [rowPickerOpen, setRowPickerOpen] = useState(false);
+  const [columnPickerOpen, setColumnPickerOpen] = useState(false);
+  const [columnPickerTab, setColumnPickerTab] = useState<'question' | 'audience'>('question');
+  const [audiencePickerOpen, setAudiencePickerOpen] = useState(false);
+  const [audienceSearch, setAudienceSearch] = useState('');
+  const [dataSetPickerOpen, setDataSetPickerOpen] = useState(false);
+  const [dataSetStep, setDataSetStep] = useState<'study' | 'wave'>('study');
+  const [selectedStudy, setSelectedStudy] = useState<Study | null>(null);
+  const [wavePickerOpen, setWavePickerOpen] = useState(false);
+  const [columnAudienceSearch, setColumnAudienceSearch] = useState('');
 
-  const dataSources = useMemo(() => {
-    if (studies && studies.length > 0) {
-      return studies.map((s) => s.name);
-    }
-    return fallbackDataSources;
-  }, [studies]);
-
-  // Fetch existing crosstab data
+  // Fetch data
   const { data: crosstab, isLoading: crosstabLoading } = useCrosstab(isNew ? '' : (id ?? ''));
   const updateCrosstab = useUpdateCrosstab();
   const createCrosstab = useCreateCrosstab();
+  const { data: audienceResponse } = useAudiences({ per_page: 50 });
+  const { data: studies } = useStudies();
+  const { data: allWaves } = useWaves();
+  const { data: questionsResponse } = useQuestions({ per_page: 100 });
 
-  // Local editable state
-  const [crosstabName, setCrosstabName] = useState<string>('');
-  const [selectedMetric, setSelectedMetric] = useState<MetricType>('audience_percentage');
-  const [highlightMode, setHighlightMode] = useState<'none' | 'heatmap' | 'index'>('heatmap');
-  const [selectedAudience, setSelectedAudience] = useState<string>('All Adults 16+');
-  const [selectedSource, setSelectedSource] = useState<string>('GWI Core');
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const audiences = useMemo(() => audienceResponse?.data ?? [], [audienceResponse]);
+  const questions = useMemo(() => questionsResponse?.data ?? [], [questionsResponse]);
+  const waves = useMemo(() => allWaves ?? [], [allWaves]);
 
-  // Seed local state from the fetched crosstab once
-  if (crosstab && !isInitialized) {
-    setCrosstabName(crosstab.name);
-    if (crosstab.config.metrics?.[0]) {
-      setSelectedMetric(crosstab.config.metrics[0]);
+  // Already-selected question IDs for picker highlighting
+  const selectedRowQuestionIds = useMemo(
+    () => crosstabConfig.config.rows.filter((r) => r.question_id).map((r) => r.question_id!),
+    [crosstabConfig.config.rows]
+  );
+  const selectedColumnQuestionIds = useMemo(
+    () => crosstabConfig.config.columns.filter((c) => c.type === 'question' && c.question_id).map((c) => c.question_id!),
+    [crosstabConfig.config.columns]
+  );
+
+  // Seed config from fetched crosstab once
+  useEffect(() => {
+    if (crosstab && !isInitialized) {
+      setCrosstabName(crosstab.name);
+      crosstabConfig.initializeFrom(crosstab.config);
+      if (crosstab.config.highlight?.type) {
+        setHighlightMode(
+          crosstab.config.highlight.type === 'heatmap' ? 'heatmap' :
+          crosstab.config.highlight.type === 'significance' ? 'index' : 'none'
+        );
+      }
+      setIsInitialized(true);
     }
-    if (crosstab.config.highlight?.type) {
-      setHighlightMode(
-        crosstab.config.highlight.type === 'heatmap' ? 'heatmap' :
-        crosstab.config.highlight.type === 'significance' ? 'index' : 'none'
-      );
-    }
-    setIsInitialized(true);
-  }
+  }, [crosstab, isInitialized, crosstabConfig]);
 
-  // Build crosstab query from the config
+  // Build crosstab query from config
   const crosstabRequest: CrosstabQueryRequest | null = useMemo(() => {
-    if (!crosstab?.config) return null;
-
-    const rowQuestionIds = crosstab.config.rows
-      ?.filter((d) => d.type === 'question' && d.question_id)
-      .map((d) => d.question_id!) ?? [];
+    const cfg = crosstabConfig.config;
+    const rowQuestionIds = cfg.rows.filter((d) => d.type === 'question' && d.question_id).map((d) => d.question_id!);
     if (rowQuestionIds.length === 0) return null;
 
-    const colQuestionIds = crosstab.config.columns
-      ?.filter((d) => d.type === 'question' && d.question_id)
-      .map((d) => d.question_id!) ?? [];
-
-    const colAudienceIds = crosstab.config.columns
-      ?.filter((d) => d.type === 'audience' && d.audience_id)
-      .map((d) => d.audience_id!) ?? [];
+    const colQuestionIds = cfg.columns.filter((d) => d.type === 'question' && d.question_id).map((d) => d.question_id!);
+    const colAudienceIds = cfg.columns.filter((d) => d.type === 'audience' && d.audience_id).map((d) => d.audience_id!);
 
     return {
       row_question_ids: rowQuestionIds,
       column_question_ids: colQuestionIds.length > 0 ? colQuestionIds : undefined,
       column_audience_ids: colAudienceIds.length > 0 ? colAudienceIds : undefined,
-      metrics: crosstab.config.metrics ?? [selectedMetric],
-      wave_ids: crosstab.config.wave_ids ?? [],
-      location_ids: crosstab.config.location_ids ?? [],
-      base_audience: crosstab.config.base_audience,
+      metrics: cfg.metrics,
+      wave_ids: cfg.wave_ids,
+      location_ids: cfg.location_ids,
+      base_audience: cfg.base_audience,
     };
-  }, [crosstab?.config, selectedMetric]);
+  }, [crosstabConfig.config]);
 
   const { data: queryResult, isLoading: queryLoading } = useCrosstabQuery(crosstabRequest);
 
-  // Extract grid data from query result
   const gridRows = queryResult?.rows ?? [];
   const gridColumns = queryResult?.columns ?? [];
   const gridCells = queryResult?.cells ?? [];
+  const activeMetric: MetricType = crosstabConfig.config.metrics[0] ?? 'audience_percentage';
 
   // Save handler
   const handleSave = () => {
+    const cfg = crosstabConfig.config;
     const configPayload = {
-      ...crosstab?.config,
-      metrics: [selectedMetric],
+      ...cfg,
       highlight: highlightMode !== 'none' ? {
         type: highlightMode === 'heatmap' ? 'heatmap' as const : 'significance' as const,
       } : undefined,
@@ -131,33 +120,120 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
       createCrosstab.mutate(
         {
           name: crosstabName || 'Untitled Crosstab',
-          config: {
-            rows: [],
-            columns: [],
-            metrics: [selectedMetric],
-            wave_ids: [],
-            location_ids: [],
-          },
+          config: configPayload,
         },
         {
           onSuccess: (newCrosstab) => {
+            crosstabConfig.markSaved();
             if (newCrosstab?.id) navigate(`/app/crosstabs/${newCrosstab.id}`);
           },
         }
       );
     } else if (id) {
-      updateCrosstab.mutate({
-        id,
-        data: {
-          name: crosstabName,
-          config: configPayload,
+      updateCrosstab.mutate(
+        {
+          id,
+          data: { name: crosstabName, config: configPayload },
         },
+        {
+          onSuccess: () => crosstabConfig.markSaved(),
+        }
+      );
+    }
+  };
+
+  // Highlight change handler
+  const handleHighlightChange = (mode: string) => {
+    const m = mode as 'none' | 'heatmap' | 'index';
+    setHighlightMode(m);
+    if (m === 'none') {
+      crosstabConfig.setHighlight(undefined);
+    } else {
+      crosstabConfig.setHighlight({
+        type: m === 'heatmap' ? 'heatmap' : 'significance',
       });
     }
   };
 
+  // Row picker handlers
+  const handleRowQuestionSelect = (question: Question) => {
+    const dpIds = question.datapoints.map((dp) => dp.id);
+    crosstabConfig.addRowQuestion(question.id, dpIds);
+  };
+
+  // Column picker handlers
+  const handleColumnQuestionSelect = (question: Question) => {
+    const dpIds = question.datapoints.map((dp) => dp.id);
+    crosstabConfig.addColumnQuestion(question.id, dpIds);
+  };
+
+  const handleColumnAudienceSelect = (audienceId: string) => {
+    crosstabConfig.addColumnAudience(audienceId);
+  };
+
+  // Base audience picker
+  const handleBaseAudienceSelect = (audienceId: string | null) => {
+    if (!audienceId) {
+      crosstabConfig.setBaseAudience(undefined);
+    } else {
+      const aud = audiences.find((a) => a.id === audienceId);
+      if (aud) {
+        crosstabConfig.setBaseAudience(aud.expression);
+      }
+    }
+    setAudiencePickerOpen(false);
+  };
+
+  // Data set picker
+  const handleStudySelect = (study: Study) => {
+    setSelectedStudy(study);
+    setDataSetStep('wave');
+  };
+
+  const handleDataSetWaveSelect = (study: Study, waveId: string) => {
+    crosstabConfig.setWaveIds([{ study_id: study.id, wave_id: waveId }]);
+    setDataSetPickerOpen(false);
+    setDataSetStep('study');
+    setSelectedStudy(null);
+  };
+
+  // Wave picker
+  const handleWaveAdd = (studyId: string, waveId: string) => {
+    crosstabConfig.addWave({ study_id: studyId, wave_id: waveId });
+  };
+
   const isDataLoading = crosstabLoading || queryLoading;
   const isSaving = updateCrosstab.isPending || createCrosstab.isPending;
+
+  // Filtered audiences for pickers
+  const filteredAudiences = useMemo(() => {
+    if (!audienceSearch) return audiences;
+    const q = audienceSearch.toLowerCase();
+    return audiences.filter((a) => a.name.toLowerCase().includes(q) || a.description?.toLowerCase().includes(q));
+  }, [audiences, audienceSearch]);
+
+  const filteredColumnAudiences = useMemo(() => {
+    if (!columnAudienceSearch) return audiences;
+    const q = columnAudienceSearch.toLowerCase();
+    return audiences.filter((a) => a.name.toLowerCase().includes(q) || a.description?.toLowerCase().includes(q));
+  }, [audiences, columnAudienceSearch]);
+
+  // Waves grouped by study for wave picker
+  const wavesGroupedByStudy = useMemo(() => {
+    const groups: Record<string, { studyName: string; studyId: string; waves: typeof waves }> = {};
+    for (const w of waves) {
+      if (!groups[w.study_id]) {
+        groups[w.study_id] = { studyName: w.study_name, studyId: w.study_id, waves: [] };
+      }
+      groups[w.study_id].waves.push(w);
+    }
+    return Object.values(groups);
+  }, [waves]);
+
+  const selectedWaveIds = useMemo(
+    () => new Set(crosstabConfig.config.wave_ids.map((w) => w.wave_id)),
+    [crosstabConfig.config.wave_ids]
+  );
 
   if (crosstabLoading && !isNew) {
     return (
@@ -187,15 +263,6 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
           <button className="icon-btn"><Download size={18} /></button>
           <button className="icon-btn"><Share2 size={18} /></button>
           <Button
-            variant="ghost"
-            icon={<Plus size={16} />}
-            onClick={() => {
-              // Placeholder for adding a new row question
-            }}
-          >
-            Add row
-          </Button>
-          <Button
             variant="primary"
             icon={<Save size={16} />}
             loading={isSaving}
@@ -215,40 +282,24 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
           placeholder="Untitled Crosstab"
         />
 
-        <div className="crosstab-config-bar">
-          <div className="crosstab-config-item">
-            <label>Data Source</label>
-            <select className="crosstab-config-select" value={selectedSource} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedSource(e.target.value)}>
-              {dataSources.map((ds: string) => <option key={ds} value={ds}>{ds}</option>)}
-            </select>
-          </div>
-          <div className="crosstab-config-item">
-            <label>Audience</label>
-            <select className="crosstab-config-select" value={selectedAudience} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedAudience(e.target.value)}>
-              {audiences.map((a: string) => <option key={a} value={a}>{a}</option>)}
-            </select>
-          </div>
-          <div className="crosstab-config-item">
-            <label>Metric</label>
-            <select className="crosstab-config-select" value={selectedMetric} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedMetric(e.target.value as MetricType)}>
-              {metricOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-          <div className="crosstab-config-item">
-            <label>Highlight</label>
-            <Dropdown
-              trigger={
-                <button className="crosstab-config-select" style={{ cursor: 'pointer' }}>
-                  {highlightOptions.find((h) => h.value === highlightMode)?.label ?? 'None'}
-                </button>
-              }
-              items={highlightOptions}
-              onSelect={(value) => setHighlightMode(value as 'none' | 'heatmap' | 'index')}
-            />
-          </div>
-        </div>
+        <CrosstabConfigPanel
+          config={crosstabConfig.config}
+          questions={questions}
+          audiences={audiences}
+          waves={waves}
+          studies={studies}
+          highlightMode={highlightMode}
+          onRemoveRow={(i) => crosstabConfig.removeRow(i)}
+          onRemoveColumn={(i) => crosstabConfig.removeColumn(i)}
+          onToggleMetric={(m) => crosstabConfig.toggleMetric(m)}
+          onRemoveWave={(i) => crosstabConfig.removeWave(i)}
+          onHighlightChange={handleHighlightChange}
+          onOpenRowPicker={() => setRowPickerOpen(true)}
+          onOpenColumnPicker={() => { setColumnPickerTab('question'); setColumnPickerOpen(true); }}
+          onOpenBasePicker={() => { setAudienceSearch(''); setAudiencePickerOpen(true); }}
+          onOpenDataSetPicker={() => { setDataSetStep('study'); setSelectedStudy(null); setDataSetPickerOpen(true); }}
+          onOpenWavePicker={() => setWavePickerOpen(true)}
+        />
 
         <div className="crosstab-table-container">
           {isDataLoading ? (
@@ -265,7 +316,7 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
               rows={gridRows}
               columns={gridColumns}
               cells={gridCells}
-              activeMetric={selectedMetric}
+              activeMetric={activeMetric}
               highlightMode={highlightMode}
             />
           )}
@@ -278,9 +329,6 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
             </span>
             <span className="crosstab-stat">
               Wave: <strong>{queryResult?.meta?.wave_name ?? '-'}</strong>
-            </span>
-            <span className="crosstab-stat">
-              Source: <strong>{selectedSource}</strong>
             </span>
             {crosstab?.updated_at && (
               <span className="crosstab-stat">
@@ -297,6 +345,215 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
           )}
         </div>
       </div>
+
+      {/* ==================== MODALS ==================== */}
+
+      {/* 1. Row Question Picker */}
+      <Modal
+        open={rowPickerOpen}
+        onClose={() => setRowPickerOpen(false)}
+        title="Add Row Questions"
+        size="lg"
+        footer={
+          <Button variant="primary" onClick={() => setRowPickerOpen(false)}>
+            Done
+          </Button>
+        }
+      >
+        <QuestionBrowser
+          onSelectQuestion={handleRowQuestionSelect}
+          selectedQuestionIds={selectedRowQuestionIds}
+        />
+      </Modal>
+
+      {/* 2. Column Picker (Question / Audience tabs) */}
+      <Modal
+        open={columnPickerOpen}
+        onClose={() => setColumnPickerOpen(false)}
+        title="Add Column Dimensions"
+        size="lg"
+        footer={
+          <Button variant="primary" onClick={() => setColumnPickerOpen(false)}>
+            Done
+          </Button>
+        }
+      >
+        <div className="picker-tabs">
+          <button
+            className={`picker-tab ${columnPickerTab === 'question' ? 'picker-tab--active' : ''}`}
+            onClick={() => setColumnPickerTab('question')}
+          >
+            Question
+          </button>
+          <button
+            className={`picker-tab ${columnPickerTab === 'audience' ? 'picker-tab--active' : ''}`}
+            onClick={() => setColumnPickerTab('audience')}
+          >
+            Audience
+          </button>
+        </div>
+        {columnPickerTab === 'question' ? (
+          <QuestionBrowser
+            onSelectQuestion={handleColumnQuestionSelect}
+            selectedQuestionIds={selectedColumnQuestionIds}
+          />
+        ) : (
+          <>
+            <SearchInput
+              value={columnAudienceSearch}
+              onChange={setColumnAudienceSearch}
+              placeholder="Search audiences..."
+            />
+            <div className="picker-list" style={{ marginTop: 'var(--spacing-md)' }}>
+              {filteredColumnAudiences.map((aud) => {
+                const isSelected = crosstabConfig.config.columns.some(
+                  (c) => c.type === 'audience' && c.audience_id === aud.id
+                );
+                return (
+                  <div
+                    key={aud.id}
+                    className={`picker-list-item ${isSelected ? 'picker-list-item--selected' : ''}`}
+                    onClick={() => handleColumnAudienceSelect(aud.id)}
+                  >
+                    <div className="picker-list-item__info">
+                      <span className="picker-list-item__name">{aud.name}</span>
+                      {aud.description && <span className="picker-list-item__desc">{aud.description}</span>}
+                    </div>
+                    {aud.sample_size != null && (
+                      <span className="picker-list-item__meta">n={aud.sample_size.toLocaleString()}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </Modal>
+
+      {/* 3. Base Audience Picker */}
+      <Modal
+        open={audiencePickerOpen}
+        onClose={() => setAudiencePickerOpen(false)}
+        title="Select Base Audience"
+        size="md"
+      >
+        <SearchInput
+          value={audienceSearch}
+          onChange={setAudienceSearch}
+          placeholder="Search audiences..."
+        />
+        <div className="picker-list" style={{ marginTop: 'var(--spacing-md)' }}>
+          <div
+            className="picker-list-item"
+            onClick={() => handleBaseAudienceSelect(null)}
+          >
+            <div className="picker-list-item__info">
+              <span className="picker-list-item__name">All Adults (no filter)</span>
+              <span className="picker-list-item__desc">Use the full survey base with no audience filter</span>
+            </div>
+          </div>
+          {filteredAudiences.map((aud) => (
+            <div
+              key={aud.id}
+              className="picker-list-item"
+              onClick={() => handleBaseAudienceSelect(aud.id)}
+            >
+              <div className="picker-list-item__info">
+                <span className="picker-list-item__name">{aud.name}</span>
+                {aud.description && <span className="picker-list-item__desc">{aud.description}</span>}
+              </div>
+              {aud.sample_size != null && (
+                <span className="picker-list-item__meta">n={aud.sample_size.toLocaleString()}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </Modal>
+
+      {/* 4. Data Set Picker (Study → Wave two-step) */}
+      <Modal
+        open={dataSetPickerOpen}
+        onClose={() => { setDataSetPickerOpen(false); setDataSetStep('study'); setSelectedStudy(null); }}
+        title={dataSetStep === 'study' ? 'Select Data Set' : `Select Wave — ${selectedStudy?.name ?? ''}`}
+        size="md"
+      >
+        {dataSetStep === 'wave' && selectedStudy ? (
+          <>
+            <button className="picker-back-btn" onClick={() => { setDataSetStep('study'); setSelectedStudy(null); }}>
+              <ChevronLeft size={14} />
+              Back to studies
+            </button>
+            <div className="picker-list">
+              {selectedStudy.waves.map((w) => (
+                <div
+                  key={w.id}
+                  className="picker-list-item"
+                  onClick={() => handleDataSetWaveSelect(selectedStudy, w.id)}
+                >
+                  <div className="picker-list-item__info">
+                    <span className="picker-list-item__name">{w.name}</span>
+                    <span className="picker-list-item__desc">
+                      {w.start_date} — {w.end_date} · n={w.sample_size.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="picker-list">
+            {(studies ?? []).map((study) => (
+              <div
+                key={study.id}
+                className="picker-list-item"
+                onClick={() => handleStudySelect(study)}
+              >
+                <div className="picker-list-item__info">
+                  <span className="picker-list-item__name">{study.name}</span>
+                  {study.description && <span className="picker-list-item__desc">{study.description}</span>}
+                </div>
+                <span className="picker-list-item__meta">{study.waves.length} waves</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
+
+      {/* 5. Wave Picker (multi-select, grouped by study) */}
+      <Modal
+        open={wavePickerOpen}
+        onClose={() => setWavePickerOpen(false)}
+        title="Add Waves"
+        size="md"
+        footer={
+          <Button variant="primary" onClick={() => setWavePickerOpen(false)}>
+            Done
+          </Button>
+        }
+      >
+        <div className="picker-list">
+          {wavesGroupedByStudy.map((group) => (
+            <div key={group.studyId}>
+              <div className="picker-study-header">{group.studyName}</div>
+              {group.waves.map((w) => {
+                const isSelected = selectedWaveIds.has(w.id);
+                return (
+                  <div
+                    key={w.id}
+                    className={`picker-list-item ${isSelected ? 'picker-list-item--selected' : ''}`}
+                    onClick={() => handleWaveAdd(w.study_id, w.id)}
+                  >
+                    <div className="picker-list-item__info">
+                      <span className="picker-list-item__name">{w.name}</span>
+                      <span className="picker-list-item__desc">n={w.sample_size.toLocaleString()}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -65,17 +65,26 @@ function studyLabel(config: CrosstabConfig, waves?: Wave[], studies?: Study[]): 
   return config.wave_ids[0].study_id
 }
 
-function baseLabel(config: CrosstabConfig, questions?: Question[]): string {
+function basePillLabel(config: CrosstabConfig, questions?: Question[]): string {
   if (!config.base_audience) return 'All Adults'
   const expr = config.base_audience as unknown as Record<string, unknown>
   if ('question' in expr && typeof expr.question === 'object' && expr.question !== null) {
     const qExpr = expr.question as { question_id: string; datapoint_ids: string[] }
     const q = questions?.find((q) => q.id === qExpr.question_id)
-    const name = q?.name ?? qExpr.question_id
-    const dpCount = qExpr.datapoint_ids.length
-    return `Question: ${name} (${dpCount} datapoint${dpCount !== 1 ? 's' : ''})`
+    return q?.name ?? qExpr.question_id
   }
   return 'Custom filter'
+}
+
+function basePillSublabel(config: CrosstabConfig): string | undefined {
+  if (!config.base_audience) return undefined
+  const expr = config.base_audience as unknown as Record<string, unknown>
+  if ('question' in expr && typeof expr.question === 'object' && expr.question !== null) {
+    const qExpr = expr.question as { question_id: string; datapoint_ids: string[] }
+    const dpCount = qExpr.datapoint_ids.length
+    return `(${dpCount} datapoint${dpCount !== 1 ? 's' : ''})`
+  }
+  return undefined
 }
 
 export default function CrosstabConfigPanel({
@@ -148,6 +157,20 @@ export default function CrosstabConfigPanel({
           </div>
           <button className="config-panel__dim-add" onClick={onOpenWavePicker}><Plus size={10} /> Add</button>
         </div>
+
+        <div className="config-panel__separator" />
+
+        {/* Base */}
+        <div className="config-panel__dim-group">
+          <span className="config-panel__dim-label">Base</span>
+          <div className="config-panel__dim-pills">
+            <ConfigPill
+              label={basePillLabel(config, questions)}
+              sublabel={basePillSublabel(config)}
+              onClick={onOpenBasePicker}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Row 2: Compact inline controls */}
@@ -160,13 +183,6 @@ export default function CrosstabConfigPanel({
               <ConfigPill key={m} label={metricLabels[m] ?? m} active={config.metrics.includes(m)} onClick={() => onToggleMetric(m)} />
             ))}
           </div>
-        </div>
-
-        {/* Base */}
-        <div className="config-panel__control">
-          <span className="config-panel__control-label">Base</span>
-          <span className="config-panel__control-value">{baseLabel(config, questions)}</span>
-          <button className="config-panel__control-btn" onClick={onOpenBasePicker}>Change</button>
         </div>
 
         {/* Data Set */}

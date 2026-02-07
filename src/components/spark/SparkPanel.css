@@ -1,0 +1,184 @@
+/* ==============================================
+   SparkPanel – Collapsible "Ask Spark" wrapper
+   GWI Platform Design System
+   ============================================== */
+
+.spark-panel {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  background: var(--color-white);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+/* ---------- Header (always visible) ---------- */
+.spark-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--spacing-6) var(--spacing-md);
+  background: var(--color-surface-secondary);
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.spark-panel__header:hover {
+  background: var(--color-surface-tertiary);
+}
+
+.spark-panel__header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
+.spark-panel__header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.spark-panel__expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.spark-panel__expand-btn:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.spark-panel__chevron {
+  color: var(--color-text-muted);
+  transition: transform var(--transition-fast);
+}
+
+.spark-panel__chevron--open {
+  transform: rotate(180deg);
+}
+
+/* ---------- Body (visible when open) ---------- */
+.spark-panel__body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Suggested prompt pills ---------- */
+.spark-panel__prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.spark-panel__prompt-pill {
+  padding: 4px 12px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.spark-panel__prompt-pill:hover {
+  background: var(--color-primary);
+  color: var(--color-white);
+  box-shadow: var(--shadow-primary);
+}
+
+.spark-panel__prompt-pill:active {
+  transform: scale(0.97);
+}
+
+/* ---------- Sidebar variant (right-side drawer) ---------- */
+.spark-panel-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  position: sticky;
+  top: var(--spacing-lg);
+  align-self: flex-start;
+  max-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Let the panel fill the sidebar and manage its own scroll */
+.spark-panel-sidebar .spark-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 120px);
+  overflow: visible;
+}
+
+.spark-panel-sidebar .spark-panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Remove the restrictive compact max-heights inside the sidebar */
+.spark-panel-sidebar .spark-panel__chat {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.spark-panel-sidebar .spark-panel__chat .spark-chat--compact {
+  max-height: none;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.spark-panel-sidebar .spark-chat__messages {
+  flex: 1;
+  min-height: 80px;
+  overflow-y: auto;
+}
+
+@media (max-width: 1100px) {
+  .spark-panel-sidebar {
+    width: 100%;
+    position: static;
+    max-height: none;
+  }
+
+  .spark-panel-sidebar .spark-panel {
+    max-height: none;
+  }
+
+  .spark-panel-sidebar .spark-panel__chat .spark-chat--compact {
+    max-height: 500px;
+  }
+}
+
+/* ---------- SparkChat compact overrides ---------- */
+/* Strip border/shadow from compact chat since the panel provides them */
+.spark-panel__chat .spark-chat--compact {
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  max-height: 360px;
+}

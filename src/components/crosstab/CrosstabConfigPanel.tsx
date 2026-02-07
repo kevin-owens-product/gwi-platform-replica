@@ -65,8 +65,17 @@ function studyLabel(config: CrosstabConfig, waves?: Wave[], studies?: Study[]): 
   return config.wave_ids[0].study_id
 }
 
-function baseLabel(config: CrosstabConfig): string {
-  return config.base_audience ? 'Custom filter' : 'All Adults'
+function baseLabel(config: CrosstabConfig, questions?: Question[]): string {
+  if (!config.base_audience) return 'All Adults'
+  const expr = config.base_audience as unknown as Record<string, unknown>
+  if ('question' in expr && typeof expr.question === 'object' && expr.question !== null) {
+    const qExpr = expr.question as { question_id: string; datapoint_ids: string[] }
+    const q = questions?.find((q) => q.id === qExpr.question_id)
+    const name = q?.name ?? qExpr.question_id
+    const dpCount = qExpr.datapoint_ids.length
+    return `Question: ${name} (${dpCount} datapoint${dpCount !== 1 ? 's' : ''})`
+  }
+  return 'Custom filter'
 }
 
 export default function CrosstabConfigPanel({
@@ -156,7 +165,7 @@ export default function CrosstabConfigPanel({
         {/* Base */}
         <div className="config-panel__control">
           <span className="config-panel__control-label">Base</span>
-          <span className="config-panel__control-value">{baseLabel(config)}</span>
+          <span className="config-panel__control-value">{baseLabel(config, questions)}</span>
           <button className="config-panel__control-btn" onClick={onOpenBasePicker}>Change</button>
         </div>
 

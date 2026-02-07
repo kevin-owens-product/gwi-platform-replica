@@ -11,7 +11,7 @@ import CrosstabConfigPanel from '@/components/crosstab/CrosstabConfigPanel';
 import QuestionBrowser from '@/components/taxonomy/QuestionBrowser';
 import { Button, Modal, SearchInput } from '@/components/shared';
 import { formatRelativeDate } from '@/utils/format';
-import type { MetricType, CrosstabQueryRequest, Question, Study } from '@/api/types';
+import type { MetricType, CrosstabQueryRequest, Question, Study, AudienceQuestion } from '@/api/types';
 import './CrosstabDetail.css';
 
 interface CrosstabDetailProps {
@@ -35,6 +35,9 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
   const [columnPickerTab, setColumnPickerTab] = useState<'question' | 'audience'>('question');
   const [audiencePickerOpen, setAudiencePickerOpen] = useState(false);
   const [audienceSearch, setAudienceSearch] = useState('');
+  const [basePickerTab, setBasePickerTab] = useState<'saved' | 'question' | 'clear'>('saved');
+  const [baseQuestion, setBaseQuestion] = useState<Question | null>(null);
+  const [baseDatapointIds, setBaseDatapointIds] = useState<Set<string>>(new Set());
   const [dataSetPickerOpen, setDataSetPickerOpen] = useState(false);
   const [dataSetStep, setDataSetStep] = useState<'study' | 'wave'>('study');
   const [selectedStudy, setSelectedStudy] = useState<Study | null>(null);
@@ -172,16 +175,45 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
   };
 
   // Base audience picker
-  const handleBaseAudienceSelect = (audienceId: string | null) => {
-    if (!audienceId) {
+  const handleBaseApply = () => {
+    if (basePickerTab === 'saved') return; // saved tab uses direct selection
+    if (basePickerTab === 'clear') {
       crosstabConfig.setBaseAudience(undefined);
-    } else {
-      const aud = audiences.find((a) => a.id === audienceId);
-      if (aud) {
-        crosstabConfig.setBaseAudience(aud.expression);
-      }
+    } else if (basePickerTab === 'question' && baseQuestion && baseDatapointIds.size > 0) {
+      const expr: AudienceQuestion = {
+        question: {
+          question_id: baseQuestion.id,
+          datapoint_ids: Array.from(baseDatapointIds),
+        },
+      };
+      crosstabConfig.setBaseAudience(expr);
     }
     setAudiencePickerOpen(false);
+  };
+
+  const handleBaseSavedSelect = (audienceId: string) => {
+    const aud = audiences.find((a) => a.id === audienceId);
+    if (aud) {
+      crosstabConfig.setBaseAudience(aud.expression);
+    }
+    setAudiencePickerOpen(false);
+  };
+
+  const handleBaseQuestionSelect = (question: Question) => {
+    setBaseQuestion(question);
+    setBaseDatapointIds(new Set());
+  };
+
+  const handleBaseDatapointToggle = (dpId: string) => {
+    setBaseDatapointIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(dpId)) {
+        next.delete(dpId);
+      } else {
+        next.add(dpId);
+      }
+      return next;
+    });
   };
 
   // Data set picker
@@ -296,7 +328,7 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
           onHighlightChange={handleHighlightChange}
           onOpenRowPicker={() => setRowPickerOpen(true)}
           onOpenColumnPicker={() => { setColumnPickerTab('question'); setColumnPickerOpen(true); }}
-          onOpenBasePicker={() => { setAudienceSearch(''); setAudiencePickerOpen(true); }}
+          onOpenBasePicker={() => { setAudienceSearch(''); setBasePickerTab('saved'); setBaseQuestion(null); setBaseDatapointIds(new Set()); setAudiencePickerOpen(true); }}
           onOpenDataSetPicker={() => { setDataSetStep('study'); setSelectedStudy(null); setDataSetPickerOpen(true); }}
           onOpenWavePicker={() => setWavePickerOpen(true)}
         />
@@ -430,44 +462,123 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
         )}
       </Modal>
 
-      {/* 3. Base Audience Picker */}
+      {/* 3. Base Audience Picker (tabbed) */}
       <Modal
         open={audiencePickerOpen}
         onClose={() => setAudiencePickerOpen(false)}
         title="Select Base Audience"
-        size="md"
-      >
-        <SearchInput
-          value={audienceSearch}
-          onChange={setAudienceSearch}
-          placeholder="Search audiences..."
-        />
-        <div className="picker-list" style={{ marginTop: 'var(--spacing-md)' }}>
-          <div
-            className="picker-list-item"
-            onClick={() => handleBaseAudienceSelect(null)}
-          >
-            <div className="picker-list-item__info">
-              <span className="picker-list-item__name">All Adults (no filter)</span>
-              <span className="picker-list-item__desc">Use the full survey base with no audience filter</span>
-            </div>
-          </div>
-          {filteredAudiences.map((aud) => (
-            <div
-              key={aud.id}
-              className="picker-list-item"
-              onClick={() => handleBaseAudienceSelect(aud.id)}
+        size="lg"
+        footer={
+          <div style={{ display: 'flex', gap: 'var(--spacing-sm)', justifyContent: 'flex-end' }}>
+            <Button variant="ghost" onClick={() => setAudiencePickerOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              disabled={
+                basePickerTab === 'saved' ||
+                (basePickerTab === 'question' && baseDatapointIds.size === 0)
+              }
+              onClick={handleBaseApply}
             >
-              <div className="picker-list-item__info">
-                <span className="picker-list-item__name">{aud.name}</span>
-                {aud.description && <span className="picker-list-item__desc">{aud.description}</span>}
-              </div>
-              {aud.sample_size != null && (
-                <span className="picker-list-item__meta">n={aud.sample_size.toLocaleString()}</span>
-              )}
-            </div>
-          ))}
+              Apply
+            </Button>
+          </div>
+        }
+      >
+        <div className="picker-tabs">
+          <button
+            className={`picker-tab ${basePickerTab === 'saved' ? 'picker-tab--active' : ''}`}
+            onClick={() => setBasePickerTab('saved')}
+          >
+            Saved Audiences
+          </button>
+          <button
+            className={`picker-tab ${basePickerTab === 'question' ? 'picker-tab--active' : ''}`}
+            onClick={() => setBasePickerTab('question')}
+          >
+            By Question
+          </button>
+          <button
+            className={`picker-tab ${basePickerTab === 'clear' ? 'picker-tab--active' : ''}`}
+            onClick={() => setBasePickerTab('clear')}
+          >
+            All Adults
+          </button>
         </div>
+
+        {basePickerTab === 'saved' && (
+          <>
+            <SearchInput
+              value={audienceSearch}
+              onChange={setAudienceSearch}
+              placeholder="Search audiences..."
+            />
+            <div className="picker-list" style={{ marginTop: 'var(--spacing-md)' }}>
+              {filteredAudiences.map((aud) => (
+                <div
+                  key={aud.id}
+                  className="picker-list-item"
+                  onClick={() => handleBaseSavedSelect(aud.id)}
+                >
+                  <div className="picker-list-item__info">
+                    <span className="picker-list-item__name">{aud.name}</span>
+                    {aud.description && <span className="picker-list-item__desc">{aud.description}</span>}
+                  </div>
+                  {aud.sample_size != null && (
+                    <span className="picker-list-item__meta">n={aud.sample_size.toLocaleString()}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {basePickerTab === 'question' && (
+          <div className="base-picker__split">
+            <QuestionBrowser
+              onSelectQuestion={handleBaseQuestionSelect}
+              selectedQuestionIds={baseQuestion ? [baseQuestion.id] : []}
+            />
+            {baseQuestion ? (
+              <div className="base-picker__question-detail">
+                <h4>{baseQuestion.name}</h4>
+                <p>Select datapoints to filter by:</p>
+                <div className="base-picker__dp-list">
+                  {baseQuestion.datapoints.map((dp) => (
+                    <div
+                      key={dp.id}
+                      className="base-picker__dp-item"
+                      onClick={() => handleBaseDatapointToggle(dp.id)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={baseDatapointIds.has(dp.id)}
+                        onChange={() => handleBaseDatapointToggle(dp.id)}
+                      />
+                      <label>{dp.name}</label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="base-picker__question-detail">
+                <div className="base-picker__empty">
+                  Select a question to see its datapoints
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {basePickerTab === 'clear' && (
+          <div className="base-picker__clear">
+            <p>
+              Use the full survey base with no audience filter applied.
+              This resets the base to <strong>All Adults</strong>.
+            </p>
+          </div>
+        )}
       </Modal>
 
       {/* 4. Data Set Picker (Study → Wave two-step) */}

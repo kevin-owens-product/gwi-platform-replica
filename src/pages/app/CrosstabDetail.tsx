@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Share2, Save, ChevronLeft } from 'lucide-react';
 import { useCrosstab, useUpdateCrosstab, useCreateCrosstab } from '@/hooks/useCrosstabs';
@@ -28,6 +28,37 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
   const [crosstabName, setCrosstabName] = useState<string>('');
   const [highlightMode, setHighlightMode] = useState<'none' | 'heatmap' | 'index'>('heatmap');
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Table height calculation — measure available space and size the grid via inline style
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
+  const [gridMaxHeight, setGridMaxHeight] = useState<number | undefined>(undefined);
+
+  const recalcTableHeight = useCallback(() => {
+    const tableEl = tableContainerRef.current;
+    if (!tableEl) return;
+    const top = tableEl.getBoundingClientRect().top;
+    const footerEl = footerRef.current;
+    const footerH = footerEl
+      ? footerEl.offsetHeight + parseFloat(getComputedStyle(footerEl).marginTop || '0')
+      : 54;
+    const pageBottomPad = 32; // var(--spacing-xl)
+    const available = window.innerHeight - top - footerH - pageBottomPad;
+    setGridMaxHeight(Math.max(200, Math.floor(available)));
+  }, []);
+
+  useEffect(() => {
+    recalcTableHeight();
+    window.addEventListener('resize', recalcTableHeight);
+    const observer = new ResizeObserver(recalcTableHeight);
+    if (tableContainerRef.current?.parentElement) {
+      observer.observe(tableContainerRef.current.parentElement);
+    }
+    return () => {
+      window.removeEventListener('resize', recalcTableHeight);
+      observer.disconnect();
+    };
+  }, [recalcTableHeight]);
 
   // Modal states
   const [rowPickerOpen, setRowPickerOpen] = useState(false);
@@ -314,26 +345,31 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
           placeholder="Untitled Crosstab"
         />
 
-        <CrosstabConfigPanel
-          config={crosstabConfig.config}
-          questions={questions}
-          audiences={audiences}
-          waves={waves}
-          studies={studies}
-          highlightMode={highlightMode}
-          onRemoveRow={(i) => crosstabConfig.removeRow(i)}
-          onRemoveColumn={(i) => crosstabConfig.removeColumn(i)}
-          onToggleMetric={(m) => crosstabConfig.toggleMetric(m)}
-          onRemoveWave={(i) => crosstabConfig.removeWave(i)}
-          onHighlightChange={handleHighlightChange}
-          onOpenRowPicker={() => setRowPickerOpen(true)}
-          onOpenColumnPicker={() => { setColumnPickerTab('question'); setColumnPickerOpen(true); }}
-          onOpenBasePicker={() => { setAudienceSearch(''); setBasePickerTab('saved'); setBaseQuestion(null); setBaseDatapointIds(new Set()); setAudiencePickerOpen(true); }}
-          onOpenDataSetPicker={() => { setDataSetStep('study'); setSelectedStudy(null); setDataSetPickerOpen(true); }}
-          onOpenWavePicker={() => setWavePickerOpen(true)}
-        />
+        <div className="crosstab-config-wrapper">
+          <CrosstabConfigPanel
+            config={crosstabConfig.config}
+            questions={questions}
+            audiences={audiences}
+            waves={waves}
+            studies={studies}
+            highlightMode={highlightMode}
+            onRemoveRow={(i) => crosstabConfig.removeRow(i)}
+            onRemoveColumn={(i) => crosstabConfig.removeColumn(i)}
+            onToggleMetric={(m) => crosstabConfig.toggleMetric(m)}
+            onRemoveWave={(i) => crosstabConfig.removeWave(i)}
+            onHighlightChange={handleHighlightChange}
+            onOpenRowPicker={() => setRowPickerOpen(true)}
+            onOpenColumnPicker={() => { setColumnPickerTab('question'); setColumnPickerOpen(true); }}
+            onOpenBasePicker={() => { setAudienceSearch(''); setBasePickerTab('saved'); setBaseQuestion(null); setBaseDatapointIds(new Set()); setAudiencePickerOpen(true); }}
+            onOpenDataSetPicker={() => { setDataSetStep('study'); setSelectedStudy(null); setDataSetPickerOpen(true); }}
+            onOpenWavePicker={() => setWavePickerOpen(true)}
+          />
+        </div>
 
-        <div className="crosstab-table-container">
+        <div
+          className="crosstab-table-container"
+          ref={tableContainerRef}
+        >
           {isDataLoading ? (
             <div className="crosstab-detail-loading">
               <div className="charts-loading-spinner" />
@@ -350,11 +386,12 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
               cells={gridCells}
               activeMetric={activeMetric}
               highlightMode={highlightMode}
+              maxHeight={gridMaxHeight}
             />
           )}
         </div>
 
-        <div className="crosstab-footer">
+        <div className="crosstab-footer" ref={footerRef}>
           <div className="crosstab-stats">
             <span className="crosstab-stat">
               Sample: <strong>{queryResult?.meta?.base_size?.toLocaleString() ?? '-'}</strong>
@@ -467,7 +504,7 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
         open={audiencePickerOpen}
         onClose={() => setAudiencePickerOpen(false)}
         title="Select Base Audience"
-        size="lg"
+        size="xl"
         footer={
           <div style={{ display: 'flex', gap: 'var(--spacing-sm)', justifyContent: 'flex-end' }}>
             <Button variant="ghost" onClick={() => setAudiencePickerOpen(false)}>

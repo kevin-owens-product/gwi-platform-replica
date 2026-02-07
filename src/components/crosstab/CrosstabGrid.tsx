@@ -27,6 +27,7 @@ interface CrosstabGridProps {
   cells: GridCell[][]
   activeMetric: MetricType
   highlightMode?: 'none' | 'heatmap' | 'index'
+  maxHeight?: number
 }
 
 export default function CrosstabGrid({
@@ -35,6 +36,7 @@ export default function CrosstabGrid({
   cells,
   activeMetric,
   highlightMode = 'none',
+  maxHeight,
 }: CrosstabGridProps) {
   const allValues = cells.flat().map((c) => c.values[activeMetric] ?? 0)
   const minVal = Math.min(...allValues)
@@ -69,7 +71,7 @@ export default function CrosstabGrid({
   }, [rows])
 
   return (
-    <div className="crosstab-grid__wrapper">
+    <div className="crosstab-grid__wrapper" style={maxHeight ? { maxHeight } : undefined}>
       <table className="crosstab-grid">
         <thead>
           <tr>

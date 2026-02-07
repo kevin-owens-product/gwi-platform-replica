@@ -2,7 +2,6 @@
   overflow: auto;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  max-height: calc(100vh - 280px);
 }
 
 .crosstab-grid {

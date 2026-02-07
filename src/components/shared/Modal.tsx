@@ -1,5 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
+import './Modal.css'
 
 interface ModalProps {
   open: boolean
@@ -30,7 +32,7 @@ export default function Modal({ open, onClose, title, children, size = 'md', foo
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div
       className="modal-overlay"
       ref={overlayRef}
@@ -48,6 +50,7 @@ export default function Modal({ open, onClose, title, children, size = 'md', foo
         <div className="modal__body">{children}</div>
         {footer && <div className="modal__footer">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

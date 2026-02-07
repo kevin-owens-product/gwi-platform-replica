@@ -101,8 +101,8 @@ export default function Crosstabs(): React.JSX.Element {
             </div>
             <div className="ct-table-body">
               {filtered.map((ct: Crosstab) => {
-                const rowCount = ct.config?.rows?.length ?? 0;
-                const colCount = ct.config?.columns?.length ?? 0;
+                const rowCount = ct.config?.rows?.reduce((sum, d) => sum + (d.datapoint_ids?.length ?? 1), 0) ?? 0;
+                const colCount = ct.config?.columns?.reduce((sum, d) => sum + (d.datapoint_ids?.length ?? 1), 0) ?? 0;
 
                 return (
                   <Link key={ct.id} to={`/app/crosstabs/${ct.id}`} className="ct-table-row">

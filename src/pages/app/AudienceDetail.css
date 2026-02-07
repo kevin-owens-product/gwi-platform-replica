@@ -72,12 +72,12 @@
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-semibold);
   transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
-  box-shadow: 0 1px 3px rgba(255, 0, 119, 0.2);
+  box-shadow: var(--shadow-primary-sm);
 }
 
 .btn-primary:hover {
   background-color: var(--color-primary-hover);
-  box-shadow: 0 2px 8px rgba(255, 0, 119, 0.3);
+  box-shadow: var(--shadow-primary-xl);
 }
 
 .btn-primary:active {
@@ -566,7 +566,7 @@
 }
 
 .group-connector__label--or:hover {
-  background-color: #dde1ff;
+  background-color: var(--color-accent-blue-lighter);
 }
 
 /* ---------- Loading State ---------- */

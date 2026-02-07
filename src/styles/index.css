@@ -103,6 +103,46 @@
   --color-info-light: #ebf8ff;
   --color-info-text: #1a5276;
 
+  /* Secondary & Danger State Colors */
+  --color-secondary-hover: #2a2a42;
+  --color-secondary-active: #1a1a2e;
+  --color-danger-hover: #c53030;
+  --color-danger-active: #9b2c2c;
+  --color-primary-dark: #a0155a;
+
+  /* Primary Shadows */
+  --shadow-primary-xs: 0 1px 2px rgba(255, 0, 119, 0.15);
+  --shadow-primary-sm: 0 1px 3px rgba(255, 0, 119, 0.2);
+  --shadow-primary: 0 2px 6px rgba(255, 0, 119, 0.2);
+  --shadow-primary-md: 0 2px 8px rgba(255, 0, 119, 0.25);
+  --shadow-primary-lg: 0 4px 12px rgba(255, 0, 119, 0.25);
+  --shadow-primary-xl: 0 2px 8px rgba(255, 0, 119, 0.3);
+
+  /* Overlay */
+  --color-overlay: rgba(26, 26, 46, 0.4);
+  --color-overlay-heavy: rgba(26, 26, 46, 0.45);
+
+  /* Status Border Colors */
+  --color-success-border: #a7f3d0;
+  --color-error-border: #fecaca;
+
+  /* Accent Light Hover */
+  --color-accent-blue-lighter: #dde1ff;
+
+  /* Heatmap Colors */
+  --color-heatmap-1: #fef2f2;
+  --color-heatmap-2: #fecaca;
+  --color-heatmap-3: #fde68a;
+  --color-heatmap-4: #bbf7d0;
+  --color-heatmap-5: #86efac;
+
+  /* Index Colors */
+  --color-index-strong-over: #006644;
+  --color-index-over: #00b37a;
+  --color-index-neutral: #5c5c70;
+  --color-index-under: #f5a623;
+  --color-index-strong-under: #e53e3e;
+
   /* Chart Colors - GWI Palette */
   --color-chart-1: #FF0077;
   --color-chart-2: #334BFA;

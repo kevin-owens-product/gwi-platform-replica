@@ -50,7 +50,7 @@
 
 .charts-header .btn-create:hover {
   background-color: var(--color-primary-hover);
-  box-shadow: 0 2px 8px rgba(255, 0, 119, 0.25);
+  box-shadow: var(--shadow-primary-md);
 }
 
 .charts-header .btn-create:active {

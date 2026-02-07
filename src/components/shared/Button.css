@@ -53,19 +53,19 @@
 .btn--primary {
   background: var(--color-primary);
   color: var(--color-white);
-  box-shadow: 0 1px 2px rgba(255, 0, 119, 0.2);
+  box-shadow: var(--shadow-primary-sm);
 }
 
 .btn--primary:hover:not(:disabled) {
   background: var(--color-primary-hover);
-  box-shadow: 0 2px 4px rgba(255, 0, 119, 0.25);
+  box-shadow: var(--shadow-primary-md);
   transform: translateY(-1px);
 }
 
 .btn--primary:active:not(:disabled) {
   background: var(--color-primary-active);
   transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(255, 0, 119, 0.15);
+  box-shadow: var(--shadow-primary-xs);
 }
 
 .btn--secondary {
@@ -74,7 +74,7 @@
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background: #2a2a42;
+  background: var(--color-secondary-hover);
   transform: translateY(-1px);
 }
 
@@ -103,12 +103,12 @@
 }
 
 .btn--danger:hover:not(:disabled) {
-  background: #c53030;
+  background: var(--color-danger-hover);
   transform: translateY(-1px);
 }
 
 .btn--danger:active:not(:disabled) {
-  background: #9b2c2c;
+  background: var(--color-danger-active);
   transform: translateY(0);
 }
 

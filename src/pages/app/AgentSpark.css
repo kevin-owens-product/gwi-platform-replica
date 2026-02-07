@@ -47,7 +47,7 @@
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wider);
   padding: 2px 8px;
-  background: linear-gradient(135deg, var(--color-primary) 0%, #a0155a 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: var(--color-white);
   border-radius: var(--radius-full);
   line-height: 1.4;
@@ -297,7 +297,7 @@
   background-color: var(--color-primary);
   color: var(--color-white);
   border-radius: var(--radius-2xl) var(--radius-2xl) var(--radius-sm) var(--radius-2xl);
-  box-shadow: 0 2px 8px rgba(255, 0, 119, 0.15);
+  box-shadow: var(--shadow-primary);
 }
 
 .chat-message.assistant {

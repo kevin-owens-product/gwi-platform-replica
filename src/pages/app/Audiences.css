@@ -80,19 +80,19 @@
   font-weight: var(--font-weight-semibold);
   border-radius: var(--radius-lg);
   transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
-  box-shadow: 0 1px 3px rgba(255, 0, 119, 0.2);
+  box-shadow: var(--shadow-primary-sm);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .btn-create:hover {
   background-color: var(--color-primary-hover);
-  box-shadow: 0 2px 8px rgba(255, 0, 119, 0.3);
+  box-shadow: var(--shadow-primary-xl);
 }
 
 .btn-create:active {
   background-color: var(--color-primary-active);
-  box-shadow: 0 1px 2px rgba(255, 0, 119, 0.2);
+  box-shadow: var(--shadow-primary-sm);
 }
 
 /* ---------- Filters ---------- */
@@ -172,7 +172,7 @@
   border-color: var(--color-primary);
   background-color: var(--color-primary);
   color: var(--color-white);
-  box-shadow: 0 1px 3px rgba(255, 0, 119, 0.2);
+  box-shadow: var(--shadow-primary-sm);
 }
 
 .filter-label {

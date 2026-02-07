@@ -204,7 +204,7 @@
 
 .btn-primary:hover:not(.btn-disabled) {
   background-color: var(--color-primary-hover);
-  box-shadow: 0 2px 8px rgba(255, 0, 119, 0.3);
+  box-shadow: var(--shadow-primary-xl);
 }
 
 .btn-primary:active:not(.btn-disabled) {
@@ -343,7 +343,7 @@
   inset: 0;
   background:
     radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(255, 0, 119, 0.15) 0%, transparent 50%);
+    radial-gradient(ellipse at 80% 80%, var(--color-input-focus-ring) 0%, transparent 50%);
   pointer-events: none;
 }
 
@@ -395,13 +395,13 @@
 .form-message.success {
   background-color: var(--color-success-light);
   color: var(--color-success-text);
-  border: 1px solid #a7f3d0;
+  border: 1px solid var(--color-success-border);
 }
 
 .form-message.error {
   background-color: var(--color-error-light);
   color: var(--color-error-text);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-error-border);
 }
 
 /* ============================================

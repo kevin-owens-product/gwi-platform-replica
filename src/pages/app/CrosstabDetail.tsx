@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Share2, Save, ChevronLeft } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useCrosstab, useUpdateCrosstab, useCreateCrosstab } from '@/hooks/useCrosstabs';
 import { useAudiences } from '@/hooks/useAudiences';
 import { useStudies, useWaves, useQuestions } from '@/hooks/useTaxonomy';
@@ -10,7 +11,7 @@ import CrosstabGrid from '@/components/crosstab/CrosstabGrid';
 import CrosstabConfigPanel from '@/components/crosstab/CrosstabConfigPanel';
 import QuestionBrowser from '@/components/taxonomy/QuestionBrowser';
 import { Button, Modal, SearchInput, BaseAudiencePicker } from '@/components/shared';
-import { formatRelativeDate } from '@/utils/format';
+import { formatRelativeDate, formatMetricValue } from '@/utils/format';
 import type { MetricType, CrosstabQueryRequest, Question, Study, AudienceQuestion, Audience } from '@/api/types';
 import './CrosstabDetail.css';
 
@@ -238,6 +239,46 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
     crosstabConfig.addWave({ study_id: studyId, wave_id: waveId });
   };
 
+  // CSV export handler
+  const handleDownloadCsv = () => {
+    if (gridRows.length === 0 || gridColumns.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+    const headers = ['Row', ...gridColumns.map((c) => c.label)];
+    const csvRows = [headers.join(',')];
+    for (let rowIdx = 0; rowIdx < gridRows.length; rowIdx++) {
+      const row = gridRows[rowIdx];
+      const values = [
+        `"${row.label.replace(/"/g, '""')}"`,
+        ...gridColumns.map((_, colIdx) => {
+          const cell = gridCells[rowIdx]?.[colIdx];
+          const val = cell?.values?.[activeMetric];
+          return val != null ? formatMetricValue(activeMetric, val) : '';
+        }),
+      ];
+      csvRows.push(values.join(','));
+    }
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${crosstabName || 'crosstab'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('CSV exported');
+  };
+
+  // Share handler
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success('Link copied to clipboard');
+  };
+
+  // Unsaved changes tracking
+  const nameChanged = crosstab ? crosstabName !== crosstab.name : crosstabName !== '';
+  const hasUnsavedChanges = crosstabConfig.isDirty || nameChanged;
+
   const isDataLoading = crosstabLoading || queryLoading;
   const isSaving = updateCrosstab.isPending || createCrosstab.isPending;
 
@@ -289,27 +330,33 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
           <span>Back to Crosstabs</span>
         </Link>
         <div className="header-actions">
-          <button className="icon-btn"><Download size={18} /></button>
-          <button className="icon-btn"><Share2 size={18} /></button>
+          <button className="icon-btn" onClick={handleDownloadCsv} title="Download CSV"><Download size={18} /></button>
+          <button className="icon-btn" onClick={handleShare} title="Copy link"><Share2 size={18} /></button>
           <Button
             variant="primary"
             icon={<Save size={16} />}
             loading={isSaving}
             onClick={handleSave}
           >
-            {isNew ? 'Create' : 'Save'}
+            {isNew ? 'Create' : hasUnsavedChanges ? 'Save *' : 'Save'}
           </Button>
         </div>
       </div>
 
       <div className="crosstab-detail-content">
-        <input
-          type="text"
-          className="crosstab-title-input"
-          value={crosstabName}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCrosstabName(e.target.value)}
-          placeholder="Untitled Crosstab"
-        />
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--spacing-lg)' }}>
+          <input
+            type="text"
+            className="crosstab-title-input"
+            value={crosstabName}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCrosstabName(e.target.value)}
+            placeholder="Untitled Crosstab"
+            style={{ marginBottom: 0 }}
+          />
+          {hasUnsavedChanges && !isNew && (
+            <span className="crosstab-unsaved-badge">Unsaved changes</span>
+          )}
+        </div>
 
         <div className="crosstab-config-wrapper">
           <CrosstabConfigPanel

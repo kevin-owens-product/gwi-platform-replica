@@ -1,11 +1,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Plus, TrendingUp, TrendingDown, Edit, Save, Loader2, Users } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Plus, TrendingUp, TrendingDown, Edit, Save, Loader2, Users, LayoutDashboard } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useDashboard, useUpdateDashboard } from '@/hooks/useDashboards';
 import { useAudiences } from '@/hooks/useAudiences';
 import { useQuestions } from '@/hooks/useTaxonomy';
-import DashboardGrid from '@/components/dashboard/DashboardGrid';
-import { Button, Modal, BaseAudiencePicker, getBaseAudienceLabel } from '@/components/shared';
+import { useCharts } from '@/hooks/useCharts';
+import DashboardGrid, { WidgetChart } from '@/components/dashboard/DashboardGrid';
+import { Button, Modal, EmptyState, BaseAudiencePicker, getBaseAudienceLabel } from '@/components/shared';
 import { formatRelativeDate } from '@/utils/format';
 import type { DashboardWidget, AudienceExpression, AudienceQuestion, Audience } from '@/api/types';
 import './DashboardDetail.css';
@@ -219,6 +221,7 @@ function DonutWidget(): React.JSX.Element {
 }
 
 // --- Fallback content rendered when there are no widgets from the API ---
+// Kept in the file but no longer rendered — replaced by EmptyState below.
 
 function FallbackDashboardContent(): React.JSX.Element {
   return (
@@ -298,6 +301,9 @@ function FallbackDashboardContent(): React.JSX.Element {
   );
 }
 
+// Suppress unused warning — kept intentionally
+void FallbackDashboardContent;
+
 // --- Main component ---
 
 export default function DashboardDetail(): React.JSX.Element {
@@ -311,11 +317,25 @@ export default function DashboardDetail(): React.JSX.Element {
   const audiences = useMemo(() => audienceResponse?.data ?? [], [audienceResponse]);
   const questions = useMemo(() => questionsResponse?.data ?? [], [questionsResponse]);
 
+  // Fetch charts for add-widget chart selector
+  const { data: chartsResponse } = useCharts({ per_page: 50 });
+  const chartsList = useMemo(() => chartsResponse?.data ?? [], [chartsResponse]);
+
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [dashboardName, setDashboardName] = useState<string>('');
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
   const [baseAudience, setBaseAudience] = useState<AudienceExpression | undefined>(undefined);
   const [audiencePickerOpen, setAudiencePickerOpen] = useState(false);
+
+  // Add widget modal state
+  const [showAddWidget, setShowAddWidget] = useState(false);
+  const [widgetType, setWidgetType] = useState<'chart' | 'stat' | 'text'>('chart');
+  const [widgetTitle, setWidgetTitle] = useState('');
+  const [widgetChartId, setWidgetChartId] = useState('');
+  const [widgetTextContent, setWidgetTextContent] = useState('');
+
+  // Widget maximize state
+  const [maximizedWidgetId, setMaximizedWidgetId] = useState<string | null>(null);
 
   // Seed base audience from dashboard data when it loads
   useEffect(() => {
@@ -333,6 +353,12 @@ export default function DashboardDetail(): React.JSX.Element {
   const baseAudienceLabel = useMemo(
     () => getBaseAudienceLabel(baseAudience, audiences, questions),
     [baseAudience, audiences, questions],
+  );
+
+  // Find maximized widget
+  const maximizedWidget = useMemo(
+    () => dashboard?.widgets?.find((w) => w.id === maximizedWidgetId),
+    [dashboard?.widgets, maximizedWidgetId],
   );
 
   // Base audience picker handlers
@@ -369,6 +395,48 @@ export default function DashboardDetail(): React.JSX.Element {
     if (!id || !dashboard) return;
     const updatedWidgets = dashboard.widgets.filter((w: DashboardWidget) => w.id !== widgetId);
     updateDashboard.mutate({ id, data: { widgets: updatedWidgets } });
+  };
+
+  // Add widget handler
+  const handleAddWidget = () => {
+    if (!id || !dashboard) return;
+
+    // Auto-position below existing widgets
+    const maxY = dashboard.widgets.reduce((max, w) => Math.max(max, w.position.y + w.position.h), 0);
+
+    const newWidget: DashboardWidget = {
+      id: `widget_${Date.now()}`,
+      type: widgetType,
+      title: widgetTitle || (widgetType === 'chart' ? 'Chart Widget' : widgetType === 'stat' ? 'Statistic' : 'Text'),
+      chart_id: widgetType === 'chart' ? widgetChartId || undefined : undefined,
+      text_content: widgetType === 'stat' || widgetType === 'text' ? widgetTextContent : undefined,
+      position: {
+        x: 0,
+        y: maxY,
+        w: widgetType === 'text' ? 12 : 6,
+        h: widgetType === 'text' ? 2 : 4,
+      },
+    };
+
+    updateDashboard.mutate(
+      { id, data: { widgets: [...dashboard.widgets, newWidget] } },
+      {
+        onSuccess: () => {
+          setShowAddWidget(false);
+          setWidgetTitle('');
+          setWidgetChartId('');
+          setWidgetTextContent('');
+          setWidgetType('chart');
+          toast.success('Widget added');
+        },
+      },
+    );
+  };
+
+  // Share copy handler
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success('Link copied to clipboard');
   };
 
   if (isLoading) {
@@ -435,9 +503,9 @@ export default function DashboardDetail(): React.JSX.Element {
               Edit
             </Button>
           )}
-          <button className="icon-btn"><Download size={18} /></button>
-          <button className="icon-btn" onClick={() => setShowShareModal(true)}><Share2 size={18} /></button>
-          <Button variant="primary" icon={<Plus size={16} />}>
+          <button className="icon-btn" onClick={() => toast('Dashboard export coming soon')} title="Download"><Download size={18} /></button>
+          <button className="icon-btn" onClick={() => setShowShareModal(true)} title="Share"><Share2 size={18} /></button>
+          <Button variant="primary" icon={<Plus size={16} />} onClick={() => setShowAddWidget(true)}>
             Add widget
           </Button>
         </div>
@@ -467,25 +535,159 @@ export default function DashboardDetail(): React.JSX.Element {
             widgets={dashboard!.widgets}
             editable={isEditing}
             onWidgetRemove={handleRemoveWidget}
+            onWidgetMaximize={(widgetId) => setMaximizedWidgetId(widgetId)}
             baseAudience={baseAudience}
           />
         ) : (
-          <FallbackDashboardContent />
+          <EmptyState
+            icon={<LayoutDashboard size={48} />}
+            title="No widgets yet"
+            description="Start building your dashboard by adding charts, statistics, or text widgets."
+            action={
+              <Button variant="primary" icon={<Plus size={16} />} onClick={() => setShowAddWidget(true)}>
+                Add First Widget
+              </Button>
+            }
+          />
         )}
       </div>
 
+      {/* Share Modal */}
       <Modal
         open={showShareModal}
         onClose={() => setShowShareModal(false)}
         title="Share Dashboard"
         footer={
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <Button variant="secondary" onClick={() => setShowShareModal(false)}>Cancel</Button>
-            <Button variant="primary" onClick={() => setShowShareModal(false)}>Share</Button>
+            <Button variant="secondary" onClick={() => setShowShareModal(false)}>Close</Button>
           </div>
         }
       >
-        <p>Share this dashboard with your team by sending them a link or inviting specific members.</p>
+        <p style={{ marginBottom: 'var(--spacing-md)' }}>Share this dashboard by copying the link below.</p>
+        <div className="share-url-row">
+          <input type="text" readOnly value={typeof window !== 'undefined' ? window.location.href : ''} />
+          <Button variant="primary" onClick={handleCopyLink}>Copy</Button>
+        </div>
+      </Modal>
+
+      {/* Add Widget Modal */}
+      <Modal
+        open={showAddWidget}
+        onClose={() => setShowAddWidget(false)}
+        title="Add Widget"
+        footer={
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <Button variant="secondary" onClick={() => setShowAddWidget(false)}>Cancel</Button>
+            <Button variant="primary" onClick={handleAddWidget} loading={updateDashboard.isPending}>Add Widget</Button>
+          </div>
+        }
+      >
+        <div className="add-widget-form">
+          <div>
+            <div className="add-widget-label">Type</div>
+            <div className="add-widget-type-select">
+              <button
+                className={`add-widget-type-btn ${widgetType === 'chart' ? 'active' : ''}`}
+                onClick={() => setWidgetType('chart')}
+              >
+                Chart
+              </button>
+              <button
+                className={`add-widget-type-btn ${widgetType === 'stat' ? 'active' : ''}`}
+                onClick={() => setWidgetType('stat')}
+              >
+                Statistic
+              </button>
+              <button
+                className={`add-widget-type-btn ${widgetType === 'text' ? 'active' : ''}`}
+                onClick={() => setWidgetType('text')}
+              >
+                Text
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <div className="add-widget-label">Title</div>
+            <input
+              type="text"
+              className="add-widget-input"
+              value={widgetTitle}
+              onChange={(e) => setWidgetTitle(e.target.value)}
+              placeholder="Widget title"
+            />
+          </div>
+
+          {widgetType === 'chart' && (
+            <div>
+              <div className="add-widget-label">Chart</div>
+              <select
+                className="add-widget-input"
+                value={widgetChartId}
+                onChange={(e) => setWidgetChartId(e.target.value)}
+              >
+                <option value="">Select a chart...</option>
+                {chartsList.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {widgetType === 'stat' && (
+            <div>
+              <div className="add-widget-label">Value</div>
+              <input
+                type="text"
+                className="add-widget-input"
+                value={widgetTextContent}
+                onChange={(e) => setWidgetTextContent(e.target.value)}
+                placeholder="e.g., 42%"
+              />
+            </div>
+          )}
+
+          {widgetType === 'text' && (
+            <div>
+              <div className="add-widget-label">Content</div>
+              <textarea
+                className="add-widget-textarea"
+                value={widgetTextContent}
+                onChange={(e) => setWidgetTextContent(e.target.value)}
+                placeholder="Enter text content..."
+              />
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Widget Maximize Modal */}
+      <Modal
+        open={!!maximizedWidgetId}
+        onClose={() => setMaximizedWidgetId(null)}
+        title={maximizedWidget?.title ?? 'Widget'}
+        size="xl"
+      >
+        <div style={{ minHeight: 400 }}>
+          {maximizedWidget?.type === 'chart' && (
+            <WidgetChart widget={maximizedWidget} height={500} />
+          )}
+          {maximizedWidget?.type === 'stat' && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 400 }}>
+              <span style={{ fontSize: 'var(--font-size-4xl)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text)' }}>
+                {maximizedWidget.text_content ?? '--'}
+              </span>
+              <span style={{ fontSize: 'var(--font-size-body)', color: 'var(--color-text-secondary)', marginTop: 'var(--spacing-md)' }}>
+                {maximizedWidget.title}
+              </span>
+            </div>
+          )}
+          {maximizedWidget?.type === 'text' && (
+            <div style={{ padding: 'var(--spacing-lg)', fontSize: 'var(--font-size-body)', color: 'var(--color-text)', lineHeight: 'var(--line-height-relaxed)' }}>
+              {maximizedWidget.text_content}
+            </div>
+          )}
+        </div>
       </Modal>
 
       <BaseAudiencePicker

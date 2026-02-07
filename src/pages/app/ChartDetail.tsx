@@ -1,14 +1,17 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, MoreHorizontal, Save, Users } from 'lucide-react';
-import { useChart, useUpdateChart, useCreateChart } from '@/hooks/useCharts';
+import { ArrowLeft, Download, Share2, MoreHorizontal, Save, Users, Plus, X } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { chartsApi } from '@/api';
+import { useChart, useUpdateChart, useCreateChart, useDeleteChart } from '@/hooks/useCharts';
 import { useAudiences } from '@/hooks/useAudiences';
 import { useStudies, useWaves, useQuestions } from '@/hooks/useTaxonomy';
 import { useStatsQuery } from '@/hooks/useQueries';
 import ChartRenderer from '@/components/chart/ChartRenderer';
-import { Button, Dropdown, BaseAudiencePicker, getBaseAudienceLabel } from '@/components/shared';
+import QuestionBrowser from '@/components/taxonomy/QuestionBrowser';
+import { Button, Dropdown, Modal, BaseAudiencePicker, getBaseAudienceLabel } from '@/components/shared';
 import { formatRelativeDate } from '@/utils/format';
-import type { ChartType, MetricType, StatsQueryRequest, StatsDatapoint, AudienceExpression, AudienceQuestion, Audience } from '@/api/types';
+import type { ChartType, ChartDimension, MetricType, StatsQueryRequest, StatsDatapoint, AudienceExpression, AudienceQuestion, Audience, Question } from '@/api/types';
 
 interface ChartDataPoint {
   name: string;
@@ -71,6 +74,7 @@ export default function ChartDetail(): React.JSX.Element {
   const { data: chart, isLoading: chartLoading } = useChart(isNew ? '' : (id ?? ''));
   const updateChart = useUpdateChart();
   const createChart = useCreateChart();
+  const deleteChart = useDeleteChart();
 
   // Local editable state, seeded from API data
   const [chartName, setChartName] = useState<string>('');
@@ -80,7 +84,20 @@ export default function ChartDetail(): React.JSX.Element {
   const [baseAudience, setBaseAudience] = useState<AudienceExpression | undefined>(undefined);
   const [audiencePickerOpen, setAudiencePickerOpen] = useState(false);
   const [selectedSource, setSelectedSource] = useState<string>('GWI Core');
+  const [selectedWave, setSelectedWave] = useState<string>('');
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
+
+  // Question editor state
+  const [rows, setRows] = useState<ChartDimension[]>([]);
+  const [questionPickerOpen, setQuestionPickerOpen] = useState(false);
+
+  // Display options state
+  const [showLegend, setShowLegend] = useState(true);
+  const [showGrid, setShowGrid] = useState(true);
+  const [showLabels, setShowLabels] = useState(true);
+
+  // Delete confirmation
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Seed local state from the fetched chart once
   useEffect(() => {
@@ -93,9 +110,22 @@ export default function ChartDetail(): React.JSX.Element {
       if (chart.config.base_audience) {
         setBaseAudience(chart.config.base_audience);
       }
+      if (chart.config.wave_ids?.[0]) {
+        setSelectedWave(chart.config.wave_ids[0].wave_id);
+      } else if (waveOptions[0]) {
+        setSelectedWave(waveOptions[0].value);
+      }
+      if (chart.config.rows) {
+        setRows(chart.config.rows);
+      }
+      if (chart.config.options) {
+        setShowLegend(chart.config.options.show_legend ?? true);
+        setShowGrid(chart.config.options.show_grid ?? true);
+        setShowLabels(chart.config.options.show_labels ?? true);
+      }
       setIsInitialized(true);
     }
-  }, [chart, isInitialized]);
+  }, [chart, isInitialized, waveOptions]);
 
   // Derive display label for the current base audience
   const baseAudienceLabel = useMemo(
@@ -103,32 +133,36 @@ export default function ChartDetail(): React.JSX.Element {
     [baseAudience, audiences, questions],
   );
 
-  // Build stats query from the chart config
+  // Selected question IDs for picker highlighting
+  const selectedQuestionIds = useMemo(
+    () => rows.filter((r) => r.question_id).map((r) => r.question_id!),
+    [rows],
+  );
+
+  // Build stats query from local state
   const statsRequest: StatsQueryRequest | null = useMemo(() => {
-    if (!chart?.config) return null;
-    const questionIds = chart.config.rows
-      ?.filter((d) => d.type === 'question' && d.question_id)
-      .map((d) => d.question_id!) ?? [];
+    const questionIds = rows
+      .filter((d) => d.type === 'question' && d.question_id)
+      .map((d) => d.question_id!);
     if (questionIds.length === 0) return null;
 
     return {
       question_ids: questionIds,
-      metrics: chart.config.metrics ?? [selectedMetric],
-      wave_ids: chart.config.wave_ids ?? [],
-      location_ids: chart.config.location_ids ?? [],
+      metrics: [selectedMetric],
+      wave_ids: selectedWave ? [{ study_id: '', wave_id: selectedWave }] : (chart?.config.wave_ids ?? []),
+      location_ids: chart?.config.location_ids ?? [],
       base_audience: baseAudience,
     };
-  }, [chart?.config, selectedMetric, baseAudience]);
+  }, [rows, selectedMetric, selectedWave, chart?.config.wave_ids, chart?.config.location_ids, baseAudience]);
 
   const { data: statsData, isLoading: statsLoading } = useStatsQuery(statsRequest);
 
-  // Transform stats response into format ChartRenderer expects: array of {name, ...seriesValues}
+  // Transform stats response into format ChartRenderer expects
   const { chartData, series } = useMemo((): { chartData: ChartDataPoint[]; series: string[] } => {
     if (!statsData?.results?.length) {
       return { chartData: [], series: [] };
     }
 
-    // For single-question charts: datapoints become rows, metrics/audiences become series
     const result = statsData.results[0];
     if (!result) return { chartData: [], series: [] };
 
@@ -139,7 +173,6 @@ export default function ChartDetail(): React.JSX.Element {
       [seriesNames[0]]: dp.metrics[selectedMetric] ?? 0,
     }));
 
-    // If there are multiple results (multiple questions), build multi-series
     if (statsData.results.length > 1) {
       const multiSeries = statsData.results.map((r) => r.question_name);
       const dpNames = new Set<string>();
@@ -175,12 +208,45 @@ export default function ChartDetail(): React.JSX.Element {
     setBaseAudience(undefined);
   };
 
+  // Question editor handlers
+  const handleQuestionSelect = (question: Question) => {
+    const dpIds = question.datapoints.map((dp) => dp.id);
+    setRows((prev) => {
+      if (prev.some((r) => r.question_id === question.id)) return prev;
+      return [...prev, { type: 'question', question_id: question.id, datapoint_ids: dpIds }];
+    });
+  };
+
+  const handleRemoveQuestion = (index: number) => {
+    setRows((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Dirty tracking
+  const isDirty = useMemo(() => {
+    if (!chart || isNew) return false;
+    if (chartName !== chart.name) return true;
+    if (chartType !== chart.chart_type) return true;
+    if (selectedMetric !== (chart.config.metrics?.[0] ?? 'audience_percentage')) return true;
+    if (JSON.stringify(rows) !== JSON.stringify(chart.config.rows ?? [])) return true;
+    if (showLegend !== (chart.config.options?.show_legend ?? true)) return true;
+    if (showGrid !== (chart.config.options?.show_grid ?? true)) return true;
+    if (showLabels !== (chart.config.options?.show_labels ?? true)) return true;
+    return false;
+  }, [chart, isNew, chartName, chartType, selectedMetric, rows, showLegend, showGrid, showLabels]);
+
   // Save handler
   const handleSave = () => {
     const configPayload = {
       ...chart?.config,
+      rows,
       metrics: [selectedMetric],
       base_audience: baseAudience,
+      wave_ids: selectedWave ? [{ study_id: '', wave_id: selectedWave }] : (chart?.config.wave_ids ?? []),
+      options: {
+        show_legend: showLegend,
+        show_grid: showGrid,
+        show_labels: showLabels,
+      },
     };
 
     if (isNew) {
@@ -189,12 +255,13 @@ export default function ChartDetail(): React.JSX.Element {
           name: chartName || 'Untitled Chart',
           chart_type: chartType,
           config: {
-            rows: [],
+            rows,
             columns: [],
             metrics: [selectedMetric],
-            wave_ids: [],
+            wave_ids: selectedWave ? [{ study_id: '', wave_id: selectedWave }] : [],
             location_ids: [],
             base_audience: baseAudience,
+            options: { show_legend: showLegend, show_grid: showGrid, show_labels: showLabels },
           },
         },
         {
@@ -215,6 +282,72 @@ export default function ChartDetail(): React.JSX.Element {
     }
   };
 
+  // CSV export
+  const handleDownloadCsv = () => {
+    if (chartData.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+    const headers = ['Label', ...series];
+    const csvRows = [headers.join(',')];
+    for (const row of chartData) {
+      csvRows.push([
+        `"${String(row.name).replace(/"/g, '""')}"`,
+        ...series.map((s) => String(row[s] ?? '')),
+      ].join(','));
+    }
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${chartName || 'chart'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('CSV exported');
+  };
+
+  // Share handler
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success('Link copied to clipboard');
+  };
+
+  // More actions handler
+  const handleMoreAction = async (value: string) => {
+    switch (value) {
+      case 'duplicate': {
+        if (!id || isNew) return;
+        try {
+          const copy = await chartsApi.duplicate(id);
+          toast.success('Chart duplicated');
+          navigate(`/app/chart-builder/chart/${copy.id}`);
+        } catch {
+          toast.error('Failed to duplicate chart');
+        }
+        break;
+      }
+      case 'export-csv':
+        handleDownloadCsv();
+        break;
+      case 'export-png':
+        toast('PNG export coming soon');
+        break;
+      case 'delete':
+        setShowDeleteModal(true);
+        break;
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (!id) return;
+    deleteChart.mutate(id, {
+      onSuccess: () => {
+        setShowDeleteModal(false);
+        navigate('/app/chart-builder');
+      },
+    });
+  };
+
   const isDataLoading = chartLoading || statsLoading;
   const isSaving = updateChart.isPending || createChart.isPending;
 
@@ -225,6 +358,14 @@ export default function ChartDetail(): React.JSX.Element {
     { label: 'Export as CSV', value: 'export-csv' },
     { label: 'Delete', value: 'delete', danger: true },
   ];
+
+  // Get question labels for pills
+  const questionLabels = useMemo(() => {
+    return rows.map((r) => {
+      const q = questions.find((q) => q.id === r.question_id);
+      return q?.name ?? r.question_id ?? 'Unknown';
+    });
+  }, [rows, questions]);
 
   if (chartLoading && !isNew) {
     return (
@@ -251,14 +392,12 @@ export default function ChartDetail(): React.JSX.Element {
           <span>Back to Charts</span>
         </Link>
         <div className="header-actions">
-          <button className="icon-btn"><Download size={18} /></button>
-          <button className="icon-btn"><Share2 size={18} /></button>
+          <button className="icon-btn" onClick={handleDownloadCsv} title="Download CSV"><Download size={18} /></button>
+          <button className="icon-btn" onClick={handleShare} title="Copy link"><Share2 size={18} /></button>
           <Dropdown
             trigger={<button className="icon-btn"><MoreHorizontal size={18} /></button>}
             items={moreActions}
-            onSelect={(value) => {
-              console.log('Action selected:', value);
-            }}
+            onSelect={handleMoreAction}
             align="right"
           />
           <Button
@@ -267,7 +406,7 @@ export default function ChartDetail(): React.JSX.Element {
             loading={isSaving}
             onClick={handleSave}
           >
-            {isNew ? 'Create' : 'Save'}
+            {isNew ? 'Create' : isDirty ? 'Save *' : 'Save'}
           </Button>
         </div>
       </div>
@@ -276,7 +415,7 @@ export default function ChartDetail(): React.JSX.Element {
         <input
           type="text"
           className="chart-title-input"
-          value={chartName || (isNew ? '' : '')}
+          value={chartName}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setChartName(e.target.value)}
           placeholder="Untitled Chart"
         />
@@ -306,6 +445,8 @@ export default function ChartDetail(): React.JSX.Element {
                     type={chartType}
                     data={chartData}
                     series={series}
+                    showLegend={showLegend}
+                    showGrid={showGrid}
                   />
                 )}
               </>
@@ -375,6 +516,30 @@ export default function ChartDetail(): React.JSX.Element {
         <div className="chart-config-panel">
           <h3>Configuration</h3>
           <div className="config-options">
+            {/* Questions section */}
+            <div className="config-group">
+              <label>Questions</label>
+              {rows.length > 0 && (
+                <div className="config-pills-list">
+                  {rows.map((r, i) => (
+                    <span key={r.question_id ?? i} className="config-pill-item">
+                      {questionLabels[i]}
+                      <button className="config-pill-remove" onClick={() => handleRemoveQuestion(i)}>
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<Plus size={14} />}
+                onClick={() => setQuestionPickerOpen(true)}
+              >
+                Add Question
+              </Button>
+            </div>
             <div className="config-group">
               <label>Chart Type</label>
               <select className="config-select" value={chartType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setChartType(e.target.value as ChartType)}>
@@ -410,22 +575,67 @@ export default function ChartDetail(): React.JSX.Element {
             </div>
             <div className="config-group">
               <label>Wave</label>
-              <select className="config-select" defaultValue={waveOptions[0]?.value}>
+              <select
+                className="config-select"
+                value={selectedWave}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedWave(e.target.value)}
+              >
                 {waveOptions.map((w) => <option key={w.value} value={w.value}>{w.label}</option>)}
               </select>
             </div>
             <div className="config-divider" />
-            <Button
-              variant="primary"
-              fullWidth
-              loading={isSaving}
-              onClick={handleSave}
-            >
-              {isNew ? 'Create Chart' : 'Apply Changes'}
-            </Button>
+            {/* Display Options */}
+            <div className="config-group">
+              <label>Display Options</label>
+              <label className="config-checkbox">
+                <input type="checkbox" checked={showLegend} onChange={(e) => setShowLegend(e.target.checked)} />
+                Show Legend
+              </label>
+              <label className="config-checkbox">
+                <input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
+                Show Grid
+              </label>
+              <label className="config-checkbox">
+                <input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} />
+                Show Labels
+              </label>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Question Picker Modal */}
+      <Modal
+        open={questionPickerOpen}
+        onClose={() => setQuestionPickerOpen(false)}
+        title="Add Questions"
+        size="lg"
+        footer={
+          <Button variant="primary" onClick={() => setQuestionPickerOpen(false)}>
+            Done
+          </Button>
+        }
+      >
+        <QuestionBrowser
+          onSelectQuestion={handleQuestionSelect}
+          selectedQuestionIds={selectedQuestionIds}
+        />
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        open={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Chart"
+        footer={
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+            <Button variant="danger" loading={deleteChart.isPending} onClick={handleConfirmDelete}>Delete</Button>
+          </div>
+        }
+      >
+        <p>Are you sure you want to delete &ldquo;{chartName || 'this chart'}&rdquo;? This action cannot be undone.</p>
+      </Modal>
 
       <BaseAudiencePicker
         open={audiencePickerOpen}

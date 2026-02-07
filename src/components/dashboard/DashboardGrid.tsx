@@ -11,7 +11,7 @@ interface ChartDataPoint {
   [key: string]: string | number
 }
 
-function WidgetChart({ widget }: { widget: DashboardWidget }) {
+export function WidgetChart({ widget, height }: { widget: DashboardWidget; height?: number }) {
   const { data: chart, isLoading: chartLoading } = useChart(widget.chart_id ?? '')
 
   const statsRequest: StatsQueryRequest | null = useMemo(() => {
@@ -56,7 +56,7 @@ function WidgetChart({ widget }: { widget: DashboardWidget }) {
       type={chart?.chart_type ?? widget.chart_type ?? 'bar'}
       data={chartData}
       series={series}
-      height={widget.position.h * 80 - 60}
+      height={height ?? (widget.position.h * 80 - 60)}
     />
   )
 }
@@ -67,6 +67,8 @@ interface DashboardGridProps {
   editable?: boolean
   onWidgetUpdate?: (widget: DashboardWidget) => void
   onWidgetRemove?: (widgetId: string) => void
+  onWidgetSettings?: (widgetId: string) => void
+  onWidgetMaximize?: (widgetId: string) => void
   baseAudience?: AudienceExpression
 }
 
@@ -75,6 +77,8 @@ export default function DashboardGrid({
   columns = 12,
   editable = false,
   onWidgetRemove,
+  onWidgetSettings,
+  onWidgetMaximize,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   baseAudience,
 }: DashboardGridProps) {
@@ -132,8 +136,8 @@ export default function DashboardGrid({
               <span className="dashboard-grid__widget-title">{widget.title}</span>
               {editable && hoveredWidget === widget.id && (
                 <div className="dashboard-grid__widget-actions">
-                  <button title="Settings"><Settings size={14} /></button>
-                  <button title="Expand"><Maximize2 size={14} /></button>
+                  <button title="Settings" onClick={() => onWidgetSettings?.(widget.id)}><Settings size={14} /></button>
+                  <button title="Expand" onClick={() => onWidgetMaximize?.(widget.id)}><Maximize2 size={14} /></button>
                   <button title="Remove" onClick={() => onWidgetRemove?.(widget.id)}>
                     <Trash2 size={14} />
                   </button>

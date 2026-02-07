@@ -463,6 +463,68 @@
 }
 
 /* ============================================
+   Config Checkbox
+   ============================================ */
+.config-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text);
+  padding: var(--spacing-xs) 0;
+}
+
+.config-checkbox input[type="checkbox"] {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* ============================================
+   Config Pills List (for question editor)
+   ============================================ */
+.config-pills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
+}
+
+.config-pill-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 4px 10px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-full);
+}
+
+.config-pill-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-full);
+  padding: 0;
+}
+
+.config-pill-remove:hover {
+  color: var(--color-error);
+  background: var(--color-error-light);
+}
+
+/* ============================================
    Responsive
    ============================================ */
 @media (max-width: 900px) {

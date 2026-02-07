@@ -19,8 +19,15 @@ export default function ConfigPill({ label, sublabel, removable, onRemove, activ
     .filter(Boolean)
     .join(' ')
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault()
+      onClick()
+    }
+  }
+
   return (
-    <span className={className} onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}>
+    <span className={className} onClick={onClick} onKeyDown={onClick ? handleKeyDown : undefined} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}>
       <span className="config-pill__label">{label}</span>
       {sublabel && <span className="config-pill__sublabel">{sublabel}</span>}
       {removable && onRemove && (

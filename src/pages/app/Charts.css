@@ -1,12 +1,29 @@
+/* ============================================
+   Charts Page - GWI Platform Design
+   ============================================ */
+
 .charts-page {
   padding: var(--spacing-xl);
+  max-width: var(--content-max-width);
+  animation: fadeIn 0.2s ease;
 }
 
+/* ============================================
+   Header
+   ============================================ */
 .charts-header {
   display: flex;
   align-items: center;
   gap: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
+}
+
+.charts-header .page-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  letter-spacing: var(--letter-spacing-tight);
+  white-space: nowrap;
 }
 
 .charts-tabs {
@@ -15,109 +32,231 @@
   margin-left: auto;
 }
 
+/* Pink create button - top right */
+.charts-header .btn-create {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 10px 20px;
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.charts-header .btn-create:hover {
+  background-color: var(--color-primary-hover);
+  box-shadow: 0 2px 8px rgba(255, 0, 119, 0.25);
+}
+
+.charts-header .btn-create:active {
+  background-color: var(--color-primary-active);
+}
+
+/* ============================================
+   Filters
+   ============================================ */
 .charts-filters {
   display: flex;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-xl);
 }
 
+/* ============================================
+   Card Grid
+   ============================================ */
 .charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--spacing-lg);
 }
 
+/* ============================================
+   Chart Card
+   ============================================ */
 .chart-card {
+  display: flex;
+  flex-direction: column;
   background-color: var(--color-white);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              transform var(--transition-fast);
 }
 
 .chart-card:hover {
   border-color: var(--color-border);
   box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
+.chart-card:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Card preview area */
 .chart-preview {
-  height: 140px;
-  background: linear-gradient(180deg, var(--color-border-light) 0%, #f8f9fc 100%);
+  height: 150px;
+  background: linear-gradient(
+    180deg,
+    var(--color-surface-secondary) 0%,
+    var(--color-surface-tertiary) 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-light);
+  position: relative;
+  overflow: hidden;
+}
+
+.chart-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
 }
 
 .chart-mini-svg {
   width: 100%;
   max-width: 160px;
   height: auto;
+  opacity: 0.85;
+  transition: opacity var(--transition-fast);
+}
+
+.chart-card:hover .chart-mini-svg {
+  opacity: 1;
 }
 
 .chart-mini-pie {
   max-width: 80px;
 }
 
+/* Card info section */
 .chart-info {
-  padding: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-md) var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex: 1;
 }
 
 .chart-name {
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
-  margin-bottom: var(--spacing-sm);
+  line-height: var(--line-height-tight);
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chart-meta {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 0;
+  flex-wrap: wrap;
 }
 
 .chart-type-badge {
-  font-size: 0.6875rem;
+  font-size: var(--font-size-xs);
   padding: 2px 8px;
   border-radius: var(--radius-full);
   background: var(--color-primary-light);
   color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
   white-space: nowrap;
+  letter-spacing: 0.01em;
 }
 
 .chart-dataset {
-  font-size: 0.75rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
 .chart-updated {
-  font-size: 0.75rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-top: auto;
+}
+
+/* ============================================
+   Loading State
+   ============================================ */
+.charts-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4xl) var(--spacing-xl);
+  gap: var(--spacing-md);
   color: var(--color-text-muted);
 }
 
+.charts-loading p {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+}
+
+.charts-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border-light);
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  animation: spin 0.7s linear infinite;
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
 .charts-empty {
   text-align: center;
-  padding: var(--spacing-2xl);
+  padding: var(--spacing-4xl) var(--spacing-xl);
   color: var(--color-text-muted);
+  background: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
 }
 
 .charts-empty p {
-  font-size: 0.9375rem;
+  font-size: var(--font-size-body);
   margin-bottom: var(--spacing-md);
+  color: var(--color-text-secondary);
 }
 
 .charts-empty-btn {
-  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 8px 20px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  font-size: 0.875rem;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
   color: var(--color-primary);
   background: var(--color-white);
   transition: all var(--transition-fast);
+  cursor: pointer;
 }
 
 .charts-empty-btn:hover {
   background: var(--color-primary-light);
   border-color: var(--color-primary);
+}
+
+.charts-empty-btn:active {
+  background: var(--color-primary-lighter);
 }

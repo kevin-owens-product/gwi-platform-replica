@@ -1,3 +1,5 @@
+/* Crosstabs Listing Page - GWI Design System */
+
 .crosstabs-page {
   padding: var(--spacing-xl);
 }
@@ -24,18 +26,20 @@
 .crosstabs-table {
   background-color: var(--color-white);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 
 .ct-table-header {
   display: grid;
   grid-template-columns: 1fr 140px 120px 140px;
   padding: var(--spacing-md) var(--spacing-lg);
-  background-color: var(--color-border-light);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--color-text-light);
+  background-color: var(--color-surface-secondary);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .ct-table-body {
@@ -48,14 +52,14 @@
   grid-template-columns: 1fr 140px 120px 140px;
   padding: var(--spacing-md) var(--spacing-lg);
   border-bottom: 1px solid var(--color-border-light);
-  font-size: 0.875rem;
+  font-size: var(--font-size-body);
   color: var(--color-text);
   transition: background-color var(--transition-fast);
   align-items: center;
 }
 
 .ct-table-row:hover {
-  background-color: var(--color-border-light);
+  background-color: var(--color-surface-secondary);
 }
 
 .ct-table-row:last-child {
@@ -74,8 +78,8 @@
 .ct-icon-wrapper {
   width: 36px;
   height: 36px;
-  background-color: var(--color-border-light);
-  border-radius: var(--radius-md);
+  background-color: var(--color-surface-tertiary);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -85,50 +89,71 @@
 
 .ct-row-name {
   display: block;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
 }
 
 .ct-row-owner {
   display: block;
-  font-size: 0.75rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
 .ct-size {
-  font-size: 0.8125rem;
-  color: var(--color-text-light);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
 }
 
 .ct-dataset-badge {
-  font-size: 0.6875rem;
+  font-size: var(--font-size-xs);
   padding: 2px 8px;
   border-radius: var(--radius-full);
   background: var(--color-primary-light);
   color: var(--color-primary);
   white-space: nowrap;
+  font-weight: var(--font-weight-medium);
 }
 
 .ct-date {
-  font-size: 0.8125rem;
-  color: var(--color-text-light);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
 }
 
+/* Loading State */
+.crosstabs-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4xl) var(--spacing-xl);
+  color: var(--color-text-muted);
+  gap: var(--spacing-md);
+}
+
+.crosstabs-loading p {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+}
+
+/* Empty State */
 .crosstabs-empty {
   text-align: center;
-  padding: var(--spacing-2xl);
+  padding: var(--spacing-4xl);
   color: var(--color-text-muted);
 }
 
 .crosstabs-empty p {
-  font-size: 0.9375rem;
+  font-size: var(--font-size-body);
   margin-bottom: var(--spacing-md);
+  color: var(--color-text-secondary);
 }
 
 .crosstabs-empty-btn {
-  padding: 8px 16px;
+  padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
   color: var(--color-primary);
   background: var(--color-white);
   transition: all var(--transition-fast);

@@ -1,3 +1,5 @@
+/* App Layout - GWI Design System */
+
 .app-layout {
   display: flex;
   min-height: 100vh;
@@ -6,6 +8,7 @@
 .app-main {
   flex: 1;
   margin-left: var(--sidebar-width);
-  background-color: var(--color-background);
+  background-color: var(--color-surface-secondary);
   min-height: 100vh;
+  transition: margin-left var(--transition-normal);
 }

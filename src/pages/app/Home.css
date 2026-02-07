@@ -1,69 +1,104 @@
+/* ============================================
+   Home Page - GWI Agent Spark Landing
+   ============================================ */
+
 .home-page {
-  padding: var(--spacing-xl);
+  padding: var(--spacing-2xl) var(--spacing-xl);
   max-width: 900px;
   margin: 0 auto;
+  min-height: calc(100vh - var(--header-height));
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 .home-content {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xl);
+  width: 100%;
+  animation: fadeIn 0.3s ease;
 }
 
-/* Agent Spark Hero */
+/* ============================================
+   Agent Spark Hero Section
+   ============================================ */
 .agent-spark-hero {
-  background: linear-gradient(135deg, #fdf2f8 0%, #fff 100%);
+  background: linear-gradient(
+    160deg,
+    var(--color-primary-light) 0%,
+    var(--color-surface) 50%,
+    var(--color-surface) 100%
+  );
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-xl);
-  padding: var(--spacing-xl);
+  border-radius: var(--radius-2xl);
+  padding: var(--spacing-2xl) var(--spacing-xl);
   text-align: center;
+  box-shadow: var(--shadow-card);
 }
 
 .agent-spark-avatar {
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
   margin: 0 auto var(--spacing-md);
-  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
-  border-radius: var(--radius-xl);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-lighter) 0%,
+    var(--color-primary-light) 100%
+  );
+  border-radius: var(--radius-2xl);
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
 }
 
 .wave-emoji {
-  font-size: 2.5rem;
+  font-size: 2rem;
+  line-height: 1;
 }
 
 .agent-spark-title {
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   margin-bottom: var(--spacing-lg);
-  line-height: 1.4;
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-tight);
 }
 
 .agent-spark-title .highlight {
   color: var(--color-primary);
 }
 
-/* Input Container */
+/* ============================================
+   Chat / Prompt Input Area
+   ============================================ */
 .agent-spark-input-container {
   background: var(--color-white);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding: var(--spacing-md);
-  max-width: 600px;
+  max-width: 620px;
   margin: 0 auto;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.agent-spark-input-container:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
 }
 
 .agent-spark-input {
   width: 100%;
   border: none;
   outline: none;
-  font-size: 0.9375rem;
+  font-size: var(--font-size-body);
+  font-family: inherit;
   color: var(--color-text);
-  padding: var(--spacing-sm) 0;
+  padding: var(--spacing-xs) 0;
+  background: transparent;
+  line-height: var(--line-height-normal);
 }
 
 .agent-spark-input::placeholder {
@@ -80,20 +115,23 @@
 }
 
 .add-audience-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
   padding: 6px 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  font-size: 0.8125rem;
-  color: var(--color-text);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
   background: var(--color-white);
-  transition: background-color var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
 .add-audience-btn:hover {
-  background-color: var(--color-border-light);
+  background-color: var(--color-surface-secondary);
+  border-color: var(--color-border-hover);
+  color: var(--color-text);
 }
 
 .agent-spark-input-right {
@@ -103,13 +141,16 @@
 }
 
 .dataset-selector {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
   padding: 6px 12px;
-  font-size: 0.8125rem;
-  color: var(--color-text);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
   background: transparent;
+  border-radius: var(--radius-md);
+  transition: color var(--transition-fast);
 }
 
 .dataset-selector:hover {
@@ -119,52 +160,63 @@
 .send-btn {
   width: 36px;
   height: 36px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   background: var(--color-text);
   color: var(--color-white);
-  border-radius: var(--radius-md);
-  transition: all var(--transition-fast);
+  border-radius: var(--radius-lg);
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+  flex-shrink: 0;
 }
 
 .send-btn:hover:not(:disabled) {
   background: var(--color-primary);
+  transform: scale(1.04);
+}
+
+.send-btn:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .send-btn:disabled {
-  background: var(--color-border);
+  background: var(--color-button-disabled);
+  color: var(--color-button-disabled-text);
   cursor: not-allowed;
 }
 
 .agent-spark-disclaimer {
   margin-top: var(--spacing-md);
-  font-size: 0.75rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
 }
 
-/* Example Prompts */
+/* ============================================
+   Example Prompt Cards
+   ============================================ */
 .example-prompts-section {
   text-align: center;
 }
 
 .example-prompts-header {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text);
   margin-bottom: var(--spacing-md);
 }
 
 .sparkle-icon {
   font-size: 1rem;
+  line-height: 1;
 }
 
 .sparkle-icon.small {
-  font-size: 0.875rem;
+  font-size: var(--font-size-body);
 }
 
 .example-prompts-list {
@@ -175,33 +227,44 @@
 }
 
 .example-prompt-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: 6px;
   padding: 8px 16px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
-  font-size: 0.8125rem;
-  color: var(--color-text);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
   background: var(--color-white);
+  box-shadow: var(--shadow-xs);
   transition: all var(--transition-fast);
 }
 
 .example-prompt-btn:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
+  background: var(--color-primary-light);
+  box-shadow: var(--shadow-sm);
 }
 
-/* Recent Section */
+.example-prompt-btn:active {
+  transform: scale(0.97);
+}
+
+/* ============================================
+   Recent Conversations Section
+   ============================================ */
 .recent-section {
-  margin-top: var(--spacing-lg);
+  margin-top: var(--spacing-sm);
 }
 
 .recent-title {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   margin-bottom: var(--spacing-md);
+  letter-spacing: var(--letter-spacing-tight);
 }
 
 .recent-list {
@@ -216,36 +279,56 @@
   gap: var(--spacing-md);
   padding: var(--spacing-md);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: var(--color-white);
+  box-shadow: var(--shadow-card);
   transition: all var(--transition-fast);
+  text-decoration: none;
+  color: inherit;
 }
 
 .recent-item:hover {
   border-color: var(--color-border);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .recent-item-icon {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--color-primary-light);
+  border-radius: var(--radius-lg);
+  flex-shrink: 0;
 }
 
 .recent-item-content {
   flex: 1;
+  min-width: 0;
 }
 
 .recent-item-title {
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  line-height: var(--line-height-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .recent-item-date {
-  font-size: 0.8125rem;
+  font-size: var(--font-size-body-sm);
   color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
+}
+
+/* ============================================
+   Spin Animation (for loading states)
+   ============================================ */
+.spin {
+  animation: spin 1s linear infinite;
 }

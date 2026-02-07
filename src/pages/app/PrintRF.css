@@ -1,3 +1,5 @@
+/* Print Reach & Frequency Page - GWI Design System */
+
 .printrf-page {
   display: flex;
   flex-direction: column;
@@ -5,8 +7,25 @@
 }
 
 .printrf-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
   padding: var(--spacing-lg) var(--spacing-xl);
   border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-white);
+}
+
+.printrf-loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-muted);
+}
+
+.printrf-spinner {
+  animation: spin 1s linear infinite;
+  color: var(--color-primary);
 }
 
 .printrf-content {
@@ -37,11 +56,12 @@
 }
 
 .printrf-label {
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text);
 }
 
+/* Select / Dropdown Controls */
 .printrf-multiselect-wrapper,
 .printrf-select-wrapper {
   position: relative;
@@ -52,17 +72,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
+  padding: var(--spacing-5) 14px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-body);
   color: var(--color-text);
   background: var(--color-white);
   text-align: left;
+  transition: border-color var(--transition-fast);
 }
 
 .printrf-select-btn:hover {
-  border-color: var(--color-text-muted);
+  border-color: var(--color-border-hover);
 }
 
 .printrf-dropdown {
@@ -70,12 +91,12 @@
   top: 100%;
   left: 0;
   right: 0;
-  margin-top: 4px;
+  margin-top: var(--spacing-xs);
   background: var(--color-white);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  z-index: 10;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-dropdown);
+  z-index: var(--z-dropdown);
   max-height: 240px;
   overflow-y: auto;
 }
@@ -84,19 +105,28 @@
   min-width: 360px;
 }
 
+.printrf-dropdown-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) 14px;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-muted);
+}
+
 .printrf-dropdown-option {
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-sm);
-  padding: 10px 14px;
-  font-size: 0.875rem;
+  padding: var(--spacing-5) 14px;
+  font-size: var(--font-size-body);
   color: var(--color-text);
   cursor: pointer;
   transition: background-color var(--transition-fast);
 }
 
 .printrf-dropdown-option:hover {
-  background: var(--color-border-light);
+  background: var(--color-surface-secondary);
 }
 
 .printrf-dropdown-option input[type="checkbox"] {
@@ -110,19 +140,19 @@
 }
 
 .printrf-pub-name {
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .printrf-pub-meta {
-  font-size: 0.75rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
 .printrf-dropdown-item {
   width: 100%;
-  padding: 8px 14px;
+  padding: var(--spacing-sm) 14px;
   text-align: left;
-  font-size: 0.875rem;
+  font-size: var(--font-size-body);
   color: var(--color-text);
   background: none;
   border: none;
@@ -131,21 +161,23 @@
 }
 
 .printrf-dropdown-item:hover {
-  background: var(--color-border-light);
+  background: var(--color-surface-secondary);
 }
 
 .printrf-dropdown-item.selected {
   color: var(--color-primary);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
+  background: var(--color-primary-light);
 }
 
+/* Insertion Schedule */
 .printrf-insertions {
   margin-bottom: var(--spacing-xl);
 }
 
 .printrf-section-title {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   margin-bottom: var(--spacing-md);
 }
@@ -153,37 +185,39 @@
 .printrf-insertion-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: var(--font-size-body);
   margin-bottom: var(--spacing-md);
 }
 
 .printrf-insertion-table th {
   text-align: left;
-  padding: 10px 14px;
-  font-weight: 500;
-  color: var(--color-text-light);
+  padding: var(--spacing-5) 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
   border-bottom: 2px solid var(--color-border);
-  font-size: 0.8125rem;
+  font-size: var(--font-size-body-sm);
 }
 
 .printrf-insertion-table td {
-  padding: 8px 14px;
+  padding: var(--spacing-sm) 14px;
   border-bottom: 1px solid var(--color-border-light);
 }
 
 .printrf-table-select {
   width: 100%;
-  padding: 8px 10px;
+  padding: var(--spacing-sm) var(--spacing-5);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: 0.875rem;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
   color: var(--color-text);
   background: var(--color-white);
+  transition: border-color var(--transition-fast);
 }
 
 .printrf-table-select:focus {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
 }
 
 .printrf-table-select-sm {
@@ -192,17 +226,19 @@
 
 .printrf-table-input {
   width: 80px;
-  padding: 6px 10px;
+  padding: var(--spacing-3) var(--spacing-5);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: 0.875rem;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
   color: var(--color-text);
   text-align: center;
+  transition: border-color var(--transition-fast);
 }
 
 .printrf-table-input:focus {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
 }
 
 .printrf-remove-btn {
@@ -211,13 +247,13 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   color: var(--color-text-muted);
   transition: all var(--transition-fast);
 }
 
 .printrf-remove-btn:hover:not(:disabled) {
-  background: var(--color-primary-light);
+  background: var(--color-error-light);
   color: var(--color-error);
 }
 
@@ -230,11 +266,12 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
-  padding: 8px 14px;
+  padding: var(--spacing-sm) 14px;
   border: 1px dashed var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 0.8125rem;
-  color: var(--color-text-light);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
   transition: all var(--transition-fast);
 }
 
@@ -244,6 +281,7 @@
   background: var(--color-primary-light);
 }
 
+/* Actions */
 .printrf-actions {
   margin-bottom: var(--spacing-xl);
 }
@@ -252,12 +290,12 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: 12px 28px;
+  padding: var(--spacing-6) var(--spacing-lg);
   background: var(--color-primary);
   color: var(--color-white);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
   transition: background-color var(--transition-fast);
 }
 
@@ -271,6 +309,7 @@
   cursor: not-allowed;
 }
 
+/* Results */
 .printrf-results {
   margin-top: var(--spacing-lg);
   padding-top: var(--spacing-lg);
@@ -286,22 +325,28 @@
 .printrf-result-card {
   padding: var(--spacing-lg);
   background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
   text-align: center;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--transition-fast);
+}
+
+.printrf-result-card:hover {
+  box-shadow: var(--shadow-sm);
 }
 
 .printrf-result-label {
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--letter-spacing-wider);
   margin-bottom: var(--spacing-sm);
 }
 
 .printrf-result-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
   color: var(--color-text);
 }

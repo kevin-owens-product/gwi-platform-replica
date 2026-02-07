@@ -32,7 +32,7 @@ export default function ConfigPill({ label, sublabel, removable, onRemove, activ
           }}
           aria-label={`Remove ${label}`}
         >
-          <X size={12} />
+          <X size={10} />
         </button>
       )}
     </span>

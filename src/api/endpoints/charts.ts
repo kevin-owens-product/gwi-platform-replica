@@ -26,4 +26,11 @@ export const chartsApi = {
 
   duplicate: (id: string) =>
     apiClient.post(`v3/charts/${id}/duplicate`).json<Chart>(),
+
+  getAnnotations: (chartId: string) =>
+    apiClient.get(`v3/charts/${chartId}/annotations`)
+      .json<Array<{ id: string; text: string; x: number; y: number; created_at: string }>>(),
+
+  export: (id: string, format: string) =>
+    apiClient.get(`v3/charts/${id}/export`, { searchParams: { format } }).blob(),
 }

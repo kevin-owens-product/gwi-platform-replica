@@ -24,7 +24,7 @@ export const mediaApi = {
     await delay()
     const study: TvStudyRecord = {
       id: newId('tv'),
-      name: config.name,
+      name: config.name ?? 'Untitled TV Study',
       created_at: now(),
       updated_at: now(),
       user_id: 'user_current',
@@ -65,8 +65,8 @@ export const mediaApi = {
         label: dp.label,
         reach_pct: Math.round(Math.random() * 30 + 10),
         grp: Math.round(Math.random() * 80 + 20),
-        cpm: dp.cpm,
-        attention_score: dp.attention_score,
+        cpm: dp.cpm ?? 0,
+        attention_score: dp.attention_score ?? 0,
         efficiency_rating: 'medium' as const,
       })) ?? [],
       channel_contribution: study.config.channels.map((chId) => ({
@@ -109,7 +109,7 @@ export const mediaApi = {
     await delay()
     const study: PrintRFStudyRecord = {
       id: newId('print'),
-      name: config.name,
+      name: config.name ?? 'Untitled Print Study',
       created_at: now(),
       updated_at: now(),
       user_id: 'user_current',
@@ -156,7 +156,7 @@ export const mediaApi = {
           pub_b: study.config.publications[1],
           overlap_pct: Math.round(Math.random() * 15 + 5),
         },
-      ] : undefined,
+      ] : [],
     }
 
     study.updated_at = now()

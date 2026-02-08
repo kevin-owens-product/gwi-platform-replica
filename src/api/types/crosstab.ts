@@ -29,6 +29,7 @@ export interface CrosstabConfig {
   wave_ids: WaveId[]
   location_ids: string[]
   highlight?: CrosstabHighlight
+  timeframe?: 'daily' | 'weekly' | 'monthly'
   // New config sections
   banner?: BannerConfig
   stat_test?: StatisticalTestConfig
@@ -181,7 +182,7 @@ export interface SortConfig {
   sort_column_id?: string
   sort_direction: 'ascending' | 'descending'
   pin_rows?: string[]
-  pin_position: 'top' | 'bottom'
+  pin_position?: 'top' | 'bottom'
   custom_order?: string[]
   secondary_sort?: {
     sort_by: 'value' | 'alphabetical'

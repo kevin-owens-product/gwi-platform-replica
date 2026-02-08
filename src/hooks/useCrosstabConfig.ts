@@ -50,7 +50,7 @@ export function useCrosstabConfig() {
 
   const addRowCalculated = useCallback((label: string, formula?: string) => {
     setConfig((prev) => {
-      const dim: CrosstabDimension = { type: 'calculated', label, formula }
+      const dim: CrosstabDimension = { type: 'calculated', label, formula: formula as any }
       return { ...prev, rows: [...prev.rows, dim] }
     })
   }, [])
@@ -233,9 +233,9 @@ export function useCrosstabConfig() {
     setConfig((prev) => ({
       ...prev,
       rebasing: {
-        ...prev.rebasing,
         enabled: true,
         percentage_base: base as RebasingConfig['percentage_base'],
+        exclude_no_answer: prev.rebasing?.exclude_no_answer ?? false,
       },
     }))
   }, [])
@@ -251,7 +251,7 @@ export function useCrosstabConfig() {
       sort: {
         ...prev.sort,
         sort_by: sortBy as SortConfig['sort_by'],
-        direction: prev.sort?.direction ?? 'descending',
+        sort_direction: prev.sort?.sort_direction ?? 'descending',
       },
     }))
   }, [])
@@ -270,9 +270,12 @@ export function useCrosstabConfig() {
         ...prev,
         wave_comparison: {
           mode: mode as WaveComparisonConfig['mode'],
-          show_delta_columns: true,
-          delta_format: 'absolute_and_percentage' as const,
-          show_sparklines: mode === 'trended',
+          wave_ids: prev.wave_comparison?.wave_ids ?? [],
+          show_delta: prev.wave_comparison?.show_delta ?? true,
+          delta_format: prev.wave_comparison?.delta_format ?? 'absolute',
+          significance_between_waves: prev.wave_comparison?.significance_between_waves ?? false,
+          trend_indicators: prev.wave_comparison?.trend_indicators ?? true,
+          sparkline: prev.wave_comparison?.sparkline ?? (mode === 'trended'),
         },
       }
     })

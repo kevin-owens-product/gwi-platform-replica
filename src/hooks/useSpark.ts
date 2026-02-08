@@ -41,3 +41,23 @@ export function useDeleteSparkConversation() {
     },
   })
 }
+
+export function useRenameSparkConversation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, title }: { id: string; title: string }) =>
+      sparkApi.renameConversation(id, title),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spark-conversations'] })
+    },
+  })
+}
+
+export function useSparkInsights() {
+  return useQuery({
+    queryKey: ['spark-insights'],
+    queryFn: () => sparkApi.getInsights(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}

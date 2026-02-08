@@ -68,4 +68,20 @@ export const crosstabsApi = {
     crosstabs.unshift(copy)
     return { ...copy }
   },
+
+  async listTemplates(): Promise<Array<{ id: string; name: string; description: string; config: Crosstab['config'] }>> {
+    await delay()
+    return [
+      { id: 'tpl-xt-1', name: 'Brand Awareness Template', description: 'Standard brand awareness crosstab layout', config: crosstabs[0]?.config ?? { rows: [], columns: [], metrics: ['audience_percentage'], wave_ids: [], location_ids: [] } },
+      { id: 'tpl-xt-2', name: 'Media Usage Template', description: 'Compare media usage across demographics', config: crosstabs[1]?.config ?? { rows: [], columns: [], metrics: ['audience_percentage'], wave_ids: [], location_ids: [] } },
+    ]
+  },
+
+  async applyTemplate(crosstabId: string, _templateId: string): Promise<Crosstab> {
+    await delay()
+    const c = findById(crosstabs, crosstabId)
+    if (!c) throw new Error(`Crosstab ${crosstabId} not found`)
+    c.updated_at = now()
+    return { ...c }
+  },
 }

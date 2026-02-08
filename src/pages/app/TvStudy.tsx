@@ -487,7 +487,7 @@ export default function TvStudy(): React.JSX.Element {
   // ─── Tab Config ─────────────────────────────────────────────────────
 
   const tabItems = useMemo(() => {
-    const base = [
+    const base: Array<{ id: string; label: string; icon: React.ReactNode; count?: number }> = [
       { id: 'plan', label: 'Plan', icon: <Tv size={15} /> },
     ];
     if (showResults) {
@@ -495,7 +495,7 @@ export default function TvStudy(): React.JSX.Element {
         { id: 'results', label: 'Results', icon: <BarChart3 size={15} /> },
         { id: 'overlap', label: 'Overlap', icon: <Layers size={15} /> },
         { id: 'competitive', label: 'Competitive', icon: <Swords size={15} /> },
-        { id: 'scenarios', label: 'Scenarios', count: scenarios.length, icon: <GitCompare size={15} /> } as { id: string; label: string; icon: React.ReactNode; count?: number },
+        { id: 'scenarios', label: 'Scenarios', count: scenarios.length, icon: <GitCompare size={15} /> },
       );
     }
     return base;

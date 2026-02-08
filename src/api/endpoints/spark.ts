@@ -17,4 +17,11 @@ export const sparkApi = {
 
   deleteConversation: (id: string) =>
     apiClient.delete(`v3/spark/conversations/${id}`).json<void>(),
+
+  renameConversation: (id: string, title: string) =>
+    apiClient.patch(`v3/spark/conversations/${id}`, { json: { title } }).json<any>(),
+
+  getInsights: () =>
+    apiClient.get('v3/spark/insights')
+      .json<Array<{ id: string; title: string; summary: string; category: string; created_at: string }>>(),
 }

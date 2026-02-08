@@ -69,4 +69,17 @@ export const chartsApi = {
     charts.unshift(copy)
     return { ...copy }
   },
+
+  async getAnnotations(_chartId: string): Promise<Array<{ id: string; text: string; x: number; y: number; created_at: string }>> {
+    await delay()
+    return [
+      { id: 'ann-1', text: 'Key inflection point', x: 0.5, y: 0.7, created_at: now() },
+      { id: 'ann-2', text: 'Target reached', x: 0.8, y: 0.3, created_at: now() },
+    ]
+  },
+
+  async export(_id: string, _format: string): Promise<Blob> {
+    await delay()
+    return new Blob(['Mock chart export'], { type: 'application/octet-stream' })
+  },
 }

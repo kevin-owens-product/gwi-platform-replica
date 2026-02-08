@@ -522,7 +522,7 @@ export default function PrintRF(): React.JSX.Element {
   // ─── Tab Config ─────────────────────────────────────────────────────
 
   const tabItems = useMemo(() => {
-    const base = [
+    const base: Array<{ id: string; label: string; icon: React.ReactNode; count?: number }> = [
       { id: 'plan', label: 'Plan', icon: <FileText size={15} /> },
     ];
     if (showResults) {
@@ -530,7 +530,7 @@ export default function PrintRF(): React.JSX.Element {
         { id: 'results', label: 'Results', icon: <BarChart3 size={15} /> },
         { id: 'duplication', label: 'Duplication', icon: <Grid3x3 size={15} /> },
         { id: 'profiling', label: 'Profiling', icon: <UserCircle size={15} /> },
-        { id: 'scenarios', label: 'Scenarios', count: scenarios.length, icon: <GitCompare size={15} /> } as { id: string; label: string; icon: React.ReactNode; count?: number },
+        { id: 'scenarios', label: 'Scenarios', count: scenarios.length, icon: <GitCompare size={15} /> },
       );
     }
     return base;

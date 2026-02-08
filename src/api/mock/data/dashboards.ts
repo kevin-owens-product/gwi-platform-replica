@@ -1,10 +1,54 @@
-import type { Dashboard } from '../../types'
+import type { Dashboard, DashboardSchedule } from '../../types'
 import { daysAgo } from '../helpers'
+
+// View counts stored separately (not part of Dashboard type, used by UI layer)
+export const mockDashboardViewCounts: Record<string, number> = {
+  dash_social_overview: 342,
+  dash_consumer_tech: 218,
+  dash_ecommerce: 156,
+  dash_media_mix: 89,
+  dash_brand: 274,
+  dash_demographics: 192,
+  dash_sustainability: 127,
+  dash_executive: 531,
+}
+
+// Dashboard schedules stored separately (DashboardSchedule is its own entity)
+export const mockDashboardSchedules: DashboardSchedule[] = [
+  {
+    id: 'sched_sustainability',
+    dashboard_id: 'dash_sustainability',
+    frequency: 'weekly',
+    day_of_week: 1,
+    time: '09:00',
+    timezone: 'America/New_York',
+    recipients: ['team@company.com', 'sustainability@company.com'],
+    format: 'pdf',
+    conditional_delivery: false,
+    enabled: true,
+    next_send_at: daysAgo(-6),
+  },
+  {
+    id: 'sched_executive',
+    dashboard_id: 'dash_executive',
+    frequency: 'monthly',
+    day_of_month: 1,
+    time: '08:00',
+    timezone: 'America/New_York',
+    recipients: ['leadership@company.com'],
+    format: 'pdf',
+    conditional_delivery: false,
+    enabled: true,
+    next_send_at: daysAgo(-25),
+  },
+]
 
 export const mockDashboards: Dashboard[] = [
   {
     id: 'dash_social_overview', name: 'Social Media Overview', description: 'Key social media metrics and trends across platforms',
     created_at: daysAgo(30), updated_at: daysAgo(2), user_id: 'user_sarah', is_shared: true,
+    tags: ['social_media', 'quarterly'],
+    folder_id: 'folder-1',
     layout: { columns: 12, row_height: 80 },
     widgets: [
       { id: 'w1', type: 'chart', title: 'Platform Usage', chart_id: 'chart_social_usage', chart_type: 'bar', position: { x: 0, y: 0, w: 6, h: 4 } },
@@ -13,10 +57,15 @@ export const mockDashboards: Dashboard[] = [
       { id: 'w4', type: 'stat', title: 'Avg Daily Time', text_content: '2.4 hrs', position: { x: 3, y: 4, w: 3, h: 2 } },
       { id: 'w5', type: 'text', title: 'Notes', text_content: 'Social media usage continues to grow, with TikTok showing the strongest quarter-over-quarter increase among 16-24 year olds.', position: { x: 6, y: 4, w: 6, h: 2 } },
     ],
+    filters: [
+      { id: 'f1', field: 'market', label: 'Market', type: 'dropdown', options: [{ label: 'United States', value: 'US' }, { label: 'United Kingdom', value: 'UK' }, { label: 'Germany', value: 'DE' }], default_value: 'US' },
+      { id: 'f2', field: 'age_group', label: 'Age Group', type: 'multi_select', options: [{ label: '16-24', value: '16-24' }, { label: '25-34', value: '25-34' }, { label: '35-44', value: '35-44' }, { label: '45+', value: '45+' }] },
+    ],
   },
   {
     id: 'dash_consumer_tech', name: 'Consumer Technology', description: 'Device ownership, tech adoption, and AI usage trends',
     created_at: daysAgo(25), updated_at: daysAgo(5), user_id: 'user_sarah', is_shared: true,
+    tags: ['technology', 'devices'],
     layout: { columns: 12, row_height: 80 },
     widgets: [
       { id: 'w6', type: 'chart', title: 'Device Ownership', chart_id: 'chart_device_pie', chart_type: 'pie', position: { x: 0, y: 0, w: 6, h: 4 } },
@@ -29,6 +78,8 @@ export const mockDashboards: Dashboard[] = [
   {
     id: 'dash_ecommerce', name: 'E-Commerce Insights', description: 'Online shopping behavior, purchase categories, and payment preferences',
     created_at: daysAgo(20), updated_at: daysAgo(4), user_id: 'user_maria', is_shared: true,
+    tags: ['ecommerce', 'retail'],
+    folder_id: 'folder-1',
     layout: { columns: 12, row_height: 80 },
     widgets: [
       { id: 'w11', type: 'chart', title: 'Purchase Categories by Age', chart_id: 'chart_purchase_stacked', chart_type: 'stacked_bar', position: { x: 0, y: 0, w: 8, h: 4 } },
@@ -36,10 +87,16 @@ export const mockDashboards: Dashboard[] = [
       { id: 'w13', type: 'stat', title: 'Avg Order Value', text_content: '$87', position: { x: 8, y: 2, w: 4, h: 2 } },
       { id: 'w14', type: 'text', title: 'Key Insight', text_content: 'Clothing and electronics remain the top online purchase categories, with Gen Z leading in food delivery.', position: { x: 0, y: 4, w: 12, h: 2 } },
     ],
+    refresh_config: {
+      mode: 'polling',
+      polling_interval_ms: 300000,
+      show_last_updated: true,
+    },
   },
   {
     id: 'dash_media_mix', name: 'Media Consumption Mix', description: 'Cross-platform media consumption analysis',
     created_at: daysAgo(18), updated_at: daysAgo(3), user_id: 'user_sarah', is_shared: false,
+    folder_id: 'folder-2',
     layout: { columns: 12, row_height: 80 },
     widgets: [
       { id: 'w15', type: 'chart', title: 'Streaming Services', chart_id: 'chart_streaming_donut', chart_type: 'donut', position: { x: 0, y: 0, w: 6, h: 4 } },
@@ -52,6 +109,7 @@ export const mockDashboards: Dashboard[] = [
   {
     id: 'dash_brand', name: 'Brand Engagement Dashboard', description: 'Brand awareness, discovery, and loyalty metrics',
     created_at: daysAgo(15), updated_at: daysAgo(6), user_id: 'user_sophia', is_shared: true,
+    tags: ['brand_health'],
     layout: { columns: 12, row_height: 80 },
     widgets: [
       { id: 'w20', type: 'chart', title: 'Brand Discovery', chart_id: 'chart_brand_discovery', chart_type: 'bar', position: { x: 0, y: 0, w: 8, h: 4 } },
@@ -62,6 +120,7 @@ export const mockDashboards: Dashboard[] = [
   {
     id: 'dash_demographics', name: 'Demographic Deep Dive', description: 'Detailed demographic analysis with cross-tabulations',
     created_at: daysAgo(12), updated_at: daysAgo(8), user_id: 'user_alex', is_shared: true,
+    tags: ['demographics', 'deep_dive'],
     layout: { columns: 12, row_height: 80 },
     widgets: [
       { id: 'w23', type: 'chart', title: 'Age vs Income', chart_id: 'chart_age_income_scatter', chart_type: 'scatter', position: { x: 0, y: 0, w: 6, h: 4 } },
@@ -74,6 +133,8 @@ export const mockDashboards: Dashboard[] = [
   {
     id: 'dash_sustainability', name: 'Sustainability & Attitudes', description: 'Environmental and social attitudes across demographics',
     created_at: daysAgo(8), updated_at: daysAgo(1), user_id: 'user_maria', is_shared: true,
+    tags: ['sustainability', 'attitudes'],
+    folder_id: 'folder-2',
     layout: { columns: 12, row_height: 80 },
     widgets: [
       { id: 'w28', type: 'chart', title: 'Environmental Concern by Age', chart_id: 'chart_env_concern', chart_type: 'stacked_bar', position: { x: 0, y: 0, w: 8, h: 4 } },
@@ -84,6 +145,8 @@ export const mockDashboards: Dashboard[] = [
   {
     id: 'dash_executive', name: 'Q4 Executive Summary', description: 'High-level overview for leadership team',
     created_at: daysAgo(5), updated_at: daysAgo(0), user_id: 'user_sarah', is_shared: true,
+    tags: ['executive', 'quarterly'],
+    folder_id: 'folder-1',
     layout: { columns: 12, row_height: 80 },
     widgets: [
       { id: 'w31', type: 'stat', title: 'Total Respondents', text_content: '45,200', position: { x: 0, y: 0, w: 3, h: 2 } },
@@ -93,5 +156,14 @@ export const mockDashboards: Dashboard[] = [
       { id: 'w35', type: 'chart', title: 'Social Platform Usage', chart_id: 'chart_social_usage', chart_type: 'bar', position: { x: 0, y: 2, w: 6, h: 4 } },
       { id: 'w36', type: 'chart', title: 'Streaming Market Share', chart_id: 'chart_streaming_donut', chart_type: 'donut', position: { x: 6, y: 2, w: 6, h: 4 } },
     ],
+    presentation_config: {
+      enabled: true,
+      transition: 'fade',
+      loop: true,
+      dark_mode: false,
+      hide_filters: true,
+      auto_refresh: true,
+      presenter_notes: 'Highlight TikTok growth and streaming churn metrics for Q4 review.',
+    },
   },
 ]

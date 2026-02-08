@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Globe, LayoutDashboard, MoreVertical, Edit, Copy, Trash2, LucideIcon, Loader2 } from 'lucide-react';
+import { Plus, Globe, LayoutDashboard, MoreVertical, Edit, Copy, Trash2, LucideIcon, Loader2, Calendar, Bell, Eye } from 'lucide-react';
 import { useDashboards, useDeleteDashboard } from '@/hooks/useDashboards';
 import { SearchInput, Tabs, Pagination, EmptyState, Badge, Dropdown } from '@/components/shared';
 import { formatRelativeDate } from '@/utils/format';
-import type { Dashboard } from '@/api/types';
+import type { Dashboard, DashboardWidgetType } from '@/api/types';
 import './Dashboards.css';
 
 type PreviewType = 'bars' | 'line' | 'pie' | 'mixed';
@@ -14,6 +14,7 @@ const tabItems = [
   { id: 'my', label: 'My Dashboards' },
   { id: 'shared', label: 'Shared' },
   { id: 'gwi', label: 'GWI Dashboards', icon: <Globe size={16} /> },
+  { id: 'templates', label: 'Templates' },
 ];
 
 function PreviewBars(): React.JSX.Element {
@@ -76,6 +77,31 @@ function getPreviewType(dashboard: Dashboard): PreviewType {
   return 'mixed';
 }
 
+function getWidgetTypeBreakdown(dashboard: Dashboard): string {
+  const widgets = dashboard.widgets ?? [];
+  if (widgets.length === 0) return '0 widgets';
+
+  const counts: Partial<Record<DashboardWidgetType, number>> = {};
+  for (const w of widgets) {
+    counts[w.type] = (counts[w.type] ?? 0) + 1;
+  }
+
+  const parts: string[] = [];
+  if (counts.chart) parts.push(`${counts.chart} chart${counts.chart > 1 ? 's' : ''}`);
+  if (counts.stat) parts.push(`${counts.stat} stat${counts.stat > 1 ? 's' : ''}`);
+  if (counts.text) parts.push(`${counts.text} text`);
+  if (counts.table) parts.push(`${counts.table} table${counts.table > 1 ? 's' : ''}`);
+  if (counts.gauge) parts.push(`${counts.gauge} gauge${counts.gauge > 1 ? 's' : ''}`);
+  if (counts.map) parts.push(`${counts.map} map${counts.map > 1 ? 's' : ''}`);
+
+  // If there are remaining types not listed above, sum them
+  const listedCount = (counts.chart ?? 0) + (counts.stat ?? 0) + (counts.text ?? 0) + (counts.table ?? 0) + (counts.gauge ?? 0) + (counts.map ?? 0);
+  const otherCount = widgets.length - listedCount;
+  if (otherCount > 0) parts.push(`${otherCount} other`);
+
+  return parts.length > 0 ? parts.join(', ') : `${widgets.length} widgets`;
+}
+
 const dropdownActions = [
   { label: 'Edit', value: 'edit', icon: <Edit size={14} /> },
   { label: 'Duplicate', value: 'duplicate', icon: <Copy size={14} /> },
@@ -99,6 +125,7 @@ export default function Dashboards(): React.JSX.Element {
     if (activeTab === 'all') return true;
     if (activeTab === 'shared') return d.is_shared;
     if (activeTab === 'my') return !d.is_shared;
+    if (activeTab === 'templates') return !!d.template_id;
     return true;
   });
 
@@ -169,20 +196,52 @@ export default function Dashboards(): React.JSX.Element {
             {filtered.map((dashboard: Dashboard) => {
               const previewType = getPreviewType(dashboard);
               const Preview = previewComponents[previewType];
+              const widgetBreakdown = getWidgetTypeBreakdown(dashboard);
+              // Use 'any' escape for fields not yet on the Dashboard type
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const d = dashboard as any;
+
               return (
                 <div key={dashboard.id} className="dashboard-card">
                   <Link to={`/app/dashboards/${dashboard.id}`} className="dashboard-card-link">
                     <div className="dashboard-preview">
                       <Preview />
+                      {/* Scheduled indicator */}
+                      {d.schedule && (
+                        <span className="dash-schedule-indicator">
+                          <Calendar size={14} />
+                        </span>
+                      )}
+                      {/* Alert indicator */}
+                      {d.alerts?.length ? (
+                        <span className="dash-alert-indicator">
+                          <Bell size={14} />
+                        </span>
+                      ) : null}
                     </div>
                     <div className="dashboard-info">
                       <h3 className="dashboard-name">{dashboard.name}</h3>
                       <p className="dashboard-meta">
-                        <span>{dashboard.widgets?.length ?? 0} widgets</span>
+                        <span>{widgetBreakdown}</span>
                         <span className="meta-dot">&middot;</span>
                         <span>{formatRelativeDate(dashboard.updated_at)}</span>
                       </p>
+                      {/* View count */}
+                      {d.view_count != null && (
+                        <p className="dashboard-views">
+                          <Eye size={12} />
+                          <span>{d.view_count} views</span>
+                        </p>
+                      )}
                       {dashboard.is_shared && <Badge variant="info">Shared</Badge>}
+                      {/* Tag filter chips */}
+                      {dashboard.tags && dashboard.tags.length > 0 && (
+                        <div className="dash-tag-chips">
+                          {dashboard.tags.map((tag) => (
+                            <Badge key={tag} variant="default" className="dash-tag-chip">{tag}</Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </Link>
                   <div className="dashboard-card-actions">

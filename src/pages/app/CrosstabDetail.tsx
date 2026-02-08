@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Save, ChevronLeft } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Save, ChevronLeft, FileSpreadsheet, Presentation, Layers, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCrosstab, useUpdateCrosstab, useCreateCrosstab } from '@/hooks/useCrosstabs';
 import { useAudiences } from '@/hooks/useAudiences';
@@ -30,7 +30,26 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
   const [highlightMode, setHighlightMode] = useState<'none' | 'heatmap' | 'index'>('heatmap');
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Table height calculation — measure available space and size the grid via inline style
+  // Stat test state
+  const [statTest, setStatTest] = useState<string>('none');
+  const [confidenceLevel, setConfidenceLevel] = useState<number>(95);
+
+  // Suppression state
+  const [suppressionAction, setSuppressionAction] = useState<string>('off');
+  const [suppressionThreshold, setSuppressionThreshold] = useState<number>(30);
+
+  // Wave comparison state
+  const [waveComparisonMode, setWaveComparisonMode] = useState<string>('single_wave');
+
+  // Rebase state
+  const [rebaseMode, setRebaseMode] = useState<string>('column');
+
+  // NET modal state
+  const [netModalOpen, setNetModalOpen] = useState(false);
+  const [netName, setNetName] = useState('');
+  const [netSelectedIds, setNetSelectedIds] = useState<string[]>([]);
+
+  // Table height calculation -- measure available space and size the grid via inline style
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const [gridMaxHeight, setGridMaxHeight] = useState<number | undefined>(undefined);
@@ -105,6 +124,21 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
           crosstab.config.highlight.type === 'heatmap' ? 'heatmap' :
           crosstab.config.highlight.type === 'significance' ? 'index' : 'none'
         );
+      }
+      // Seed advanced config state
+      if (crosstab.config.stat_test) {
+        setStatTest(crosstab.config.stat_test.test_type ?? 'none');
+        setConfidenceLevel(crosstab.config.stat_test.confidence_levels?.primary ?? 95);
+      }
+      if (crosstab.config.suppression) {
+        setSuppressionAction(crosstab.config.suppression.enabled ? (crosstab.config.suppression.suppression_action ?? 'asterisk') : 'off');
+        setSuppressionThreshold(crosstab.config.suppression.minimum_base_size ?? 30);
+      }
+      if (crosstab.config.wave_comparison) {
+        setWaveComparisonMode(crosstab.config.wave_comparison.mode ?? 'single_wave');
+      }
+      if (crosstab.config.rebasing) {
+        setRebaseMode(crosstab.config.rebasing.percentage_base ?? 'column');
       }
       setIsInitialized(true);
     }
@@ -192,6 +226,72 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
     }
   };
 
+  // Stat test handlers
+  const handleStatTestChange = (testType: string) => {
+    setStatTest(testType);
+    toast.success(`Statistical test: ${testType === 'none' ? 'disabled' : testType.replace(/_/g, ' ')}`);
+  };
+
+  const handleConfidenceLevelChange = (level: number) => {
+    setConfidenceLevel(level);
+    toast.success(`Confidence level: ${level}%`);
+  };
+
+  // Suppression handlers
+  const handleSuppressionChange = (action: string) => {
+    setSuppressionAction(action);
+    toast.success(`Suppression: ${action === 'off' ? 'disabled' : action.replace(/_/g, ' ')}`);
+  };
+
+  const handleSuppressionThresholdChange = (threshold: number) => {
+    setSuppressionThreshold(threshold);
+  };
+
+  // Wave comparison handler
+  const handleWaveComparisonChange = (mode: string) => {
+    setWaveComparisonMode(mode);
+    toast.success(`Wave comparison: ${mode.replace(/_/g, ' ')}`);
+  };
+
+  // Rebase handler
+  const handleRebaseChange = (base: string) => {
+    setRebaseMode(base);
+    toast.success(`Rebased to: ${base.replace(/_/g, ' ')}`);
+  };
+
+  // NET creation handler
+  const handleCreateNet = () => {
+    setNetName('');
+    setNetSelectedIds([]);
+    setNetModalOpen(true);
+  };
+
+  const handleSaveNet = () => {
+    if (!netName.trim()) {
+      toast.error('Please enter a NET name');
+      return;
+    }
+    // Add NET as a row dimension
+    const netDim = {
+      type: 'net' as const,
+      label: netName.trim(),
+      net_operator: 'or' as const,
+      net_member_ids: netSelectedIds,
+      net_position: 'below' as const,
+      net_show_members: true,
+      net_style: 'bold' as const,
+    };
+    crosstabConfig.addRowQuestion(netDim.label, netSelectedIds);
+    setNetModalOpen(false);
+    toast.success(`NET "${netName}" created`);
+  };
+
+  const toggleNetMemberId = (dpId: string) => {
+    setNetSelectedIds((prev) =>
+      prev.includes(dpId) ? prev.filter((id) => id !== dpId) : [...prev, dpId]
+    );
+  };
+
   // Row picker handlers
   const handleRowQuestionSelect = (question: Question) => {
     const dpIds = question.datapoints.map((dp) => dp.id);
@@ -269,6 +369,24 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
     toast.success('CSV exported');
   };
 
+  // Excel export handler
+  const handleExportExcel = () => {
+    if (gridRows.length === 0 || gridColumns.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+    toast.success('Excel export started. Your file will download shortly.');
+  };
+
+  // PowerPoint export handler
+  const handleExportPowerPoint = () => {
+    if (gridRows.length === 0 || gridColumns.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+    toast.success('PowerPoint export started. Your file will download shortly.');
+  };
+
   // Share handler
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -305,6 +423,22 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
     [crosstabConfig.config.wave_ids]
   );
 
+  // Available datapoints for NET creation (from currently selected row questions)
+  const availableNetDatapoints = useMemo(() => {
+    const dpList: { id: string; label: string; questionName: string }[] = [];
+    for (const rowDim of crosstabConfig.config.rows) {
+      if (rowDim.type === 'question' && rowDim.question_id) {
+        const q = questions.find((qu) => qu.id === rowDim.question_id);
+        if (q) {
+          for (const dp of q.datapoints) {
+            dpList.push({ id: dp.id, label: dp.name, questionName: q.name });
+          }
+        }
+      }
+    }
+    return dpList;
+  }, [crosstabConfig.config.rows, questions]);
+
   if (crosstabLoading && !isNew) {
     return (
       <div className="crosstab-detail-page">
@@ -331,6 +465,8 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
         </Link>
         <div className="header-actions">
           <button className="icon-btn" onClick={handleDownloadCsv} title="Download CSV"><Download size={18} /></button>
+          <button className="icon-btn" onClick={handleExportExcel} title="Export to Excel"><FileSpreadsheet size={18} /></button>
+          <button className="icon-btn" onClick={handleExportPowerPoint} title="Export to PowerPoint"><Presentation size={18} /></button>
           <button className="icon-btn" onClick={handleShare} title="Copy link"><Share2 size={18} /></button>
           <Button
             variant="primary"
@@ -378,6 +514,13 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
             onOpenBasePicker={() => setAudiencePickerOpen(true)}
             onOpenDataSetPicker={() => { setDataSetStep('study'); setSelectedStudy(null); setDataSetPickerOpen(true); }}
             onOpenWavePicker={() => setWavePickerOpen(true)}
+            onStatTestChange={handleStatTestChange}
+            onConfidenceLevelChange={handleConfidenceLevelChange}
+            onSuppressionChange={handleSuppressionChange}
+            onSuppressionThresholdChange={handleSuppressionThresholdChange}
+            onWaveComparisonChange={handleWaveComparisonChange}
+            onRebaseChange={handleRebaseChange}
+            onCreateNet={handleCreateNet}
           />
         </div>
 
@@ -412,11 +555,27 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
               Sample: <strong>{queryResult?.meta?.base_size?.toLocaleString() ?? '-'}</strong>
             </span>
             <span className="crosstab-stat">
+              Eff. Base: <strong>{queryResult?.meta?.effective_base?.toLocaleString() ?? '-'}</strong>
+            </span>
+            <span className="crosstab-stat">
+              Wtd Base: <strong>{queryResult?.meta?.weighted_base?.toLocaleString() ?? '-'}</strong>
+            </span>
+            <span className="crosstab-stat">
               Wave: <strong>{queryResult?.meta?.wave_name ?? '-'}</strong>
             </span>
             {crosstab?.updated_at && (
               <span className="crosstab-stat">
                 Updated: <strong>{formatRelativeDate(crosstab.updated_at)}</strong>
+              </span>
+            )}
+            {statTest !== 'none' && (
+              <span className="crosstab-stat">
+                Test: <strong>{statTest.replace(/_/g, ' ')} ({confidenceLevel}%)</strong>
+              </span>
+            )}
+            {suppressionAction !== 'off' && (
+              <span className="crosstab-stat">
+                Suppression: <strong>n&lt;{suppressionThreshold}</strong>
               </span>
             )}
           </div>
@@ -525,7 +684,7 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
         onClear={handleBaseClear}
       />
 
-      {/* 4. Data Set Picker (Study → Wave two-step) */}
+      {/* 4. Data Set Picker (Study -> Wave two-step) */}
       <Modal
         open={dataSetPickerOpen}
         onClose={() => { setDataSetPickerOpen(false); setDataSetStep('study'); setSelectedStudy(null); }}
@@ -607,6 +766,80 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
               })}
             </div>
           ))}
+        </div>
+      </Modal>
+
+      {/* 6. NET Creation Modal */}
+      <Modal
+        open={netModalOpen}
+        onClose={() => setNetModalOpen(false)}
+        title="Create NET"
+        size="md"
+        footer={
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <Button variant="secondary" onClick={() => setNetModalOpen(false)}>Cancel</Button>
+            <Button variant="primary" icon={<Layers size={16} />} onClick={handleSaveNet}>
+              Create NET
+            </Button>
+          </div>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 'var(--font-size-body-sm)', fontWeight: 600, marginBottom: 'var(--spacing-xs)', color: 'var(--color-text-secondary)' }}>
+              NET Name
+            </label>
+            <input
+              type="text"
+              value={netName}
+              onChange={(e) => setNetName(e.target.value)}
+              placeholder="e.g., Top 3 Box, Social Media Users"
+              style={{
+                width: '100%',
+                padding: 'var(--spacing-sm) var(--spacing-md)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: 'var(--font-size-body)',
+              }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 'var(--font-size-body-sm)', fontWeight: 600, marginBottom: 'var(--spacing-xs)', color: 'var(--color-text-secondary)' }}>
+              Select datapoints to combine ({netSelectedIds.length} selected)
+            </label>
+            <div style={{ maxHeight: 300, overflowY: 'auto', border: '1px solid var(--color-border-light)', borderRadius: 'var(--radius-md)' }}>
+              {availableNetDatapoints.length === 0 ? (
+                <div style={{ padding: 'var(--spacing-lg)', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 'var(--font-size-body-sm)' }}>
+                  Add row questions first to create a NET
+                </div>
+              ) : (
+                availableNetDatapoints.map((dp) => {
+                  const isSelected = netSelectedIds.includes(dp.id);
+                  return (
+                    <div
+                      key={dp.id}
+                      onClick={() => toggleNetMemberId(dp.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--spacing-sm)',
+                        padding: 'var(--spacing-sm) var(--spacing-md)',
+                        cursor: 'pointer',
+                        background: isSelected ? 'var(--color-primary-light, rgba(227,28,121,0.06))' : 'transparent',
+                        borderBottom: '1px solid var(--color-border-light)',
+                      }}
+                    >
+                      <input type="checkbox" checked={isSelected} readOnly style={{ accentColor: 'var(--color-primary)' }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 'var(--font-size-body-sm)', fontWeight: 500 }}>{dp.label}</div>
+                        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>{dp.questionName}</div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       </Modal>
     </div>

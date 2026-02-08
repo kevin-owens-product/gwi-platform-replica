@@ -6,6 +6,13 @@ import type {
   MetricType,
   WaveId,
   AudienceExpression,
+  StatisticalTestConfig,
+  SuppressionConfig,
+  WeightingConfig,
+  RebasingConfig,
+  SortConfig,
+  WaveComparisonConfig,
+  BannerConfig,
 } from '@/api/types'
 
 const defaultConfig: CrosstabConfig = {
@@ -34,8 +41,31 @@ export function useCrosstabConfig() {
     })
   }, [])
 
+  const addRowNet = useCallback((label: string, datapointIds: string[]) => {
+    setConfig((prev) => {
+      const dim: CrosstabDimension = { type: 'net', label, datapoint_ids: datapointIds }
+      return { ...prev, rows: [...prev.rows, dim] }
+    })
+  }, [])
+
+  const addRowCalculated = useCallback((label: string, formula?: string) => {
+    setConfig((prev) => {
+      const dim: CrosstabDimension = { type: 'calculated', label, formula }
+      return { ...prev, rows: [...prev.rows, dim] }
+    })
+  }, [])
+
   const removeRow = useCallback((index: number) => {
     setConfig((prev) => ({ ...prev, rows: prev.rows.filter((_, i) => i !== index) }))
+  }, [])
+
+  const reorderRows = useCallback((fromIndex: number, toIndex: number) => {
+    setConfig((prev) => {
+      const rows = [...prev.rows]
+      const [moved] = rows.splice(fromIndex, 1)
+      rows.splice(toIndex, 0, moved)
+      return { ...prev, rows }
+    })
   }, [])
 
   // --- Column mutations ---
@@ -57,6 +87,15 @@ export function useCrosstabConfig() {
 
   const removeColumn = useCallback((index: number) => {
     setConfig((prev) => ({ ...prev, columns: prev.columns.filter((_, i) => i !== index) }))
+  }, [])
+
+  const reorderColumns = useCallback((fromIndex: number, toIndex: number) => {
+    setConfig((prev) => {
+      const columns = [...prev.columns]
+      const [moved] = columns.splice(fromIndex, 1)
+      columns.splice(toIndex, 0, moved)
+      return { ...prev, columns }
+    })
   }, [])
 
   // --- Metric mutations ---
@@ -107,6 +146,143 @@ export function useCrosstabConfig() {
     setConfig((prev) => ({ ...prev, highlight }))
   }, [])
 
+  // --- Timeframe ---
+  const setTimeframe = useCallback((timeframe: 'daily' | 'weekly' | 'monthly' | undefined) => {
+    setConfig((prev) => ({ ...prev, timeframe }))
+  }, [])
+
+  // --- Statistical testing ---
+  const setStatTest = useCallback((statTest: StatisticalTestConfig | undefined) => {
+    setConfig((prev) => ({ ...prev, stat_test: statTest }))
+  }, [])
+
+  const setStatTestType = useCallback((testType: string) => {
+    setConfig((prev) => {
+      if (testType === 'none') {
+        return { ...prev, stat_test: undefined }
+      }
+      return {
+        ...prev,
+        stat_test: {
+          ...prev.stat_test,
+          test_type: testType as StatisticalTestConfig['test_type'],
+          confidence_levels: prev.stat_test?.confidence_levels ?? { primary: 95 },
+          notation: prev.stat_test?.notation ?? 'letter',
+          overlap_handling: prev.stat_test?.overlap_handling ?? 'effective_base',
+        },
+      }
+    })
+  }, [])
+
+  const setConfidenceLevel = useCallback((level: number) => {
+    setConfig((prev) => ({
+      ...prev,
+      stat_test: prev.stat_test ? {
+        ...prev.stat_test,
+        confidence_levels: { ...prev.stat_test.confidence_levels, primary: level },
+      } : undefined,
+    }))
+  }, [])
+
+  // --- Suppression ---
+  const setSuppression = useCallback((suppression: SuppressionConfig | undefined) => {
+    setConfig((prev) => ({ ...prev, suppression }))
+  }, [])
+
+  const setSuppressionAction = useCallback((action: string) => {
+    setConfig((prev) => {
+      if (action === 'off') {
+        return { ...prev, suppression: undefined }
+      }
+      return {
+        ...prev,
+        suppression: {
+          enabled: true,
+          minimum_base_size: prev.suppression?.minimum_base_size ?? 30,
+          suppression_action: action as SuppressionConfig['suppression_action'],
+          apply_to: prev.suppression?.apply_to ?? 'cells',
+          suppress_significance: true,
+          complementary_suppression: false,
+          footnote_on_suppression: true,
+        },
+      }
+    })
+  }, [])
+
+  const setSuppressionThreshold = useCallback((threshold: number) => {
+    setConfig((prev) => ({
+      ...prev,
+      suppression: prev.suppression ? {
+        ...prev.suppression,
+        minimum_base_size: threshold,
+      } : undefined,
+    }))
+  }, [])
+
+  // --- Weighting ---
+  const setWeighting = useCallback((weighting: WeightingConfig | undefined) => {
+    setConfig((prev) => ({ ...prev, weighting }))
+  }, [])
+
+  // --- Rebasing ---
+  const setRebasing = useCallback((rebasing: RebasingConfig | undefined) => {
+    setConfig((prev) => ({ ...prev, rebasing }))
+  }, [])
+
+  const setRebasingBase = useCallback((base: string) => {
+    setConfig((prev) => ({
+      ...prev,
+      rebasing: {
+        ...prev.rebasing,
+        enabled: true,
+        percentage_base: base as RebasingConfig['percentage_base'],
+      },
+    }))
+  }, [])
+
+  // --- Sort ---
+  const setSort = useCallback((sort: SortConfig | undefined) => {
+    setConfig((prev) => ({ ...prev, sort }))
+  }, [])
+
+  const setSortBy = useCallback((sortBy: string) => {
+    setConfig((prev) => ({
+      ...prev,
+      sort: {
+        ...prev.sort,
+        sort_by: sortBy as SortConfig['sort_by'],
+        direction: prev.sort?.direction ?? 'descending',
+      },
+    }))
+  }, [])
+
+  // --- Wave comparison ---
+  const setWaveComparison = useCallback((waveComparison: WaveComparisonConfig | undefined) => {
+    setConfig((prev) => ({ ...prev, wave_comparison: waveComparison }))
+  }, [])
+
+  const setWaveComparisonMode = useCallback((mode: string) => {
+    setConfig((prev) => {
+      if (mode === 'single_wave') {
+        return { ...prev, wave_comparison: undefined }
+      }
+      return {
+        ...prev,
+        wave_comparison: {
+          mode: mode as WaveComparisonConfig['mode'],
+          show_delta_columns: true,
+          delta_format: 'absolute_and_percentage' as const,
+          show_sparklines: mode === 'trended',
+        },
+      }
+    })
+  }, [])
+
+  // --- Banner ---
+  const setBanner = useCallback((banner: BannerConfig | undefined) => {
+    setConfig((prev) => ({ ...prev, banner }))
+  }, [])
+
   // --- Dirty tracking ---
   const isDirty = JSON.stringify(config) !== JSON.stringify(savedRef.current)
 
@@ -118,10 +294,14 @@ export function useCrosstabConfig() {
     config,
     initializeFrom,
     addRowQuestion,
+    addRowNet,
+    addRowCalculated,
     removeRow,
+    reorderRows,
     addColumnQuestion,
     addColumnAudience,
     removeColumn,
+    reorderColumns,
     toggleMetric,
     setMetrics,
     setBaseAudience,
@@ -130,6 +310,21 @@ export function useCrosstabConfig() {
     setWaveIds,
     setLocationIds,
     setHighlight,
+    setTimeframe,
+    setStatTest,
+    setStatTestType,
+    setConfidenceLevel,
+    setSuppression,
+    setSuppressionAction,
+    setSuppressionThreshold,
+    setWeighting,
+    setRebasing,
+    setRebasingBase,
+    setSort,
+    setSortBy,
+    setWaveComparison,
+    setWaveComparisonMode,
+    setBanner,
     isDirty,
     markSaved,
   }

@@ -278,6 +278,60 @@
   flex-shrink: 0;
 }
 
+/* ---------- Bulk Actions Bar ---------- */
+.aud-bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  background-color: var(--color-primary-light, rgba(14, 165, 233, 0.08));
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  animation: slideDown 120ms ease;
+}
+
+.aud-bulk-count {
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
+.aud-bulk-action {
+  padding: 4px 12px;
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  background: var(--color-white);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.aud-bulk-action:hover {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.aud-bulk-clear {
+  margin-left: auto;
+  padding: 4px 12px;
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.aud-bulk-clear:hover {
+  background-color: var(--color-surface-secondary);
+  color: var(--color-text);
+}
+
 /* ---------- Table ---------- */
 .audiences-table {
   background-color: var(--color-white);
@@ -289,7 +343,7 @@
 
 .table-header {
   display: grid;
-  grid-template-columns: 1fr 150px 150px 150px;
+  grid-template-columns: 40px 1fr 100px 100px 150px 150px 150px;
   padding: var(--spacing-6) var(--spacing-lg);
   background-color: var(--color-surface-secondary);
   border-bottom: 1px solid var(--color-border-light);
@@ -307,7 +361,7 @@
 
 .table-row {
   display: grid;
-  grid-template-columns: 1fr 150px 150px 150px;
+  grid-template-columns: 40px 1fr 100px 100px 150px 150px 150px;
   padding: var(--spacing-md) var(--spacing-lg);
   border-bottom: 1px solid var(--color-border-light);
   font-size: var(--font-size-body);
@@ -333,11 +387,25 @@
   font-size: var(--font-size-body-sm);
 }
 
+.aud-checkbox-cell {
+  width: 40px;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aud-checkbox-cell input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
 .name-cell {
   gap: var(--spacing-sm);
   color: var(--color-text);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
+  text-decoration: none;
 }
 
 .name-cell span {
@@ -355,6 +423,29 @@
   color: var(--color-text-muted);
   margin-left: -4px;
   flex-shrink: 0;
+}
+
+/* Health score dot */
+.aud-health-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  cursor: help;
+}
+
+/* Activation icon */
+.aud-activation-icon {
+  color: var(--color-warning, #eab308);
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+/* Markets column */
+.aud-markets {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
 }
 
 /* ---------- Loading & Empty States ---------- */
@@ -377,11 +468,15 @@
 
   .table-header,
   .table-row {
-    grid-template-columns: 1fr 120px 120px;
+    grid-template-columns: 40px 1fr 100px 120px;
   }
 
-  .table-header > :nth-child(3),
-  .table-row > :nth-child(3) {
+  .table-header > :nth-child(4),
+  .table-row > :nth-child(4),
+  .table-header > :nth-child(6),
+  .table-row > :nth-child(6),
+  .table-header > :nth-child(7),
+  .table-row > :nth-child(7) {
     display: none;
   }
 }
@@ -402,13 +497,19 @@
 
   .table-header,
   .table-row {
-    grid-template-columns: 1fr 120px;
+    grid-template-columns: 40px 1fr 120px;
   }
 
   .table-header > :nth-child(3),
   .table-row > :nth-child(3),
   .table-header > :nth-child(4),
-  .table-row > :nth-child(4) {
+  .table-row > :nth-child(4),
+  .table-header > :nth-child(5),
+  .table-row > :nth-child(5),
+  .table-header > :nth-child(6),
+  .table-row > :nth-child(6),
+  .table-header > :nth-child(7),
+  .table-row > :nth-child(7) {
     display: none;
   }
 }

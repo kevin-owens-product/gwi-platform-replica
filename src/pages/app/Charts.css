@@ -5,7 +5,7 @@
 .charts-page {
   padding: var(--spacing-xl);
   max-width: var(--content-max-width);
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn 200ms ease;
 }
 
 /* ============================================
@@ -32,30 +32,6 @@
   margin-left: auto;
 }
 
-/* Pink create button - top right */
-.charts-header .btn-create {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: 10px 20px;
-  background-color: var(--color-primary);
-  color: var(--color-white);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-medium);
-  border-radius: var(--radius-md);
-  transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.charts-header .btn-create:hover {
-  background-color: var(--color-primary-hover);
-  box-shadow: var(--shadow-primary-md);
-}
-
-.charts-header .btn-create:active {
-  background-color: var(--color-primary-active);
-}
 
 /* ============================================
    Filters

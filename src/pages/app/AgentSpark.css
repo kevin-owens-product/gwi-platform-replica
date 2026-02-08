@@ -700,9 +700,3 @@
   cursor: not-allowed;
 }
 
-/* ============================================
-   Spinner utility
-   ============================================ */
-.spin {
-  animation: spin 1s linear infinite;
-}

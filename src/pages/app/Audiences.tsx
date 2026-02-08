@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Folder, Globe, Check, ChevronDown, Loader2, Users, Zap } from 'lucide-react';
 import { useAudiences } from '@/hooks/useAudiences';
+import { useAuthStore } from '@/stores/auth';
 import { SearchInput, Tabs, Pagination, Badge, EmptyState } from '@/components/shared';
 import { formatDate } from '@/utils/format';
 import type { AudienceListParams, Audience } from '@/api/types';
@@ -66,6 +67,23 @@ export default function Audiences(): React.JSX.Element {
   const [page, setPage] = useState<number>(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  const currentUser = useAuthStore((s) => s.user);
+  const datasetDropdownRef = useRef<HTMLDivElement>(null);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (datasetDropdownRef.current && !datasetDropdownRef.current.contains(e.target as Node)) {
+        setShowDatasetDropdown(false);
+      }
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(e.target as Node)) {
+        setShowSortDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const sortOption = sortOptions.find((s) => s.id === selectedSort);
   const sortBy = sortOption?.apiValue ?? 'updated_at';
 
@@ -129,7 +147,7 @@ export default function Audiences(): React.JSX.Element {
           />
         </div>
 
-        <div className="filter-dropdown">
+        <div className="filter-dropdown" ref={datasetDropdownRef}>
           <button
             className={`filter-btn ${showDatasetDropdown ? 'active' : ''}`}
             onClick={() => setShowDatasetDropdown(!showDatasetDropdown)}
@@ -142,25 +160,25 @@ export default function Audiences(): React.JSX.Element {
           </button>
           {showDatasetDropdown && (
             <div className="dropdown-menu">
-              <div className="dropdown-header">
-                <span>0 Selected</span>
-                <button className="clear-btn">Clear</button>
-              </div>
               {datasetOptions.map((option: DatasetOption) => (
-                <label key={option.id} className="dropdown-option">
-                  <input
-                    type="checkbox"
-                    checked={selectedDataset === option.id}
-                    onChange={() => setSelectedDataset(option.id)}
-                  />
+                <button
+                  key={option.id}
+                  className={`dropdown-option-btn ${selectedDataset === option.id ? 'selected' : ''}`}
+                  onClick={() => {
+                    setSelectedDataset(option.id);
+                    setShowDatasetDropdown(false);
+                    setPage(1);
+                  }}
+                >
+                  {selectedDataset === option.id && <Check size={16} className="check-icon" />}
                   <span>{option.label}</span>
-                </label>
+                </button>
               ))}
             </div>
           )}
         </div>
 
-        <div className="filter-dropdown">
+        <div className="filter-dropdown" ref={sortDropdownRef}>
           <button
             className={`filter-btn ${showSortDropdown ? 'active' : ''}`}
             onClick={() => setShowSortDropdown(!showSortDropdown)}
@@ -298,7 +316,7 @@ export default function Audiences(): React.JSX.Element {
                       ? `${Object.keys(audience.market_sizes).length} markets`
                       : '-'}
                   </div>
-                  <div className="table-cell">{audience.user_id}</div>
+                  <div className="table-cell">{audience.user_id === currentUser?.id ? 'You' : 'Team member'}</div>
                   <div className="table-cell">{formatDate(audience.created_at)}</div>
                   <div className="table-cell">{formatDate(audience.updated_at)}</div>
                 </div>

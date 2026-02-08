@@ -771,9 +771,3 @@
   line-height: var(--line-height-normal);
 }
 
-/* ============================================
-   Spin Animation (for loading states)
-   ============================================ */
-.spin {
-  animation: spin 1s linear infinite;
-}

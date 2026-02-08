@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import './Tabs.css'
 
 interface Tab {
   id: string
@@ -11,11 +12,12 @@ interface TabsProps {
   tabs: Tab[]
   activeTab: string
   onChange: (tabId: string) => void
+  orientation?: 'horizontal' | 'vertical'
 }
 
-export default function Tabs({ tabs, activeTab, onChange }: TabsProps) {
+export default function Tabs({ tabs, activeTab, onChange, orientation = 'horizontal' }: TabsProps) {
   return (
-    <div className="tabs">
+    <div className={`tabs ${orientation === 'vertical' ? 'tabs--vertical' : ''}`}>
       {tabs.map((tab) => (
         <button
           key={tab.id}

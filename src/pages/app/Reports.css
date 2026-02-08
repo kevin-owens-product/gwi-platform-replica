@@ -6,6 +6,8 @@
 
 .reports-page {
   padding: var(--spacing-xl);
+  max-width: var(--content-max-width);
+  animation: fadeIn 200ms ease;
 }
 
 .reports-header {
@@ -628,7 +630,6 @@
 }
 
 .reports-loading .spin {
-  animation: spin 1s linear infinite;
   color: var(--color-primary);
 }
 

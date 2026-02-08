@@ -371,6 +371,7 @@ export default function Settings(): React.JSX.Element {
             tabs={settingsTabs}
             activeTab={activeTab}
             onChange={handleTabChange}
+            orientation="vertical"
           />
         </nav>
 

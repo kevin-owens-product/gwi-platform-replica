@@ -4,6 +4,8 @@
 
 .settings-page {
   padding: var(--spacing-xl);
+  max-width: var(--content-max-width);
+  animation: fadeIn 200ms ease;
 }
 
 .settings-header {

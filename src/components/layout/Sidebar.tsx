@@ -5,7 +5,7 @@ import {
   Settings, LogOut, ChevronDown, ChevronUp, MessageCircle,
   Tv, Newspaper, BookOpen, type LucideIcon,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import GlobalSearch from '../search/GlobalSearch'
@@ -38,6 +38,22 @@ export default function Sidebar() {
   const [helpOpen, setHelpOpen] = useState(false)
   const [userOpen, setUserOpen] = useState(false)
   const { searchOpen, setSearchOpen } = useUIStore()
+
+  const helpRef = useRef<HTMLDivElement>(null)
+  const userRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (helpRef.current && !helpRef.current.contains(e.target as Node)) {
+        setHelpOpen(false)
+      }
+      if (userRef.current && !userRef.current.contains(e.target as Node)) {
+        setUserOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const userName = user?.name || 'User'
   const userOrg = user?.organization_name || 'Organization'
@@ -72,7 +88,7 @@ export default function Sidebar() {
 
       <div className="sidebar-footer">
         {/* Help Section */}
-        <div className="sidebar-section">
+        <div className="sidebar-section" ref={helpRef}>
           <button
             className="sidebar-dropdown-btn"
             onClick={() => setHelpOpen(!helpOpen)}
@@ -96,7 +112,7 @@ export default function Sidebar() {
         </div>
 
         {/* User Section */}
-        <div className="sidebar-section">
+        <div className="sidebar-section" ref={userRef}>
           <button
             className="sidebar-dropdown-btn user-btn"
             onClick={() => setUserOpen(!userOpen)}

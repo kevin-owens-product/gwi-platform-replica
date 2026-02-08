@@ -3,7 +3,7 @@
    ============================================== */
 
 .audiences-page {
-  padding: var(--spacing-lg) var(--spacing-xl);
+  padding: var(--spacing-xl);
   max-width: var(--content-max-width);
   animation: fadeIn 200ms ease;
 }
@@ -28,71 +28,12 @@
 .audiences-tabs {
   display: flex;
   gap: var(--spacing-xs);
-  margin-left: var(--spacing-xl);
-}
-
-.tab-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-md);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-md);
-  position: relative;
-  transition: color var(--transition-fast), background-color var(--transition-fast);
-  white-space: nowrap;
-}
-
-.tab-btn:hover {
-  color: var(--color-text);
-  background-color: var(--color-surface-secondary);
-}
-
-.tab-btn.active {
-  color: var(--color-primary);
-  background-color: transparent;
-  font-weight: var(--font-weight-semibold);
-}
-
-.tab-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: var(--spacing-sm);
-  right: var(--spacing-sm);
-  height: 2px;
-  background-color: var(--color-primary);
-  border-radius: var(--radius-full);
+  margin-left: auto;
 }
 
 /* ---------- Create Button ---------- */
-.btn-create {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: 10px 20px;
+.audiences-header .btn-create {
   margin-left: auto;
-  background-color: var(--color-primary);
-  color: var(--color-white);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
-  border-radius: var(--radius-lg);
-  transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
-  box-shadow: var(--shadow-primary-sm);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.btn-create:hover {
-  background-color: var(--color-primary-hover);
-  box-shadow: var(--shadow-primary-xl);
-}
-
-.btn-create:active {
-  background-color: var(--color-primary-active);
-  box-shadow: var(--shadow-primary-sm);
 }
 
 /* ---------- Filters ---------- */
@@ -449,10 +390,6 @@
 }
 
 /* ---------- Loading & Empty States ---------- */
-.spin {
-  animation: spin 1s linear infinite;
-  color: var(--color-primary);
-}
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1024px) {

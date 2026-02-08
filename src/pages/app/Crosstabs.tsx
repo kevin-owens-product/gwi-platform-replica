@@ -119,7 +119,7 @@ export default function Crosstabs(): React.JSX.Element {
 
       {isLoading ? (
         <div className="crosstabs-loading">
-          <div className="charts-loading-spinner" />
+          <div className="crosstabs-loading-spinner" />
           <p>Loading crosstabs...</p>
         </div>
       ) : isError ? (

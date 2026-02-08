@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { chartsApi } from '@/api'
-import type { ChartListParams, CreateChartRequest, UpdateChartRequest } from '@/api/types'
+import type { ChartListParams, CreateChartRequest, UpdateChartRequest, ExportFormat } from '@/api/types'
 
 export function useCharts(params?: ChartListParams) {
   return useQuery({
@@ -61,6 +61,27 @@ export function useDeleteChart() {
     },
     onError: () => {
       toast.error('Failed to delete chart')
+    },
+  })
+}
+
+export function useChartAnnotations(chartId: string) {
+  return useQuery({
+    queryKey: ['charts', chartId, 'annotations'],
+    queryFn: () => chartsApi.getAnnotations(chartId),
+    enabled: !!chartId,
+  })
+}
+
+export function useExportChart() {
+  return useMutation({
+    mutationFn: ({ id, format }: { id: string; format: ExportFormat }) =>
+      chartsApi.export(id, format),
+    onSuccess: () => {
+      toast.success('Chart exported')
+    },
+    onError: () => {
+      toast.error('Failed to export chart')
     },
   })
 }

@@ -1,7 +1,12 @@
+/* ==========================================================================
+   CrosstabGrid  --  Enhanced styles
+   ========================================================================== */
+
 .crosstab-grid__wrapper {
   overflow: auto;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+  position: relative; /* anchor for context menu */
 }
 
 .crosstab-grid {
@@ -9,6 +14,8 @@
   border-collapse: collapse;
   font-size: 0.8125rem;
 }
+
+/* ---------- Corner cells (top-left) -------------------------------------- */
 
 .crosstab-grid__corner {
   position: sticky;
@@ -20,6 +27,45 @@
   border-bottom: 1px solid var(--color-border);
   min-width: 180px;
 }
+
+.crosstab-grid__corner--group {
+  border-bottom: none;
+}
+
+.crosstab-grid__corner--row-num {
+  min-width: 40px;
+  width: 40px;
+  text-align: center;
+  font-size: 0.6875rem;
+  color: var(--color-text-light);
+}
+
+/* ---------- Header group row (above main column headers) ----------------- */
+
+.crosstab-grid__header-group-row th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-surface, #f8f9fb);
+}
+
+.crosstab-grid__header-group-cell {
+  padding: 6px 16px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-light);
+  border-bottom: 1px solid var(--color-border);
+  border-left: 2px solid var(--color-border);
+}
+
+.crosstab-grid__header-group-cell:first-of-type {
+  border-left: none;
+}
+
+/* ---------- Column headers ----------------------------------------------- */
 
 .crosstab-grid__col-header {
   position: sticky;
@@ -36,7 +82,65 @@
   border-bottom: 1px solid var(--color-border);
   white-space: nowrap;
   min-width: 100px;
+  user-select: none;
 }
+
+/* When a header-group row is present, push the main header row down */
+.crosstab-grid__header-group-row ~ tr > .crosstab-grid__col-header,
+.crosstab-grid__header-group-row ~ tr > .crosstab-grid__corner {
+  top: 30px; /* approximate height of the group row */
+}
+
+.crosstab-grid__col-header--sortable {
+  cursor: pointer;
+}
+
+.crosstab-grid__col-header--sortable:hover {
+  background: var(--color-hover, rgba(59, 130, 246, 0.06));
+}
+
+.crosstab-grid__col-header--sorted {
+  color: var(--color-text);
+}
+
+.crosstab-grid__col-header--delta {
+  border-left: 2px dashed var(--color-border);
+  color: var(--color-text-light);
+  font-style: italic;
+}
+
+.crosstab-grid__col-header-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.crosstab-grid__sort-indicator {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 2px;
+  color: var(--color-primary, #334BFA);
+}
+
+/* ---------- Stat test letter badge --------------------------------------- */
+
+.crosstab-grid__stat-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-primary, #334BFA);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+/* ---------- Row headers -------------------------------------------------- */
 
 .crosstab-grid__row-header {
   position: sticky;
@@ -52,6 +156,55 @@
   white-space: nowrap;
   min-width: 180px;
 }
+
+.crosstab-grid__row-header-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ---------- Row numbers -------------------------------------------------- */
+
+.crosstab-grid__row-number {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--color-surface, #f8f9fb);
+  padding: 4px 8px;
+  text-align: center;
+  font-size: 0.6875rem;
+  color: var(--color-text-light);
+  border-right: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border-light);
+  min-width: 40px;
+  width: 40px;
+}
+
+/* ---------- Collapse button ---------------------------------------------- */
+
+.crosstab-grid__collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  color: var(--color-text-light);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.crosstab-grid__collapse-btn:hover {
+  background: var(--color-hover, rgba(59, 130, 246, 0.08));
+  color: var(--color-text);
+}
+
+/* ---------- Group rows --------------------------------------------------- */
 
 .crosstab-grid__group-row {
   position: relative;
@@ -73,6 +226,42 @@
   border-top: 1px solid var(--color-border);
 }
 
+/* ---------- Row type variants -------------------------------------------- */
+
+/* NET rows: bold + light shaded background */
+.crosstab-grid__data-row--net > th,
+.crosstab-grid__data-row--net > td {
+  font-weight: 700;
+  background-color: var(--color-surface, rgba(0, 0, 0, 0.025));
+}
+
+.crosstab-grid__data-row--net > th {
+  background-color: var(--color-surface, #f2f3f5);
+}
+
+/* Total rows: bold + top border */
+.crosstab-grid__data-row--total > th,
+.crosstab-grid__data-row--total > td {
+  font-weight: 700;
+  border-top: 2px solid var(--color-border);
+}
+
+/* Calculated rows: italic */
+.crosstab-grid__data-row--calculated > th,
+.crosstab-grid__data-row--calculated > td {
+  font-style: italic;
+}
+
+/* Spacer rows: reduced height, no border */
+.crosstab-grid__data-row--spacer > th,
+.crosstab-grid__data-row--spacer > td {
+  height: 8px;
+  padding: 0;
+  border-bottom: none;
+}
+
+/* ---------- Data cells --------------------------------------------------- */
+
 .crosstab-grid__cell {
   padding: 10px 16px;
   text-align: center;
@@ -88,6 +277,133 @@
 .crosstab-grid__cell--significant {
   font-weight: 700;
 }
+
+.crosstab-grid__cell--suppressed {
+  opacity: 0.45;
+  font-style: italic;
+}
+
+/* Delta column cells */
+.crosstab-grid__cell--delta {
+  border-left: 2px dashed var(--color-border);
+}
+
+.crosstab-grid__cell--delta-positive {
+  color: var(--color-index-over, #00b37a);
+}
+
+.crosstab-grid__cell--delta-negative {
+  color: var(--color-index-strong-under, #e53e3e);
+}
+
+/* ---------- Cell content layout ------------------------------------------ */
+
+.crosstab-grid__cell-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+}
+
+.crosstab-grid__cell-value {
+  white-space: nowrap;
+}
+
+.crosstab-grid__cell-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ---------- Significance letters ----------------------------------------- */
+
+.crosstab-grid__sig-letters {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--color-primary, #334BFA);
+  margin-left: 2px;
+  letter-spacing: 0.02em;
+  vertical-align: super;
+  line-height: 1;
+}
+
+/* ---------- Trend arrows ------------------------------------------------- */
+
+.crosstab-grid__trend-arrow {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.crosstab-grid__trend-arrow--up {
+  color: var(--color-index-over, #00b37a);
+}
+
+.crosstab-grid__trend-arrow--down {
+  color: var(--color-index-strong-under, #e53e3e);
+}
+
+.crosstab-grid__trend-arrow--flat {
+  color: var(--color-text-light, #999);
+}
+
+/* ---------- Sparklines --------------------------------------------------- */
+
+.crosstab-grid__sparkline {
+  flex-shrink: 0;
+  color: var(--color-primary, #334BFA);
+}
+
+/* ---------- Context menu ------------------------------------------------- */
+
+.crosstab-grid__context-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 180px;
+  background: var(--color-white, #fff);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 4px 0;
+  animation: crosstab-ctx-fade-in 120ms ease-out;
+}
+
+@keyframes crosstab-ctx-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.crosstab-grid__context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 14px;
+  border: none;
+  background: none;
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast);
+}
+
+.crosstab-grid__context-menu-item:hover {
+  background: var(--color-hover, rgba(59, 130, 246, 0.06));
+}
+
+.crosstab-grid__context-menu-item svg {
+  flex-shrink: 0;
+  color: var(--color-text-light);
+}
+
+/* ---------- Last row cleanup --------------------------------------------- */
 
 .crosstab-grid tr:last-child td,
 .crosstab-grid tr:last-child th {

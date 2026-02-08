@@ -193,11 +193,11 @@ function resolveQuestionLabel(qId: string): string {
   return QUESTION_LABELS[qId] ?? qId.replace(/^q_/, '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-export function generateStatsResponse(questionIds: string[]): StatsQueryResponse {
+export function generateStatsResponse(questionIds: string[], options?: { include_trend?: boolean; include_confidence_intervals?: boolean }): StatsQueryResponse {
   const results = questionIds.map((qid) => ({
     question_id: qid,
     question_name: qid.replace('q_', '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-    datapoints: generateDatapoints(qid),
+    datapoints: generateDatapoints(qid, options),
   }))
 
   return {
@@ -207,11 +207,15 @@ export function generateStatsResponse(questionIds: string[]): StatsQueryResponse
       wave_name: 'Q4 2024',
       location_name: 'United States',
       execution_time_ms: Math.floor(Math.random() * 200) + 50,
+      effective_base: 43800,
+      weighted_base: 45200,
+      confidence_level: 95,
+      data_freshness: '2025-01-20T00:00:00Z',
     },
   }
 }
 
-function generateDatapoints(questionId: string) {
+function generateDatapoints(questionId: string, options?: { include_trend?: boolean; include_confidence_intervals?: boolean }) {
   const datapointSets: Record<string, Array<{ id: string; name: string }>> = {
     q_social_platforms: [
       { id: 'dp_facebook', name: 'Facebook' }, { id: 'dp_instagram', name: 'Instagram' },
@@ -235,9 +239,12 @@ function generateDatapoints(questionId: string) {
     { id: `${questionId}_dp4`, name: 'Option D' },
   ]
 
-  return dps.map((dp) => {
+  return dps.map((dp, index) => {
     const pct = Math.round(Math.random() * 60 + 10)
     const size = Math.round(pct * 452)
+    const includeTrend = options?.include_trend && index < 3
+    const includeCI = options?.include_confidence_intervals && index < 4
+
     return {
       datapoint_id: dp.id,
       datapoint_name: dp.name,
@@ -252,6 +259,22 @@ function generateDatapoints(questionId: string) {
         datapoint_size: size + Math.round(Math.random() * 200 - 100),
         datapoint_sample: Math.round(size * 0.02),
       },
+      // Trend data: quarterly values over 4 quarters
+      ...(includeTrend ? {
+        trend_data: [
+          pct - Math.round(Math.random() * 8 + 2),
+          pct - Math.round(Math.random() * 5 + 1),
+          pct - Math.round(Math.random() * 3),
+          pct,
+        ],
+      } : {}),
+      // Confidence intervals
+      ...(includeCI ? {
+        confidence_interval: {
+          lower: Math.max(0, pct - Math.round(Math.random() * 3 + 1)),
+          upper: Math.min(100, pct + Math.round(Math.random() * 3 + 1)),
+        },
+      } : {}),
     }
   })
 }
@@ -302,6 +325,8 @@ export function generateCrosstabResult(
       base_size: 45200,
       wave_name: 'Q4 2024',
       location_name: 'United States',
+      effective_base: 43800,
+      weighted_base: 45200,
     },
   }
 }
@@ -335,17 +360,35 @@ function generateFromDimensions(info: CrosstabDimensionInfo): CrosstabQueryResul
     }
   }
 
-  // Generate cell data
+  // Generate cell data with enhanced fields
   const cells = rows.map(() =>
-    columns.map(() => ({
-      values: {
-        audience_percentage: Math.round(Math.random() * 60 + 5),
-        audience_index: Math.round(Math.random() * 100 + 50),
-        audience_size: Math.round(Math.random() * 5000 + 500),
-      } as Record<string, number>,
-      significant: Math.random() > 0.7,
-      sample_size: Math.round(Math.random() * 800 + 100),
-    })),
+    columns.map(() => {
+      const pct = Math.round(Math.random() * 60 + 5)
+      const sampleSize = Math.round(Math.random() * 800 + 100)
+      const isSignificant = Math.random() > 0.7
+      return {
+        values: {
+          audience_percentage: pct,
+          audience_index: Math.round(Math.random() * 100 + 50),
+          audience_size: Math.round(Math.random() * 5000 + 500),
+        } as Record<string, number>,
+        significant: isSignificant,
+        sample_size: sampleSize,
+        // Enhanced significance detail on ~30% of cells
+        ...(isSignificant ? {
+          significance: {
+            letters: [String.fromCharCode(65 + Math.floor(Math.random() * 5))],
+            p_value: Math.random() * 0.05,
+            direction: (Math.random() > 0.5 ? 'higher' : 'lower') as 'higher' | 'lower',
+          },
+        } : {}),
+        // Suppression on very small bases
+        ...(sampleSize < 150 ? {
+          suppressed: true,
+          suppression_reason: 'low_base' as const,
+        } : {}),
+      }
+    }),
   )
 
   return {
@@ -356,6 +399,12 @@ function generateFromDimensions(info: CrosstabDimensionInfo): CrosstabQueryResul
       base_size: 45200,
       wave_name: 'Q4 2024',
       location_name: 'United States',
+      effective_base: 43800,
+      weighted_base: 45200,
+    },
+    stat_test_summary: {
+      test_type: 'z_test',
+      primary_confidence: 95,
     },
   }
 }

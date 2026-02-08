@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { dashboardsApi } from '@/api'
-import type { CreateDashboardRequest, UpdateDashboardRequest } from '@/api/types'
+import type { CreateDashboardRequest, UpdateDashboardRequest, ExportFormat } from '@/api/types'
 
 export function useDashboards(params?: { page?: number; per_page?: number; search?: string }) {
   return useQuery({
@@ -61,6 +61,34 @@ export function useDeleteDashboard() {
     },
     onError: () => {
       toast.error('Failed to delete dashboard')
+    },
+  })
+}
+
+export function useDashboardTemplates() {
+  return useQuery({
+    queryKey: ['dashboards', 'templates'],
+    queryFn: () => dashboardsApi.listTemplates(),
+  })
+}
+
+export function useDashboardFilters(dashboardId: string) {
+  return useQuery({
+    queryKey: ['dashboards', dashboardId, 'filters'],
+    queryFn: () => dashboardsApi.getFilters(dashboardId),
+    enabled: !!dashboardId,
+  })
+}
+
+export function useExportDashboard() {
+  return useMutation({
+    mutationFn: ({ id, format }: { id: string; format: ExportFormat }) =>
+      dashboardsApi.export(id, format),
+    onSuccess: () => {
+      toast.success('Dashboard exported')
+    },
+    onError: () => {
+      toast.error('Failed to export dashboard')
     },
   })
 }

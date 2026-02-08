@@ -66,6 +66,25 @@ export const sparkApi = {
     const idx = conversations.findIndex((c) => c.id === id)
     if (idx !== -1) conversations.splice(idx, 1)
   },
+
+  async renameConversation(id: string, title: string): Promise<SparkConversation> {
+    await delay()
+    const c = findById(conversations, id)
+    if (!c) throw new Error(`Conversation ${id} not found`)
+    c.title = title
+    c.updated_at = now()
+    return { ...c }
+  },
+
+  async getInsights(): Promise<Array<{ id: string; title: string; summary: string; category: string; created_at: string }>> {
+    await delay()
+    return [
+      { id: 'ins-1', title: 'Social Media Shift', summary: 'TikTok surpassed Instagram among 16-24s in Q4 2024', category: 'media', created_at: '2025-01-15T10:00:00Z' },
+      { id: 'ins-2', title: 'E-commerce Growth', summary: 'Online purchase frequency increased 12% YoY', category: 'commerce', created_at: '2025-01-14T10:00:00Z' },
+      { id: 'ins-3', title: 'Streaming Consolidation', summary: 'Average streaming subscriptions decreased from 3.2 to 2.8', category: 'media', created_at: '2025-01-13T10:00:00Z' },
+      { id: 'ins-4', title: 'AI Adoption Surge', summary: 'AI tool usage grew 50% among professionals aged 25-44', category: 'technology', created_at: '2025-01-12T10:00:00Z' },
+    ]
+  },
 }
 
 function generateResponse(message: string): string {

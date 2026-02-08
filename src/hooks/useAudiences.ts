@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { audiencesApi } from '@/api'
-import type { AudienceListParams, CreateAudienceRequest, UpdateAudienceRequest } from '@/api/types'
+import type {
+  AudienceListParams,
+  CreateAudienceRequest,
+  UpdateAudienceRequest,
+  AudienceExpression,
+  ActivateAudienceRequest,
+} from '@/api/types'
 
 export function useAudiences(params?: AudienceListParams) {
   return useQuery({
@@ -76,6 +82,54 @@ export function useDuplicateAudience() {
     },
     onError: () => {
       toast.error('Failed to duplicate audience')
+    },
+  })
+}
+
+export function useAudienceEstimate(expression?: AudienceExpression) {
+  return useQuery({
+    queryKey: ['audiences', 'estimate', expression],
+    queryFn: () => audiencesApi.estimate(expression!),
+    enabled: !!expression,
+  })
+}
+
+export function useAudienceOverlap(audienceIds: string[]) {
+  return useQuery({
+    queryKey: ['audiences', 'overlap', audienceIds],
+    queryFn: () => audiencesApi.overlap(audienceIds),
+    enabled: audienceIds.length >= 2,
+  })
+}
+
+export function useAudienceComparison(audienceId1: string, audienceId2: string) {
+  return useQuery({
+    queryKey: ['audiences', 'comparison', audienceId1, audienceId2],
+    queryFn: () => audiencesApi.comparison(audienceId1, audienceId2),
+    enabled: !!audienceId1 && !!audienceId2,
+  })
+}
+
+export function useAudienceLookalike(audienceId: string) {
+  return useQuery({
+    queryKey: ['audiences', 'lookalike', audienceId],
+    queryFn: () => audiencesApi.lookalike(audienceId),
+    enabled: !!audienceId,
+  })
+}
+
+export function useActivateAudience() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: ActivateAudienceRequest) => audiencesApi.activate(data),
+    onSuccess: (_, { audience_id }) => {
+      queryClient.invalidateQueries({ queryKey: ['audiences'] })
+      queryClient.invalidateQueries({ queryKey: ['audiences', audience_id] })
+      toast.success('Audience activation started')
+    },
+    onError: () => {
+      toast.error('Failed to activate audience')
     },
   })
 }

@@ -23,4 +23,36 @@ export const reportsApi = {
     await delay()
     return new Blob(['Mock report content'], { type: 'application/pdf' })
   },
+
+  async create(data: { name: string; description?: string; template_id?: string }): Promise<Report> {
+    await delay()
+    const report: Report = {
+      id: `report_${Date.now()}`,
+      name: data.name,
+      description: data.description ?? '',
+      type: 'pdf',
+      size: '0 KB',
+      category: 'custom',
+      tags: [],
+      download_url: '#',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    mockReports.unshift(report)
+    return { ...report }
+  },
+
+  async update(id: string, data: Record<string, unknown>): Promise<Report> {
+    await delay()
+    const report = findById(mockReports, id)
+    if (!report) throw new Error(`Report ${id} not found`)
+    Object.assign(report, data, { updated_at: new Date().toISOString() })
+    return { ...report }
+  },
+
+  async delete(id: string): Promise<void> {
+    await delay()
+    const idx = mockReports.findIndex((r) => r.id === id)
+    if (idx !== -1) mockReports.splice(idx, 1)
+  },
 }

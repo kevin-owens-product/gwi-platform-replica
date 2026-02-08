@@ -1,6 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Plus, TrendingUp, TrendingDown, Edit, Save, Loader2, Users, LayoutDashboard } from 'lucide-react';
+import {
+  ArrowLeft, Download, Share2, Plus, TrendingUp, TrendingDown, Edit, Save, Loader2,
+  Users, LayoutDashboard, Maximize, X, Calendar, RefreshCw, ToggleLeft, ToggleRight,
+  Gauge, Sparkles, Table, Filter as FilterIcon, Map, List, Code, Minus, Image,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useDashboard, useUpdateDashboard } from '@/hooks/useDashboards';
 import { useAudiences } from '@/hooks/useAudiences';
@@ -9,7 +13,7 @@ import { useCharts } from '@/hooks/useCharts';
 import DashboardGrid, { WidgetChart } from '@/components/dashboard/DashboardGrid';
 import { Button, Modal, EmptyState, BaseAudiencePicker, getBaseAudienceLabel } from '@/components/shared';
 import { formatRelativeDate } from '@/utils/format';
-import type { DashboardWidget, AudienceExpression, AudienceQuestion, Audience } from '@/api/types';
+import type { DashboardWidget, DashboardWidgetType, AudienceExpression, AudienceQuestion, Audience } from '@/api/types';
 import './DashboardDetail.css';
 
 // --- Mock data used as fallback when API returns no widgets ---
@@ -102,6 +106,22 @@ const tableData: TableRow[] = [
   { market: 'Germany', reach: '256K', engagement: '3.9%', awareness: '61%', trend: '+2.8%' },
   { market: 'France', reach: '198K', engagement: '4.1%', awareness: '58%', trend: '+1.9%' },
   { market: 'Japan', reach: '178K', engagement: '3.5%', awareness: '52%', trend: '+5.2%' },
+];
+
+// All 12 widget types for the add widget modal
+const allWidgetTypes: { type: DashboardWidgetType; label: string; icon: React.ReactNode }[] = [
+  { type: 'chart', label: 'Chart', icon: <TrendingUp size={16} /> },
+  { type: 'stat', label: 'Statistic', icon: <Sparkles size={16} /> },
+  { type: 'text', label: 'Text', icon: <Edit size={16} /> },
+  { type: 'gauge', label: 'Gauge', icon: <Gauge size={16} /> },
+  { type: 'sparkline', label: 'Sparkline', icon: <TrendingUp size={16} /> },
+  { type: 'table', label: 'Table', icon: <Table size={16} /> },
+  { type: 'funnel', label: 'Funnel', icon: <FilterIcon size={16} /> },
+  { type: 'map', label: 'Map', icon: <Map size={16} /> },
+  { type: 'list', label: 'List', icon: <List size={16} /> },
+  { type: 'embed', label: 'Embed', icon: <Code size={16} /> },
+  { type: 'divider', label: 'Divider', icon: <Minus size={16} /> },
+  { type: 'image', label: 'Image', icon: <Image size={16} /> },
 ];
 
 // --- Static chart sub-components for fallback display ---
@@ -221,7 +241,7 @@ function DonutWidget(): React.JSX.Element {
 }
 
 // --- Fallback content rendered when there are no widgets from the API ---
-// Kept in the file but no longer rendered — replaced by EmptyState below.
+// Kept in the file but no longer rendered -- replaced by EmptyState below.
 
 function FallbackDashboardContent(): React.JSX.Element {
   return (
@@ -301,7 +321,7 @@ function FallbackDashboardContent(): React.JSX.Element {
   );
 }
 
-// Suppress unused warning — kept intentionally
+// Suppress unused warning -- kept intentionally
 void FallbackDashboardContent;
 
 // --- Main component ---
@@ -329,7 +349,7 @@ export default function DashboardDetail(): React.JSX.Element {
 
   // Add widget modal state
   const [showAddWidget, setShowAddWidget] = useState(false);
-  const [widgetType, setWidgetType] = useState<'chart' | 'stat' | 'text'>('chart');
+  const [widgetType, setWidgetType] = useState<DashboardWidgetType>('chart');
   const [widgetTitle, setWidgetTitle] = useState('');
   const [widgetChartId, setWidgetChartId] = useState('');
   const [widgetTextContent, setWidgetTextContent] = useState('');
@@ -337,12 +357,63 @@ export default function DashboardDetail(): React.JSX.Element {
   // Widget maximize state
   const [maximizedWidgetId, setMaximizedWidgetId] = useState<string | null>(null);
 
+  // Presentation mode
+  const [isPresentationMode, setIsPresentationMode] = useState(false);
+
+  // Conditional formatting toggle
+  const [conditionalFormattingEnabled, setConditionalFormattingEnabled] = useState(false);
+
+  // Auto-refresh state
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+
   // Seed base audience from dashboard data when it loads
   useEffect(() => {
     if (dashboard?.base_audience) {
       setBaseAudience(dashboard.base_audience);
     }
   }, [dashboard?.base_audience]);
+
+  // Seed refresh config
+  useEffect(() => {
+    if (dashboard?.refresh_config) {
+      setAutoRefreshEnabled(dashboard.refresh_config.mode === 'polling');
+    }
+  }, [dashboard?.refresh_config]);
+
+  // Auto-refresh timer
+  useEffect(() => {
+    if (!autoRefreshEnabled) return;
+    const interval = dashboard?.refresh_config?.polling_interval_ms ?? 60000;
+    const timer = setInterval(() => {
+      setLastRefreshed(new Date());
+    }, interval);
+    return () => clearInterval(timer);
+  }, [autoRefreshEnabled, dashboard?.refresh_config?.polling_interval_ms]);
+
+  // Presentation mode -- enter fullscreen
+  useEffect(() => {
+    if (isPresentationMode) {
+      document.documentElement.requestFullscreen?.().catch(() => {
+        // Fullscreen might not be available
+      });
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {
+        // May not be in fullscreen
+      });
+    }
+  }, [isPresentationMode]);
+
+  // Exit presentation mode on Escape
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isPresentationMode) {
+        setIsPresentationMode(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [isPresentationMode]);
 
   // Sync name from API data when it loads
   const displayName = dashboardName || dashboard?.name || 'Untitled Dashboard';
@@ -360,6 +431,12 @@ export default function DashboardDetail(): React.JSX.Element {
     () => dashboard?.widgets?.find((w) => w.id === maximizedWidgetId),
     [dashboard?.widgets, maximizedWidgetId],
   );
+
+  // Dashboard filters from filter config
+  const dashboardFilters = dashboard?.filters ?? [];
+
+  // Schedule info
+  const hasSchedule = !!(dashboard as unknown as Record<string, unknown>)?.schedule;
 
   // Base audience picker handlers
   const handleBaseSelectSaved = (aud: Audience) => {
@@ -397,6 +474,14 @@ export default function DashboardDetail(): React.JSX.Element {
     updateDashboard.mutate({ id, data: { widgets: updatedWidgets } });
   };
 
+  // Remove a filter chip
+  const handleRemoveFilter = (filterId: string) => {
+    if (!id || !dashboard) return;
+    const updatedFilters = dashboardFilters.filter((f) => f.id !== filterId);
+    updateDashboard.mutate({ id, data: { filters: updatedFilters } });
+    toast.success('Filter removed');
+  };
+
   // Add widget handler
   const handleAddWidget = () => {
     if (!id || !dashboard) return;
@@ -407,14 +492,15 @@ export default function DashboardDetail(): React.JSX.Element {
     const newWidget: DashboardWidget = {
       id: `widget_${Date.now()}`,
       type: widgetType,
-      title: widgetTitle || (widgetType === 'chart' ? 'Chart Widget' : widgetType === 'stat' ? 'Statistic' : 'Text'),
+      title: widgetTitle || (allWidgetTypes.find((t) => t.type === widgetType)?.label ?? 'Widget'),
       chart_id: widgetType === 'chart' ? widgetChartId || undefined : undefined,
       text_content: widgetType === 'stat' || widgetType === 'text' ? widgetTextContent : undefined,
+      embed_url: widgetType === 'embed' ? widgetTextContent : undefined,
       position: {
         x: 0,
         y: maxY,
-        w: widgetType === 'text' ? 12 : 6,
-        h: widgetType === 'text' ? 2 : 4,
+        w: widgetType === 'text' || widgetType === 'divider' ? 12 : 6,
+        h: widgetType === 'text' || widgetType === 'divider' ? 2 : 4,
       },
     };
 
@@ -468,13 +554,78 @@ export default function DashboardDetail(): React.JSX.Element {
   }
 
   return (
-    <div className="dashboard-detail-page">
+    <div className={`dashboard-detail-page ${isPresentationMode ? 'presentation-mode' : ''}`}>
       <div className="dashboard-detail-header">
         <Link to="/app/dashboards" className="back-link">
           <ArrowLeft size={18} />
           <span>Back to Dashboards</span>
         </Link>
         <div className="header-actions">
+          {/* Schedule indicator */}
+          {hasSchedule && (
+            <span
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--spacing-xs)',
+                padding: '6px 12px',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--color-surface-secondary)',
+                fontSize: 'var(--font-size-body-sm)',
+                color: 'var(--color-text-secondary)',
+              }}
+              title="This dashboard has a delivery schedule"
+            >
+              <Calendar size={14} />
+              Scheduled
+            </span>
+          )}
+
+          {/* Refresh indicator */}
+          <button
+            className="icon-btn"
+            onClick={() => {
+              setAutoRefreshEnabled(!autoRefreshEnabled);
+              toast.success(autoRefreshEnabled ? 'Auto-refresh disabled' : 'Auto-refresh enabled');
+            }}
+            title={autoRefreshEnabled ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
+            style={{
+              color: autoRefreshEnabled ? 'var(--color-success, #22c55e)' : undefined,
+              borderColor: autoRefreshEnabled ? 'var(--color-success, #22c55e)' : undefined,
+            }}
+          >
+            <RefreshCw size={18} />
+          </button>
+          {lastRefreshed && (
+            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', alignSelf: 'center' }}>
+              {lastRefreshed.toLocaleTimeString()}
+            </span>
+          )}
+
+          {/* Conditional formatting toggle */}
+          <button
+            className="icon-btn"
+            onClick={() => {
+              setConditionalFormattingEnabled(!conditionalFormattingEnabled);
+              toast.success(conditionalFormattingEnabled ? 'Conditional formatting OFF' : 'Conditional formatting ON');
+            }}
+            title={conditionalFormattingEnabled ? 'Conditional formatting ON' : 'Conditional formatting OFF'}
+            style={{
+              color: conditionalFormattingEnabled ? 'var(--color-primary)' : undefined,
+            }}
+          >
+            {conditionalFormattingEnabled ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+          </button>
+
+          {/* Presentation mode */}
+          <button
+            className="icon-btn"
+            onClick={() => setIsPresentationMode(true)}
+            title="Presentation mode"
+          >
+            <Maximize size={18} />
+          </button>
+
           <button
             className="config-panel__control-select"
             onClick={() => setAudiencePickerOpen(true)}
@@ -525,9 +676,54 @@ export default function DashboardDetail(): React.JSX.Element {
         )}
 
         {dashboard?.updated_at && (
-          <p className="dashboard-meta" style={{ marginBottom: 'var(--spacing-lg)' }}>
+          <p className="dashboard-meta" style={{ marginBottom: 'var(--spacing-sm)' }}>
             Last updated {formatRelativeDate(dashboard.updated_at)}
           </p>
+        )}
+
+        {/* Filter bar -- show dashboard filters as removable chips */}
+        {dashboardFilters.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 'var(--spacing-xs)',
+              marginBottom: 'var(--spacing-lg)',
+              padding: 'var(--spacing-sm) 0',
+            }}
+          >
+            <span style={{ fontSize: 'var(--font-size-body-sm)', color: 'var(--color-text-muted)', alignSelf: 'center', marginRight: 'var(--spacing-xs)' }}>
+              <FilterIcon size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+              Filters:
+            </span>
+            {dashboardFilters.map((filter) => (
+              <span
+                key={filter.id}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '4px 10px',
+                  borderRadius: 'var(--radius-full)',
+                  background: 'var(--color-surface-secondary)',
+                  border: '1px solid var(--color-border-light)',
+                  fontSize: 'var(--font-size-sm)',
+                  color: 'var(--color-text)',
+                  fontWeight: 500,
+                }}
+              >
+                <span>{filter.label}</span>
+                {isEditing && (
+                  <button
+                    onClick={() => handleRemoveFilter(filter.id)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: 0, display: 'flex' }}
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </span>
+            ))}
+          </div>
         )}
 
         {hasApiWidgets ? (
@@ -552,6 +748,32 @@ export default function DashboardDetail(): React.JSX.Element {
         )}
       </div>
 
+      {/* Presentation mode overlay exit button */}
+      {isPresentationMode && (
+        <button
+          onClick={() => setIsPresentationMode(false)}
+          style={{
+            position: 'fixed',
+            top: 16,
+            right: 16,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--spacing-xs)',
+            padding: '8px 16px',
+            background: 'rgba(0,0,0,0.7)',
+            color: '#fff',
+            borderRadius: 'var(--radius-md)',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: 'var(--font-size-body-sm)',
+          }}
+        >
+          <X size={14} />
+          Exit Presentation
+        </button>
+      )}
+
       {/* Share Modal */}
       <Modal
         open={showShareModal}
@@ -570,7 +792,7 @@ export default function DashboardDetail(): React.JSX.Element {
         </div>
       </Modal>
 
-      {/* Add Widget Modal */}
+      {/* Add Widget Modal -- all 12 types */}
       <Modal
         open={showAddWidget}
         onClose={() => setShowAddWidget(false)}
@@ -585,25 +807,29 @@ export default function DashboardDetail(): React.JSX.Element {
         <div className="add-widget-form">
           <div>
             <div className="add-widget-label">Type</div>
-            <div className="add-widget-type-select">
-              <button
-                className={`add-widget-type-btn ${widgetType === 'chart' ? 'active' : ''}`}
-                onClick={() => setWidgetType('chart')}
-              >
-                Chart
-              </button>
-              <button
-                className={`add-widget-type-btn ${widgetType === 'stat' ? 'active' : ''}`}
-                onClick={() => setWidgetType('stat')}
-              >
-                Statistic
-              </button>
-              <button
-                className={`add-widget-type-btn ${widgetType === 'text' ? 'active' : ''}`}
-                onClick={() => setWidgetType('text')}
-              >
-                Text
-              </button>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: 'var(--spacing-xs)',
+            }}>
+              {allWidgetTypes.map((wt) => (
+                <button
+                  key={wt.type}
+                  className={`add-widget-type-btn ${widgetType === wt.type ? 'active' : ''}`}
+                  onClick={() => setWidgetType(wt.type)}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: 'var(--spacing-sm)',
+                    fontSize: 'var(--font-size-xs)',
+                  }}
+                >
+                  {wt.icon}
+                  {wt.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -647,14 +873,14 @@ export default function DashboardDetail(): React.JSX.Element {
             </div>
           )}
 
-          {widgetType === 'text' && (
+          {(widgetType === 'text' || widgetType === 'embed') && (
             <div>
-              <div className="add-widget-label">Content</div>
+              <div className="add-widget-label">{widgetType === 'embed' ? 'Embed URL' : 'Content'}</div>
               <textarea
                 className="add-widget-textarea"
                 value={widgetTextContent}
                 onChange={(e) => setWidgetTextContent(e.target.value)}
-                placeholder="Enter text content..."
+                placeholder={widgetType === 'embed' ? 'https://...' : 'Enter text content...'}
               />
             </div>
           )}

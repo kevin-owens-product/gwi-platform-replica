@@ -15,4 +15,13 @@ export const reportsApi = {
 
   download: (id: string) =>
     apiClient.get(`v3/reports/${id}/download`).blob(),
+
+  create: (data: { name: string; description?: string; template_id?: string }) =>
+    apiClient.post('v3/reports', { json: data }).json<any>(),
+
+  update: (id: string, data: Record<string, unknown>) =>
+    apiClient.patch(`v3/reports/${id}`, { json: data }).json<any>(),
+
+  delete: (id: string) =>
+    apiClient.delete(`v3/reports/${id}`).json<void>(),
 }

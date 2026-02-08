@@ -25,4 +25,12 @@ export const crosstabsApi = {
 
   duplicate: (id: string) =>
     apiClient.post(`v3/crosstabs/${id}/duplicate`).json<Crosstab>(),
+
+  listTemplates: () =>
+    apiClient.get('v3/crosstabs/templates')
+      .json<Array<{ id: string; name: string; description: string; config: any }>>(),
+
+  applyTemplate: (crosstabId: string, templateId: string) =>
+    apiClient.post(`v3/crosstabs/${crosstabId}/apply-template`, { json: { template_id: templateId } })
+      .json<any>(),
 }

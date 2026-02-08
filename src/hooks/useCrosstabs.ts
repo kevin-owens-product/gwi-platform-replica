@@ -79,3 +79,27 @@ export function useDuplicateCrosstab() {
     },
   })
 }
+
+export function useCrosstabTemplates() {
+  return useQuery({
+    queryKey: ['crosstabs', 'templates'],
+    queryFn: () => crosstabsApi.listTemplates(),
+  })
+}
+
+export function useApplyCrosstabTemplate() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ crosstabId, templateId }: { crosstabId: string; templateId: string }) =>
+      crosstabsApi.applyTemplate(crosstabId, templateId),
+    onSuccess: (_, { crosstabId }) => {
+      queryClient.invalidateQueries({ queryKey: ['crosstabs'] })
+      queryClient.invalidateQueries({ queryKey: ['crosstabs', crosstabId] })
+      toast.success('Template applied')
+    },
+    onError: () => {
+      toast.error('Failed to apply template')
+    },
+  })
+}

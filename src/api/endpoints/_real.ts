@@ -8,3 +8,7 @@ export { taxonomyApi } from './taxonomy'
 export { queriesApi } from './queries'
 export { sparkApi } from './spark'
 export { adminApi } from './admin'
+
+// Canvas and Media APIs (mock-only for now; no real endpoints yet)
+export { canvasApi } from '../mock/endpoints/canvas'
+export { mediaApi } from '../mock/endpoints/media'

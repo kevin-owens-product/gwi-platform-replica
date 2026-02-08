@@ -3,7 +3,7 @@ import {
   Search, Home, Sparkles, Users, BarChart2, Grid3X3,
   LayoutDashboard, Square, FileText, HelpCircle,
   Settings, LogOut, ChevronDown, ChevronUp, MessageCircle,
-  Tv, Newspaper, type LucideIcon,
+  Tv, Newspaper, BookOpen, type LucideIcon,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuthStore } from '@/stores/auth'
@@ -29,6 +29,7 @@ const navItems: NavItem[] = [
   { path: '/app/reports', icon: FileText, label: 'Reports' },
   { path: '/app/tv-study', icon: Tv, label: 'TV Study' },
   { path: '/app/printrf', icon: Newspaper, label: 'Print R&F' },
+  { path: '/app/questions', icon: BookOpen, label: 'Questions' },
 ]
 
 export default function Sidebar() {

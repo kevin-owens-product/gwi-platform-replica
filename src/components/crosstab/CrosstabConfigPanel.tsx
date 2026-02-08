@@ -1,4 +1,5 @@
-import { Plus } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, FlaskConical, Scale, Layers, BarChart3, TrendingUp } from 'lucide-react'
 import { Dropdown } from '@/components/shared'
 import ConfigPill from './ConfigPill'
 import type { CrosstabConfig, CrosstabDimension, MetricType, WaveId, Question, Audience, Wave, Study } from '@/api/types'
@@ -9,14 +10,77 @@ const metricLabels: Record<string, string> = {
   audience_index: 'Idx',
   audience_size: 'Size',
   positive_size: 'Sample',
+  column_percentage: 'Col%',
+  row_percentage: 'Row%',
+  total_percentage: 'Tot%',
+  mean: 'Mean',
+  median: 'Median',
+  effective_base: 'Eff. Base',
+  weighted_base: 'Wtd Base',
 }
 
-const allMetrics: MetricType[] = ['audience_percentage', 'audience_index', 'audience_size', 'positive_size']
+const allMetrics: MetricType[] = [
+  'audience_percentage', 'audience_index', 'audience_size', 'positive_size',
+  'column_percentage', 'row_percentage', 'mean', 'median',
+  'effective_base', 'weighted_base',
+]
 
 const highlightOptions = [
   { label: 'None', value: 'none' },
   { label: 'Heatmap', value: 'heatmap' },
   { label: 'Index coloring', value: 'index' },
+  { label: 'Significance', value: 'significance' },
+  { label: 'Threshold', value: 'threshold' },
+]
+
+const statTestOptions = [
+  { label: 'None', value: 'none' },
+  { label: 'Z-test', value: 'z_test' },
+  { label: 'Z-test (Bonferroni)', value: 'z_test_bonferroni' },
+  { label: 'Chi-square', value: 'chi_square' },
+  { label: 'T-test', value: 't_test' },
+]
+
+const confidenceLevelOptions = [
+  { label: '90%', value: '90' },
+  { label: '95%', value: '95' },
+  { label: '99%', value: '99' },
+]
+
+const waveComparisonOptions = [
+  { label: 'Single wave', value: 'single_wave' },
+  { label: 'Side by side', value: 'side_by_side' },
+  { label: 'Trended', value: 'trended' },
+]
+
+const suppressionOptions = [
+  { label: 'Off', value: 'off' },
+  { label: 'Hide cells', value: 'hide' },
+  { label: 'Grey out', value: 'grey_out' },
+  { label: 'Asterisk (*)', value: 'asterisk' },
+  { label: 'Warning icon', value: 'warning_icon' },
+]
+
+const rebaseOptions = [
+  { label: 'Column %', value: 'column' },
+  { label: 'Row %', value: 'row' },
+  { label: 'Total %', value: 'total' },
+  { label: 'Respondent base', value: 'respondent_base' },
+]
+
+const sortOptions = [
+  { label: 'Default', value: 'default' },
+  { label: 'By value', value: 'value' },
+  { label: 'A-Z', value: 'alphabetical' },
+  { label: 'Custom', value: 'custom' },
+  { label: 'Significance', value: 'significance' },
+]
+
+const timeframeOptions = [
+  { label: 'None', value: 'none' },
+  { label: 'Daily', value: 'daily' },
+  { label: 'Weekly', value: 'weekly' },
+  { label: 'Monthly', value: 'monthly' },
 ]
 
 interface CrosstabConfigPanelProps {
@@ -26,16 +90,27 @@ interface CrosstabConfigPanelProps {
   waves?: Wave[]
   studies?: Study[]
   highlightMode: string
+  timeframe?: string
   onRemoveRow: (index: number) => void
   onRemoveColumn: (index: number) => void
   onToggleMetric: (metric: MetricType) => void
   onRemoveWave: (index: number) => void
   onHighlightChange: (mode: string) => void
+  onTimeframeChange?: (value: string) => void
   onOpenRowPicker: () => void
   onOpenColumnPicker: () => void
   onOpenBasePicker: () => void
   onOpenDataSetPicker: () => void
   onOpenWavePicker: () => void
+  onStatTestChange?: (testType: string) => void
+  onConfidenceLevelChange?: (level: number) => void
+  onSuppressionChange?: (action: string) => void
+  onSuppressionThresholdChange?: (threshold: number) => void
+  onWaveComparisonChange?: (mode: string) => void
+  onRebaseChange?: (base: string) => void
+  onSortChange?: (sort: string) => void
+  onWeightingChange?: (schemeId: string) => void
+  onCreateNet?: () => void
 }
 
 function dimLabel(dim: CrosstabDimension, questions?: Question[], audiences?: Audience[]): string {
@@ -47,7 +122,29 @@ function dimLabel(dim: CrosstabDimension, questions?: Question[], audiences?: Au
     const a = audiences?.find((a) => a.id === dim.audience_id)
     return a?.name ?? dim.audience_id
   }
-  return 'Unknown'
+  if (dim.type === 'net') {
+    return dim.label ?? 'NET'
+  }
+  if (dim.type === 'calculated') {
+    return dim.label ?? 'Calculated'
+  }
+  if (dim.type === 'wave') {
+    return dim.label ?? 'Wave'
+  }
+  if (dim.type === 'location') {
+    return dim.label ?? 'Location'
+  }
+  return dim.label ?? 'Unknown'
+}
+
+function dimTypeIcon(dim: CrosstabDimension): string {
+  switch (dim.type) {
+    case 'net': return 'NET'
+    case 'calculated': return 'Calc'
+    case 'wave': return 'W'
+    case 'location': return 'L'
+    default: return ''
+  }
 }
 
 function waveLabel(waveId: WaveId, waves?: Wave[]): string {
@@ -94,17 +191,37 @@ export default function CrosstabConfigPanel({
   waves,
   studies,
   highlightMode,
+  timeframe,
   onRemoveRow,
   onRemoveColumn,
   onToggleMetric,
   onRemoveWave,
   onHighlightChange,
+  onTimeframeChange,
   onOpenRowPicker,
   onOpenColumnPicker,
   onOpenBasePicker,
   onOpenDataSetPicker,
   onOpenWavePicker,
+  onStatTestChange,
+  onConfidenceLevelChange,
+  onSuppressionChange,
+  onSuppressionThresholdChange,
+  onWaveComparisonChange,
+  onRebaseChange,
+  onSortChange,
+  onCreateNet,
 }: CrosstabConfigPanelProps) {
+  const [showAdvanced, setShowAdvanced] = useState(false)
+
+  const currentStatTest = config.stat_test?.test_type ?? 'none'
+  const currentConfidence = config.stat_test?.confidence_levels?.primary ?? 95
+  const currentSuppression = config.suppression?.enabled ? (config.suppression.suppression_action ?? 'asterisk') : 'off'
+  const currentSuppressionThreshold = config.suppression?.minimum_base_size ?? 30
+  const currentWaveComparison = config.wave_comparison?.mode ?? 'single_wave'
+  const currentRebase = config.rebasing?.percentage_base ?? 'column'
+  const currentSort = config.sort?.sort_by ?? 'default'
+
   return (
     <div className="crosstab-config-panel">
       {/* Row 1: Pill-based dimensions */}
@@ -117,11 +234,22 @@ export default function CrosstabConfigPanel({
               <span className="config-panel__dim-empty">none</span>
             ) : (
               config.rows.map((dim, i) => (
-                <ConfigPill key={`r-${i}`} label={dimLabel(dim, questions, audiences)} removable onRemove={() => onRemoveRow(i)} />
+                <ConfigPill
+                  key={`r-${i}`}
+                  label={dimLabel(dim, questions, audiences)}
+                  sublabel={dimTypeIcon(dim) || undefined}
+                  removable
+                  onRemove={() => onRemoveRow(i)}
+                />
               ))
             )}
           </div>
           <button className="config-panel__dim-add" onClick={onOpenRowPicker}><Plus size={10} /> Add</button>
+          {onCreateNet && (
+            <button className="config-panel__dim-add config-panel__net-btn" onClick={onCreateNet}>
+              <Layers size={10} /> NET
+            </button>
+          )}
         </div>
 
         <div className="config-panel__separator" />
@@ -134,7 +262,13 @@ export default function CrosstabConfigPanel({
               <span className="config-panel__dim-empty">none</span>
             ) : (
               config.columns.map((dim, i) => (
-                <ConfigPill key={`c-${i}`} label={dimLabel(dim, questions, audiences)} removable onRemove={() => onRemoveColumn(i)} />
+                <ConfigPill
+                  key={`c-${i}`}
+                  label={dimLabel(dim, questions, audiences)}
+                  sublabel={dimTypeIcon(dim) || undefined}
+                  removable
+                  onRemove={() => onRemoveColumn(i)}
+                />
               ))
             )}
           </div>
@@ -205,7 +339,148 @@ export default function CrosstabConfigPanel({
             onSelect={(value) => onHighlightChange(value)}
           />
         </div>
+
+        {/* Statistical Testing */}
+        <div className="config-panel__control">
+          <span className="config-panel__control-label">
+            <FlaskConical size={12} /> Stat Test
+          </span>
+          <Dropdown
+            trigger={
+              <button className="config-panel__control-btn">
+                {statTestOptions.find((s) => s.value === currentStatTest)?.label ?? 'None'}
+              </button>
+            }
+            items={statTestOptions}
+            onSelect={(value) => onStatTestChange?.(value)}
+          />
+          {currentStatTest !== 'none' && (
+            <Dropdown
+              trigger={
+                <button className="config-panel__control-btn config-panel__confidence-btn">
+                  {currentConfidence}%
+                </button>
+              }
+              items={confidenceLevelOptions}
+              onSelect={(value) => onConfidenceLevelChange?.(Number(value))}
+            />
+          )}
+        </div>
+
+        {/* Timeframe */}
+        {onTimeframeChange && (
+          <div className="config-panel__control">
+            <span className="config-panel__control-label">
+              <TrendingUp size={12} /> Timeframe
+            </span>
+            <Dropdown
+              trigger={
+                <button className="config-panel__control-btn">
+                  {timeframeOptions.find((t) => t.value === (timeframe ?? 'none'))?.label ?? 'None'}
+                </button>
+              }
+              items={timeframeOptions}
+              onSelect={(value) => onTimeframeChange(value)}
+            />
+          </div>
+        )}
+
+        {/* Advanced toggle */}
+        <button
+          className="config-panel__advanced-toggle"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+        >
+          {showAdvanced ? 'Hide advanced' : 'Advanced options'}
+        </button>
       </div>
+
+      {/* Row 3: Advanced controls (collapsible) */}
+      {showAdvanced && (
+        <div className="config-panel__advanced">
+          {/* Wave Comparison */}
+          <div className="config-panel__control">
+            <span className="config-panel__control-label">
+              <BarChart3 size={12} /> Wave Mode
+            </span>
+            <Dropdown
+              trigger={
+                <button className="config-panel__control-btn">
+                  {waveComparisonOptions.find((w) => w.value === currentWaveComparison)?.label ?? 'Single wave'}
+                </button>
+              }
+              items={waveComparisonOptions}
+              onSelect={(value) => onWaveComparisonChange?.(value)}
+            />
+          </div>
+
+          {/* Suppression */}
+          <div className="config-panel__control">
+            <span className="config-panel__control-label">Suppression</span>
+            <Dropdown
+              trigger={
+                <button className="config-panel__control-btn">
+                  {suppressionOptions.find((s) => s.value === currentSuppression)?.label ?? 'Off'}
+                </button>
+              }
+              items={suppressionOptions}
+              onSelect={(value) => onSuppressionChange?.(value)}
+            />
+            {currentSuppression !== 'off' && (
+              <span className="config-panel__threshold">
+                min n=
+                <input
+                  type="number"
+                  className="config-panel__threshold-input"
+                  value={currentSuppressionThreshold}
+                  onChange={(e) => onSuppressionThresholdChange?.(Number(e.target.value))}
+                  min={1}
+                  max={500}
+                />
+              </span>
+            )}
+          </div>
+
+          {/* Rebasing */}
+          <div className="config-panel__control">
+            <span className="config-panel__control-label">
+              <Scale size={12} /> Rebase
+            </span>
+            <Dropdown
+              trigger={
+                <button className="config-panel__control-btn">
+                  {rebaseOptions.find((r) => r.value === currentRebase)?.label ?? 'Column %'}
+                </button>
+              }
+              items={rebaseOptions}
+              onSelect={(value) => onRebaseChange?.(value)}
+            />
+          </div>
+
+          {/* Sort */}
+          <div className="config-panel__control">
+            <span className="config-panel__control-label">Sort</span>
+            <Dropdown
+              trigger={
+                <button className="config-panel__control-btn">
+                  {sortOptions.find((s) => s.value === currentSort)?.label ?? 'Default'}
+                </button>
+              }
+              items={sortOptions}
+              onSelect={(value) => onSortChange?.(value)}
+            />
+          </div>
+
+          {/* Weighting indicator */}
+          {config.weighting?.scheme_id && (
+            <div className="config-panel__control">
+              <span className="config-panel__control-label">Weighting</span>
+              <span className="config-panel__control-value config-panel__weighted-badge">
+                Weighted
+              </span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

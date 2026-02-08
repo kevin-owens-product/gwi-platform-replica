@@ -1,4 +1,6 @@
-/* Settings Page - GWI Design System */
+/* ============================================
+   Settings Page - GWI Enhanced Design
+   ============================================ */
 
 .settings-page {
   padding: var(--spacing-xl);
@@ -14,7 +16,9 @@
   gap: var(--spacing-xl);
 }
 
-/* Navigation */
+/* ============================================
+   Navigation
+   ============================================ */
 .settings-nav {
   display: flex;
   flex-direction: column;
@@ -42,7 +46,9 @@
   font-weight: var(--font-weight-medium);
 }
 
-/* Content Panel */
+/* ============================================
+   Content Panel
+   ============================================ */
 .settings-content {
   background-color: var(--color-white);
   border: 1px solid var(--color-border-light);
@@ -51,7 +57,9 @@
   box-shadow: var(--shadow-card);
 }
 
-/* Sections */
+/* ============================================
+   Sections
+   ============================================ */
 .settings-section {
   margin-bottom: var(--spacing-xl);
 }
@@ -72,7 +80,16 @@
   margin-bottom: var(--spacing-xl);
 }
 
-/* Loading / Error */
+.settings-subsection-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-md);
+}
+
+/* ============================================
+   Loading / Error
+   ============================================ */
 .settings-loading {
   display: flex;
   align-items: center;
@@ -97,12 +114,91 @@
   margin-bottom: var(--spacing-md);
 }
 
-/* Form */
+/* ============================================
+   Profile Card
+   ============================================ */
+.settings-profile-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  margin-bottom: var(--spacing-xl);
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-white) 100%);
+}
+
+.settings-profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #a855f7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.settings-profile-initials {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-white);
+  letter-spacing: 1px;
+}
+
+.settings-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.settings-profile-name {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+.settings-profile-email {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+}
+
+.settings-profile-badges {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+}
+
+.settings-profile-org {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+}
+
+.settings-profile-lastlogin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-muted);
+  margin-top: var(--spacing-xs);
+}
+
+/* ============================================
+   Form
+   ============================================ */
 .settings-form {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
   max-width: 500px;
+}
+
+.settings-form--wide {
+  max-width: 600px;
 }
 
 .form-row {
@@ -121,6 +217,12 @@
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
+}
+
+.settings-form .input-field__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .settings-form input {
@@ -143,13 +245,40 @@
   cursor: not-allowed;
 }
 
-/* Toggle Group (Theme selector) */
+/* ============================================
+   Select
+   ============================================ */
+.settings-select {
+  padding: var(--spacing-5) 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  background: var(--color-white);
+  transition: border-color var(--transition-fast);
+  cursor: pointer;
+  max-width: 300px;
+}
+
+.settings-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ============================================
+   Toggle Group (Theme selector)
+   ============================================ */
 .settings-toggle-group {
   display: flex;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
   max-width: 200px;
+}
+
+.settings-toggle-group--3 {
+  max-width: 300px;
 }
 
 .settings-toggle-btn {
@@ -173,7 +302,114 @@
   background: var(--color-surface-secondary);
 }
 
-/* Security */
+/* ============================================
+   Switch Toggle
+   ============================================ */
+.settings-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.settings-switch.active {
+  background: var(--color-primary);
+}
+
+.settings-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: var(--color-white);
+  transition: transform var(--transition-fast);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.settings-switch.active .settings-switch-thumb {
+  transform: translateX(20px);
+}
+
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.settings-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+}
+
+.settings-notification-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* ============================================
+   Palette Selector
+   ============================================ */
+.settings-palette-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.settings-palette-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 2px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  background: var(--color-white);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.settings-palette-btn:hover {
+  border-color: var(--color-border);
+  background: var(--color-surface-secondary);
+}
+
+.settings-palette-btn.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.settings-palette-swatches {
+  display: flex;
+  gap: 4px;
+}
+
+.settings-palette-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.settings-palette-label {
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+/* ============================================
+   Security
+   ============================================ */
 .security-option {
   display: flex;
   align-items: center;
@@ -200,7 +436,144 @@
   color: var(--color-text-secondary);
 }
 
-/* Organisation */
+/* ============================================
+   Usage Tab
+   ============================================ */
+.settings-usage-chart {
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  background: var(--color-white);
+}
+
+.settings-usage-topusers {
+  margin-top: var(--spacing-xl);
+}
+
+/* ============================================
+   Audit Log Tab
+   ============================================ */
+.settings-audit-filters {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.settings-audit-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.settings-audit-action-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: capitalize;
+}
+
+.settings-audit-entity {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text);
+  text-transform: capitalize;
+}
+
+.settings-audit-details {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ============================================
+   Keyboard Shortcuts Tab
+   ============================================ */
+.settings-shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.settings-shortcuts-group {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.settings-shortcuts-category {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-surface-secondary);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.settings-shortcuts-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background-color var(--transition-fast);
+}
+
+.settings-shortcut-row:last-child {
+  border-bottom: none;
+}
+
+.settings-shortcut-row:hover {
+  background: var(--color-surface);
+}
+
+.settings-shortcut-desc {
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+}
+
+.settings-shortcut-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: inherit;
+  font-size: var(--font-size-body-sm);
+}
+
+.settings-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 2px 8px;
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  box-shadow: 0 1px 0 var(--color-border);
+}
+
+.settings-kbd-plus {
+  margin: 0 2px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+/* ============================================
+   Organisation (kept from original)
+   ============================================ */
 .org-info {
   display: flex;
   flex-direction: column;
@@ -223,7 +596,9 @@
   font-weight: var(--font-weight-medium);
 }
 
-/* Audiences (settings context) */
+/* ============================================
+   Audiences (settings context)
+   ============================================ */
 .audiences-section h2 {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);

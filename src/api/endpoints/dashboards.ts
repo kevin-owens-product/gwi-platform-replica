@@ -22,4 +22,15 @@ export const dashboardsApi = {
 
   delete: (id: string) =>
     apiClient.delete(`v3/dashboards/${id}`).json<void>(),
+
+  listTemplates: () =>
+    apiClient.get('v3/dashboards/templates')
+      .json<Array<{ id: string; name: string; description: string; widget_count: number }>>(),
+
+  getFilters: (dashboardId: string) =>
+    apiClient.get(`v3/dashboards/${dashboardId}/filters`)
+      .json<Array<{ id: string; label: string; type: string; options: string[] }>>(),
+
+  export: (id: string, format: string) =>
+    apiClient.get(`v3/dashboards/${id}/export`, { searchParams: { format } }).blob(),
 }

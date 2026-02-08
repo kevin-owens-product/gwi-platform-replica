@@ -268,3 +268,92 @@
 .picker-back-btn:hover {
   text-decoration: underline;
 }
+
+/* ---- Advanced toggle ---- */
+
+.config-panel__advanced-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: none;
+  background: none;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.config-panel__advanced-toggle:hover {
+  text-decoration: underline;
+}
+
+/* ---- Advanced controls row ---- */
+
+.config-panel__advanced {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xs) var(--spacing-md) var(--spacing-sm);
+  border-top: 1px solid var(--color-border-light);
+  background-color: var(--color-surface);
+}
+
+/* ---- NET button ---- */
+
+.config-panel__net-btn {
+  border-color: var(--color-warning-border, #f59e0b);
+  color: var(--color-warning-text, #92400e);
+}
+
+.config-panel__net-btn:hover {
+  border-color: var(--color-warning-text, #92400e);
+  background-color: var(--color-warning-bg, #fef3c7);
+  color: var(--color-warning-text, #92400e);
+}
+
+/* ---- Confidence button ---- */
+
+.config-panel__confidence-btn {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Suppression threshold ---- */
+
+.config-panel__threshold {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.config-panel__threshold-input {
+  width: 48px;
+  padding: 1px 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  text-align: center;
+  background: var(--color-white);
+}
+
+.config-panel__threshold-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-50);
+}
+
+/* ---- Weighted badge ---- */
+
+.config-panel__weighted-badge {
+  padding: 1px 6px;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}

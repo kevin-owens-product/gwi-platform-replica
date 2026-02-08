@@ -1,4 +1,4 @@
-// Data query types for the GWI Platform API
+// Data query types for the GWI Platform API -- enhanced
 
 import type { MetricType, WaveId } from './common'
 import type { AudienceExpression } from './audience'
@@ -12,6 +12,10 @@ export interface StatsQueryRequest {
   base_audience?: AudienceExpression
   compare_audiences?: AudienceExpression[]
   filters?: QueryFilter[]
+  // New fields
+  include_trend?: boolean
+  include_confidence_intervals?: boolean
+  comparison_wave_ids?: WaveId[]
 }
 
 export interface StatsQueryResponse {
@@ -28,8 +32,14 @@ export interface StatsResult {
 export interface StatsDatapoint {
   datapoint_id: string
   datapoint_name: string
-  metrics: Record<MetricType, number>
-  audience_metrics?: Record<string, Record<MetricType, number>>
+  metrics: Record<string, number>
+  audience_metrics?: Record<string, Record<string, number>>
+  // New fields
+  trend_data?: number[]
+  confidence_interval?: { lower: number; upper: number }
+  is_anomaly?: boolean
+  comparison_value?: number
+  comparison_change_pct?: number
 }
 
 // Crosstab query
@@ -41,6 +51,12 @@ export interface CrosstabQueryRequest {
   wave_ids: WaveId[]
   location_ids: string[]
   base_audience?: AudienceExpression
+  // New fields
+  stat_test_type?: 'chi_square' | 'z_test' | 'z_test_bonferroni' | 't_test'
+  confidence_level?: number
+  include_nets?: boolean
+  suppression_threshold?: number
+  weighting_scheme_id?: string
 }
 
 // Intersection query - audience overlap analysis
@@ -54,7 +70,7 @@ export interface IntersectionQueryRequest {
 export interface IntersectionResult {
   intersections: {
     audience_combination: string[]
-    metrics: Record<MetricType, number>
+    metrics: Record<string, number>
   }[]
 }
 
@@ -70,4 +86,9 @@ export interface QueryMeta {
   wave_name: string
   location_name: string
   execution_time_ms: number
+  // New fields
+  effective_base?: number
+  weighted_base?: number
+  confidence_level?: number
+  data_freshness?: string
 }

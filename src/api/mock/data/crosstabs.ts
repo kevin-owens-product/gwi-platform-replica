@@ -5,16 +5,25 @@ export const mockCrosstabs: Crosstab[] = [
   {
     id: 'xt_social_by_age', name: 'Social Media Usage by Age Group', description: 'Platform usage cross-tabulated with age demographics',
     created_at: daysAgo(20), updated_at: daysAgo(3), user_id: 'user_sarah', is_shared: true,
+    tags: ['social_media', 'demographics'],
+    folder_id: 'folder-1',
     config: {
       rows: [{ type: 'question', question_id: 'q_social_platforms', datapoint_ids: ['dp_facebook', 'dp_instagram', 'dp_tiktok', 'dp_twitter', 'dp_linkedin', 'dp_youtube'] }],
       columns: [{ type: 'question', question_id: 'q_age_group', datapoint_ids: ['dp_age_16_24', 'dp_age_25_34', 'dp_age_35_44', 'dp_age_45_54', 'dp_age_55_64'] }],
       metrics: ['audience_percentage', 'audience_index'], wave_ids: [{ study_id: 'study_core', wave_id: 'wave_2024q4' }], location_ids: ['loc_us'],
       highlight: { type: 'heatmap' },
+      stat_test: {
+        test_type: 'z_test',
+        confidence_levels: { primary: 95 },
+        notation: 'letter',
+        overlap_handling: 'effective_base',
+      },
     },
   },
   {
     id: 'xt_streaming_income', name: 'Streaming Services by Income', description: 'Streaming platform preference by household income',
     created_at: daysAgo(15), updated_at: daysAgo(5), user_id: 'user_maria', is_shared: true,
+    tags: ['streaming', 'income'],
     config: {
       rows: [{ type: 'question', question_id: 'q_tv_platforms', datapoint_ids: ['dp_netflix', 'dp_disney', 'dp_prime', 'dp_hbo', 'dp_hulu', 'dp_apple_tv'] }],
       columns: [{ type: 'question', question_id: 'q_income', datapoint_ids: ['dp_income_low', 'dp_income_mid_low', 'dp_income_mid', 'dp_income_mid_high', 'dp_income_high'] }],
@@ -25,26 +34,45 @@ export const mockCrosstabs: Crosstab[] = [
   {
     id: 'xt_purchase_gender', name: 'Online Purchases by Gender', description: 'E-commerce purchase categories split by gender',
     created_at: daysAgo(12), updated_at: daysAgo(4), user_id: 'user_sarah', is_shared: false,
+    folder_id: 'folder-2',
     config: {
       rows: [{ type: 'question', question_id: 'q_purchase_online', datapoint_ids: ['dp_clothing', 'dp_electronics', 'dp_food_delivery', 'dp_beauty', 'dp_home_garden'] }],
       columns: [{ type: 'question', question_id: 'q_gender', datapoint_ids: ['dp_gender_male', 'dp_gender_female', 'dp_gender_nonbinary'] }],
       metrics: ['audience_percentage', 'audience_size', 'audience_index'], wave_ids: [{ study_id: 'study_core', wave_id: 'wave_2024q4' }], location_ids: ['loc_us', 'loc_uk'],
       highlight: { type: 'significance' },
+      suppression: {
+        enabled: true,
+        minimum_base_size: 30,
+        suppression_action: 'asterisk',
+        apply_to: 'cells',
+        suppress_significance: true,
+        complementary_suppression: false,
+        footnote_on_suppression: true,
+      },
     },
   },
   {
     id: 'xt_fitness_age', name: 'Fitness Activities by Age', description: 'Physical activity participation across age groups',
     created_at: daysAgo(10), updated_at: daysAgo(2), user_id: 'user_alex', is_shared: true,
+    tags: ['fitness', 'demographics'],
     config: {
       rows: [{ type: 'question', question_id: 'q_fitness', datapoint_ids: ['dp_gym', 'dp_running', 'dp_yoga', 'dp_swimming', 'dp_cycling'] }],
       columns: [{ type: 'question', question_id: 'q_age_group', datapoint_ids: ['dp_age_16_24', 'dp_age_25_34', 'dp_age_35_44', 'dp_age_45_54'] }],
       metrics: ['audience_percentage', 'audience_index'], wave_ids: [{ study_id: 'study_core', wave_id: 'wave_2024q4' }], location_ids: ['loc_us'],
       highlight: { type: 'heatmap' },
+      stat_test: {
+        test_type: 'z_test_bonferroni',
+        confidence_levels: { primary: 95, secondary: 99 },
+        notation: 'arrow',
+        overlap_handling: 'independent',
+      },
     },
   },
   {
     id: 'xt_brand_by_audience', name: 'Brand Discovery by Audience', description: 'How different audience segments discover brands',
     created_at: daysAgo(7), updated_at: daysAgo(1), user_id: 'user_sophia', is_shared: true,
+    tags: ['brand_health', 'quarterly'],
+    folder_id: 'folder-1',
     config: {
       rows: [{ type: 'question', question_id: 'q_brand_discovery', datapoint_ids: ['dp_social_ads', 'dp_influencer', 'dp_search', 'dp_word_of_mouth', 'dp_tv_ads'] }],
       columns: [{ type: 'audience', audience_id: 'aud_gen_z_social' }, { type: 'audience', audience_id: 'aud_tech_savvy' }, { type: 'audience', audience_id: 'aud_eco_shoppers' }],
@@ -68,6 +96,8 @@ export const mockCrosstabs: Crosstab[] = [
   {
     id: 'xt_media_deep_dive', name: 'Media Consumption Deep Dive', description: 'Multi-question media consumption cross-tabulated with demographics',
     created_at: daysAgo(25), updated_at: daysAgo(1), user_id: 'user_sarah', is_shared: true,
+    tags: ['media', 'deep_dive'],
+    folder_id: 'folder-1',
     config: {
       rows: [
         { type: 'question', question_id: 'q_social_platforms', datapoint_ids: ['dp_facebook', 'dp_instagram', 'dp_tiktok', 'dp_twitter', 'dp_linkedin', 'dp_youtube', 'dp_snapchat', 'dp_pinterest', 'dp_reddit', 'dp_whatsapp', 'dp_telegram', 'dp_discord'] },
@@ -89,11 +119,19 @@ export const mockCrosstabs: Crosstab[] = [
       ],
       metrics: ['audience_percentage', 'audience_index'], wave_ids: [{ study_id: 'study_core', wave_id: 'wave_2024q4' }], location_ids: ['loc_us'],
       highlight: { type: 'heatmap' },
+      stat_test: {
+        test_type: 'chi_square',
+        confidence_levels: { primary: 95, secondary: 99 },
+        notation: 'letter',
+        overlap_handling: 'effective_base',
+        multiple_comparison_correction: 'bonferroni',
+      },
     },
   },
   {
     id: 'xt_brand_health_tech', name: 'Brand Health Tracker - Tech Brands', description: 'Awareness, consideration and usage metrics for major tech brands',
     created_at: daysAgo(18), updated_at: daysAgo(2), user_id: 'user_maria', is_shared: true,
+    tags: ['brand_health', 'technology'],
     config: {
       rows: [
         { type: 'question', question_id: 'q_tech_brands_awareness', datapoint_ids: [
@@ -120,6 +158,8 @@ export const mockCrosstabs: Crosstab[] = [
   {
     id: 'xt_global_attitudes', name: 'Global Consumer Attitudes', description: 'Attitude statements tracked across 12 countries',
     created_at: daysAgo(30), updated_at: daysAgo(3), user_id: 'user_alex', is_shared: true,
+    tags: ['attitudes', 'global'],
+    folder_id: 'folder-2',
     config: {
       rows: [
         { type: 'question', question_id: 'q_attitudes_environment', datapoint_ids: [
@@ -162,6 +202,7 @@ export const mockCrosstabs: Crosstab[] = [
   {
     id: 'xt_purchase_journey', name: 'Purchase Journey by Demographics', description: 'Product categories and purchase channels across demographic segments',
     created_at: daysAgo(14), updated_at: daysAgo(1), user_id: 'user_sophia', is_shared: true,
+    tags: ['purchase', 'journey', 'quarterly'],
     config: {
       rows: [
         { type: 'question', question_id: 'q_purchase_categories', datapoint_ids: [
@@ -189,6 +230,17 @@ export const mockCrosstabs: Crosstab[] = [
       ],
       metrics: ['audience_percentage', 'audience_size', 'audience_index'], wave_ids: [{ study_id: 'study_core', wave_id: 'wave_2024q4' }], location_ids: ['loc_us'],
       highlight: { type: 'significance' },
+      suppression: {
+        enabled: true,
+        minimum_base_size: 50,
+        suppression_action: 'grey_out',
+        apply_to: 'both',
+        suppress_significance: true,
+        complementary_suppression: true,
+        warning_threshold: 75,
+        warning_text: 'Low base size - interpret with caution',
+        footnote_on_suppression: true,
+      },
     },
   },
 ]

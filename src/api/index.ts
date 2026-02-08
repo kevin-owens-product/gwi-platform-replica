@@ -19,4 +19,6 @@ export const {
   queriesApi,
   sparkApi,
   adminApi,
+  canvasApi,
+  mediaApi,
 } = source

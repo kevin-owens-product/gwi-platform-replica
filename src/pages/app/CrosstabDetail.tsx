@@ -1,6 +1,10 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Save, ChevronLeft } from 'lucide-react';
+import {
+  ArrowLeft, Download, Share2, Save, ChevronLeft,
+  FileSpreadsheet, FileText, FileDown, Lock, Unlock,
+  ToggleLeft, ToggleRight, Info, X,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCrosstab, useUpdateCrosstab, useCreateCrosstab } from '@/hooks/useCrosstabs';
 import { useAudiences } from '@/hooks/useAudiences';
@@ -19,6 +23,13 @@ interface CrosstabDetailProps {
   isNew?: boolean;
 }
 
+// Significance threshold options
+const significanceThresholds = [
+  { label: 'p < 0.05', value: 0.05 },
+  { label: 'p < 0.01', value: 0.01 },
+  { label: 'p < 0.001', value: 0.001 },
+];
+
 export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDetailProps): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -29,6 +40,26 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
   const [crosstabName, setCrosstabName] = useState<string>('');
   const [highlightMode, setHighlightMode] = useState<'none' | 'heatmap' | 'index'>('heatmap');
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // NEW: Cell detail info bar state
+  const [cellDetail, setCellDetail] = useState<{
+    rowLabel: string;
+    colLabel: string;
+    values: Partial<Record<MetricType, number>>;
+    sampleSize: number;
+    significant?: boolean;
+  } | null>(null);
+
+  // NEW: Statistical significance controls
+  const [significanceEnabled, setSignificanceEnabled] = useState(false);
+  const [significanceThreshold, setSignificanceThreshold] = useState(0.05);
+
+  // NEW: Freeze headers toggle
+  const [freezeHeaders, setFreezeHeaders] = useState(true);
+
+  // NEW: Row & Column totals toggles
+  const [showRowTotals, setShowRowTotals] = useState(false);
+  const [showColumnTotals, setShowColumnTotals] = useState(false);
 
   // Table height calculation — measure available space and size the grid via inline style
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -269,10 +300,43 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
     toast.success('CSV exported');
   };
 
+  // NEW: Export handlers (Excel, PDF - mock)
+  const handleExportExcel = () => {
+    if (gridRows.length === 0 || gridColumns.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+    toast.success('Excel (.xlsx) export started. File will download shortly.');
+  };
+
+  const handleExportPdf = () => {
+    if (gridRows.length === 0 || gridColumns.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+    toast.success('PDF export started. File will download shortly.');
+  };
+
   // Share handler
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     toast.success('Link copied to clipboard');
+  };
+
+  // NEW: Cell click handler for cell detail info bar
+  const handleCellClick = (rowIdx: number, colIdx: number) => {
+    const cell = gridCells[rowIdx]?.[colIdx];
+    const row = gridRows[rowIdx];
+    const col = gridColumns[colIdx];
+    if (!cell || !row || !col) return;
+
+    setCellDetail({
+      rowLabel: row.label,
+      colLabel: col.label,
+      values: cell.values,
+      sampleSize: cell.sample_size,
+      significant: cell.significant,
+    });
   };
 
   // Unsaved changes tracking
@@ -381,8 +445,108 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
           />
         </div>
 
+        {/* NEW: Toolbar row - Significance, Freeze Headers, Totals, Export Options */}
+        <div className="crosstab-toolbar">
+          <div className="crosstab-toolbar-left">
+            {/* Statistical Significance */}
+            <div className="toolbar-group">
+              <button
+                className={`toolbar-toggle ${significanceEnabled ? 'toolbar-toggle--active' : ''}`}
+                onClick={() => setSignificanceEnabled(!significanceEnabled)}
+                title="Toggle significance testing"
+              >
+                {significanceEnabled ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                <span>Significance</span>
+              </button>
+              {significanceEnabled && (
+                <select
+                  className="toolbar-select"
+                  value={significanceThreshold}
+                  onChange={(e) => setSignificanceThreshold(parseFloat(e.target.value))}
+                >
+                  {significanceThresholds.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div className="toolbar-divider" />
+
+            {/* Freeze Headers */}
+            <button
+              className={`toolbar-toggle ${freezeHeaders ? 'toolbar-toggle--active' : ''}`}
+              onClick={() => setFreezeHeaders(!freezeHeaders)}
+              title="Toggle sticky headers"
+            >
+              {freezeHeaders ? <Lock size={14} /> : <Unlock size={14} />}
+              <span>Freeze Headers</span>
+            </button>
+
+            <div className="toolbar-divider" />
+
+            {/* Row Totals */}
+            <button
+              className={`toolbar-toggle ${showRowTotals ? 'toolbar-toggle--active' : ''}`}
+              onClick={() => setShowRowTotals(!showRowTotals)}
+              title="Toggle row totals"
+            >
+              {showRowTotals ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+              <span>Row Totals</span>
+            </button>
+
+            {/* Column Totals */}
+            <button
+              className={`toolbar-toggle ${showColumnTotals ? 'toolbar-toggle--active' : ''}`}
+              onClick={() => setShowColumnTotals(!showColumnTotals)}
+              title="Toggle column totals"
+            >
+              {showColumnTotals ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+              <span>Col Totals</span>
+            </button>
+          </div>
+
+          <div className="crosstab-toolbar-right">
+            {/* Export Options */}
+            <div className="toolbar-group toolbar-export-group">
+              <span className="toolbar-export-label">Export:</span>
+              <button className="toolbar-export-btn" onClick={handleExportExcel} title="Export as Excel">
+                <FileSpreadsheet size={14} />
+                <span>.xlsx</span>
+              </button>
+              <button className="toolbar-export-btn" onClick={handleDownloadCsv} title="Export as CSV">
+                <FileText size={14} />
+                <span>.csv</span>
+              </button>
+              <button className="toolbar-export-btn" onClick={handleExportPdf} title="Export as PDF">
+                <FileDown size={14} />
+                <span>.pdf</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Significance Legend */}
+        {significanceEnabled && (
+          <div className="significance-legend">
+            <Info size={14} />
+            <span className="significance-legend-text">
+              Significance testing at <strong>{significanceThresholds.find((t) => t.value === significanceThreshold)?.label}</strong>.
+            </span>
+            <span className="significance-legend-item significance-legend-item--up">
+              Significantly higher
+            </span>
+            <span className="significance-legend-item significance-legend-item--down">
+              Significantly lower
+            </span>
+            <span className="significance-legend-item significance-legend-item--none">
+              Not significant
+            </span>
+          </div>
+        )}
+
         <div
-          className="crosstab-table-container"
+          className={`crosstab-table-container ${freezeHeaders ? 'crosstab-table-container--frozen' : ''}`}
           ref={tableContainerRef}
         >
           {isDataLoading ? (
@@ -406,6 +570,73 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
           )}
         </div>
 
+        {/* NEW: Cell Detail Info Bar */}
+        {cellDetail && (
+          <div className="cell-detail-bar">
+            <div className="cell-detail-header">
+              <Info size={14} />
+              <span className="cell-detail-title">
+                {cellDetail.rowLabel} / {cellDetail.colLabel}
+              </span>
+              <button className="cell-detail-close" onClick={() => setCellDetail(null)}>
+                <X size={14} />
+              </button>
+            </div>
+            <div className="cell-detail-metrics">
+              <div className="cell-detail-metric">
+                <span className="cell-detail-metric-label">Sample Size</span>
+                <span className="cell-detail-metric-value">{cellDetail.sampleSize.toLocaleString()}</span>
+              </div>
+              <div className="cell-detail-metric">
+                <span className="cell-detail-metric-label">Percentage</span>
+                <span className="cell-detail-metric-value">
+                  {cellDetail.values.audience_percentage != null
+                    ? formatMetricValue('audience_percentage', cellDetail.values.audience_percentage)
+                    : '-'}
+                </span>
+              </div>
+              <div className="cell-detail-metric">
+                <span className="cell-detail-metric-label">Index</span>
+                <span className="cell-detail-metric-value">
+                  {cellDetail.values.audience_index != null
+                    ? formatMetricValue('audience_index', cellDetail.values.audience_index)
+                    : '-'}
+                </span>
+              </div>
+              <div className="cell-detail-metric">
+                <span className="cell-detail-metric-label">Weighted Size</span>
+                <span className="cell-detail-metric-value">
+                  {cellDetail.values.audience_size != null
+                    ? cellDetail.values.audience_size.toLocaleString()
+                    : '-'}
+                </span>
+              </div>
+              <div className="cell-detail-metric">
+                <span className="cell-detail-metric-label">Unweighted Size</span>
+                <span className="cell-detail-metric-value">
+                  {cellDetail.values.positive_size != null
+                    ? cellDetail.values.positive_size.toLocaleString()
+                    : cellDetail.sampleSize.toLocaleString()}
+                </span>
+              </div>
+              <div className="cell-detail-metric">
+                <span className="cell-detail-metric-label">Confidence Level</span>
+                <span className="cell-detail-metric-value">
+                  {cellDetail.significant ? '95%+' : 'Below threshold'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Clickable cell detail instructions */}
+        {gridRows.length > 0 && gridColumns.length > 0 && !cellDetail && (
+          <div className="cell-detail-hint">
+            <Info size={12} />
+            <span>Click any cell in the grid to view detailed metrics</span>
+          </div>
+        )}
+
         <div className="crosstab-footer" ref={footerRef}>
           <div className="crosstab-stats">
             <span className="crosstab-stat">
@@ -417,6 +648,16 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
             {crosstab?.updated_at && (
               <span className="crosstab-stat">
                 Updated: <strong>{formatRelativeDate(crosstab.updated_at)}</strong>
+              </span>
+            )}
+            {showRowTotals && (
+              <span className="crosstab-stat crosstab-stat--active">
+                Row Totals: <strong>On</strong>
+              </span>
+            )}
+            {showColumnTotals && (
+              <span className="crosstab-stat crosstab-stat--active">
+                Col Totals: <strong>On</strong>
               </span>
             )}
           </div>
@@ -525,7 +766,7 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
         onClear={handleBaseClear}
       />
 
-      {/* 4. Data Set Picker (Study → Wave two-step) */}
+      {/* 4. Data Set Picker (Study -> Wave two-step) */}
       <Modal
         open={dataSetPickerOpen}
         onClose={() => { setDataSetPickerOpen(false); setDataSetStep('study'); setSelectedStudy(null); }}

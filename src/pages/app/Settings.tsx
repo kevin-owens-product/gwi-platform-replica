@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, Shield, Building2, Save, Users, BarChart2, Settings2, Loader2 } from 'lucide-react';
+import {
+  User, Shield, Building2, Save, Users, BarChart2, Settings2, Loader2,
+  Key, Clock, Bell, BellOff, Mail, Copy, RefreshCw, Eye, EyeOff,
+  LogIn, Download, UserPlus, FileText, Database, Link2, Unlink, Check
+} from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useProfile } from '@/hooks/useAuth';
@@ -18,11 +22,99 @@ interface ProfileFormData {
   organization_name: string;
 }
 
+interface ApiKeyEntry {
+  id: string;
+  name: string;
+  key: string;
+  created: string;
+  lastUsed: string;
+  requests: number;
+}
+
+interface AuditEntry {
+  id: string;
+  action: string;
+  detail: string;
+  timestamp: string;
+  icon: React.ReactNode;
+}
+
+interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  connected: boolean;
+  icon: string;
+  lastSync?: string;
+}
+
+interface DataPermission {
+  dataset: string;
+  access: 'full' | 'read-only' | 'no-access';
+  grantedBy: string;
+  grantedDate: string;
+}
+
 const settingsTabs = [
   { id: 'profile', label: 'Profile', icon: <User size={16} /> },
   { id: 'team', label: 'Team', icon: <Users size={16} /> },
   { id: 'usage', label: 'Usage', icon: <BarChart2 size={16} /> },
   { id: 'preferences', label: 'Preferences', icon: <Settings2 size={16} /> },
+  { id: 'api', label: 'API', icon: <Key size={16} /> },
+  { id: 'activity', label: 'Activity', icon: <Clock size={16} /> },
+  { id: 'integrations', label: 'Integrations', icon: <Link2 size={16} /> },
+];
+
+// Mock API keys
+const initialApiKeys: ApiKeyEntry[] = [
+  {
+    id: '1',
+    name: 'Production Key',
+    key: 'gwi_prod_sk_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6',
+    created: '2025-09-15',
+    lastUsed: '2026-02-07',
+    requests: 12847,
+  },
+  {
+    id: '2',
+    name: 'Development Key',
+    key: 'gwi_dev_sk_x9y8z7w6v5u4t3s2r1q0p9o8n7m6l5k4',
+    created: '2025-11-02',
+    lastUsed: '2026-02-06',
+    requests: 3291,
+  },
+];
+
+// Mock audit log
+const mockAuditLog: AuditEntry[] = [
+  { id: '1', action: 'Login', detail: 'Signed in from Chrome on macOS', timestamp: '2026-02-08 09:14', icon: <LogIn size={14} /> },
+  { id: '2', action: 'Data Export', detail: 'Exported audience segment "UK Adults 18-34" as CSV', timestamp: '2026-02-07 16:42', icon: <Download size={14} /> },
+  { id: '3', action: 'Audience Created', detail: 'Created audience "Premium Shoppers Q1 2026"', timestamp: '2026-02-07 11:23', icon: <UserPlus size={14} /> },
+  { id: '4', action: 'Report Generated', detail: 'TV Study report for BBC One + ITV campaign', timestamp: '2026-02-06 14:55', icon: <FileText size={14} /> },
+  { id: '5', action: 'Login', detail: 'Signed in from Safari on iOS', timestamp: '2026-02-06 08:30', icon: <LogIn size={14} /> },
+  { id: '6', action: 'Data Export', detail: 'Exported Print R&F results for Vogue campaign', timestamp: '2026-02-05 17:10', icon: <Download size={14} /> },
+  { id: '7', action: 'Audience Created', detail: 'Created audience "Sports Enthusiasts Male 25-44"', timestamp: '2026-02-05 10:05', icon: <UserPlus size={14} /> },
+  { id: '8', action: 'Settings Updated', detail: 'Changed notification preferences', timestamp: '2026-02-04 13:22', icon: <Settings2 size={14} /> },
+  { id: '9', action: 'Login', detail: 'Signed in from Firefox on Windows', timestamp: '2026-02-04 09:00', icon: <LogIn size={14} /> },
+  { id: '10', action: 'API Key Created', detail: 'Generated new development API key', timestamp: '2026-02-03 15:45', icon: <Key size={14} /> },
+];
+
+// Mock integrations
+const initialIntegrations: Integration[] = [
+  { id: 'ga', name: 'Google Analytics', description: 'Import web analytics data to enrich audience insights', connected: true, icon: 'GA', lastSync: '2 hours ago' },
+  { id: 'sf', name: 'Salesforce', description: 'Sync CRM data with GWI audience segments', connected: false, icon: 'SF' },
+  { id: 'hs', name: 'HubSpot', description: 'Push audience segments to HubSpot for targeted campaigns', connected: true, icon: 'HS', lastSync: '1 day ago' },
+  { id: 'sl', name: 'Slack', description: 'Receive study completion and export notifications in Slack', connected: false, icon: 'SL' },
+];
+
+// Mock data permissions
+const mockDataPermissions: DataPermission[] = [
+  { dataset: 'GWI Core - Global', access: 'full', grantedBy: 'Admin', grantedDate: '2025-01-15' },
+  { dataset: 'GWI Core - UK', access: 'full', grantedBy: 'Admin', grantedDate: '2025-01-15' },
+  { dataset: 'GWI USA', access: 'read-only', grantedBy: 'Team Lead', grantedDate: '2025-06-20' },
+  { dataset: 'GWI Kids', access: 'no-access', grantedBy: '-', grantedDate: '-' },
+  { dataset: 'GWI Sports', access: 'full', grantedBy: 'Admin', grantedDate: '2025-03-10' },
+  { dataset: 'GWI Zeitgeist', access: 'read-only', grantedBy: 'Team Lead', grantedDate: '2025-09-01' },
 ];
 
 export default function Settings(): React.JSX.Element {
@@ -48,6 +140,23 @@ export default function Settings(): React.JSX.Element {
     locale: 'en-US',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
+
+  // Notification settings
+  const [notifications, setNotifications] = useState({
+    emailNotifications: true,
+    inAppNotifications: true,
+    weeklyDigest: false,
+    studyCompleted: true,
+    exportReady: true,
+    teamUpdates: false,
+  });
+
+  // API Keys state
+  const [apiKeys, setApiKeys] = useState<ApiKeyEntry[]>(initialApiKeys);
+  const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
+
+  // Integrations state
+  const [integrations, setIntegrations] = useState<Integration[]>(initialIntegrations);
 
   // Sync form data when profile loads
   useEffect(() => {
@@ -120,6 +229,51 @@ export default function Settings(): React.JSX.Element {
         timezone: preferences.timezone,
       },
     });
+  };
+
+  // API Key handlers
+  const maskKey = (key: string): string => {
+    return key.substring(0, 12) + '...' + key.substring(key.length - 4);
+  };
+
+  const toggleKeyVisibility = (id: string) => {
+    setVisibleKeys((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const copyKey = (key: string) => {
+    navigator.clipboard.writeText(key);
+    toast.success('API key copied to clipboard');
+  };
+
+  const regenerateKey = (id: string) => {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let newKey = 'gwi_regen_sk_';
+    for (let i = 0; i < 32; i++) {
+      newKey += chars[Math.floor(Math.random() * chars.length)];
+    }
+    setApiKeys((prev) =>
+      prev.map((k) => k.id === id ? { ...k, key: newKey, created: new Date().toISOString().split('T')[0] } : k)
+    );
+    toast.success('API key regenerated');
+  };
+
+  // Integration handlers
+  const toggleIntegration = (id: string) => {
+    setIntegrations((prev) =>
+      prev.map((integ) =>
+        integ.id === id
+          ? { ...integ, connected: !integ.connected, lastSync: !integ.connected ? 'Just now' : undefined }
+          : integ
+      )
+    );
+    const integration = integrations.find((i) => i.id === id);
+    if (integration) {
+      toast.success(
+        integration.connected
+          ? `${integration.name} disconnected`
+          : `${integration.name} connected`
+      );
+    }
   };
 
   return (
@@ -233,9 +387,49 @@ export default function Settings(): React.JSX.Element {
 
           {/* Team Tab */}
           {activeTab === 'team' && (
-            <div className="settings-section">
-              <UserManagement />
-            </div>
+            <>
+              <div className="settings-section">
+                <UserManagement />
+              </div>
+
+              {/* Data Permissions */}
+              <div className="settings-section">
+                <h2>Data Permissions</h2>
+                <p className="section-description">Datasets and studies your team has access to</p>
+
+                <div className="settings-data-permissions-table-wrapper">
+                  <table className="settings-data-permissions-table">
+                    <thead>
+                      <tr>
+                        <th>Dataset / Study</th>
+                        <th>Access Level</th>
+                        <th>Granted By</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mockDataPermissions.map((perm: DataPermission) => (
+                        <tr key={perm.dataset}>
+                          <td>
+                            <div className="settings-dp-dataset">
+                              <Database size={14} />
+                              <span>{perm.dataset}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className={`settings-dp-badge settings-dp-badge-${perm.access}`}>
+                              {perm.access === 'full' ? 'Full Access' : perm.access === 'read-only' ? 'Read Only' : 'No Access'}
+                            </span>
+                          </td>
+                          <td className="settings-dp-muted">{perm.grantedBy}</td>
+                          <td className="settings-dp-muted">{perm.grantedDate}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
           )}
 
           {/* Usage Tab */}
@@ -249,58 +443,342 @@ export default function Settings(): React.JSX.Element {
 
           {/* Preferences Tab */}
           {activeTab === 'preferences' && (
-            <div className="settings-section">
-              <h2>Preferences</h2>
-              <p className="section-description">Customise your platform experience</p>
+            <>
+              <div className="settings-section">
+                <h2>Preferences</h2>
+                <p className="section-description">Customise your platform experience</p>
 
-              <form className="settings-form" onSubmit={(e) => { e.preventDefault(); handleSavePreferences(); }}>
-                <div className="form-group">
-                  <label className="input-field__label">Theme</label>
-                  <div className="settings-toggle-group">
+                <form className="settings-form" onSubmit={(e) => { e.preventDefault(); handleSavePreferences(); }}>
+                  <div className="form-group">
+                    <label className="input-field__label">Theme</label>
+                    <div className="settings-toggle-group">
+                      <button
+                        type="button"
+                        className={`settings-toggle-btn ${preferences.theme === 'light' ? 'active' : ''}`}
+                        onClick={() => setPreferences({ ...preferences, theme: 'light' })}
+                      >
+                        Light
+                      </button>
+                      <button
+                        type="button"
+                        className={`settings-toggle-btn ${preferences.theme === 'dark' ? 'active' : ''}`}
+                        onClick={() => setPreferences({ ...preferences, theme: 'dark' })}
+                      >
+                        Dark
+                      </button>
+                    </div>
+                  </div>
+
+                  <Input
+                    label="Locale"
+                    type="text"
+                    value={preferences.locale}
+                    onChange={(e) => setPreferences({ ...preferences, locale: e.target.value })}
+                    hint="e.g. en-US, en-GB, de-DE"
+                    fullWidth
+                  />
+
+                  <Input
+                    label="Timezone"
+                    type="text"
+                    value={preferences.timezone}
+                    onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
+                    hint="e.g. Europe/London, America/New_York"
+                    fullWidth
+                  />
+
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    icon={<Save size={16} />}
+                    loading={updatePreferences.isPending}
+                  >
+                    Save preferences
+                  </Button>
+                </form>
+              </div>
+
+              {/* Notification Settings */}
+              <div className="settings-section">
+                <h2>Notification Settings</h2>
+                <p className="section-description">Control how and when you receive notifications</p>
+
+                <div className="settings-notifications">
+                  <div className="settings-notification-item">
+                    <div className="settings-notification-info">
+                      <div className="settings-notification-icon">
+                        <Mail size={16} />
+                      </div>
+                      <div>
+                        <h3>Email Notifications</h3>
+                        <p>Receive important updates via email</p>
+                      </div>
+                    </div>
                     <button
-                      type="button"
-                      className={`settings-toggle-btn ${preferences.theme === 'light' ? 'active' : ''}`}
-                      onClick={() => setPreferences({ ...preferences, theme: 'light' })}
+                      className={`settings-notification-toggle ${notifications.emailNotifications ? 'active' : ''}`}
+                      onClick={() => {
+                        setNotifications((prev) => ({ ...prev, emailNotifications: !prev.emailNotifications }));
+                        toast.success(notifications.emailNotifications ? 'Email notifications disabled' : 'Email notifications enabled');
+                      }}
                     >
-                      Light
+                      <span className="settings-notification-toggle-dot" />
                     </button>
+                  </div>
+
+                  <div className="settings-notification-item">
+                    <div className="settings-notification-info">
+                      <div className="settings-notification-icon">
+                        <Bell size={16} />
+                      </div>
+                      <div>
+                        <h3>In-App Notifications</h3>
+                        <p>Show notifications within the platform</p>
+                      </div>
+                    </div>
                     <button
-                      type="button"
-                      className={`settings-toggle-btn ${preferences.theme === 'dark' ? 'active' : ''}`}
-                      onClick={() => setPreferences({ ...preferences, theme: 'dark' })}
+                      className={`settings-notification-toggle ${notifications.inAppNotifications ? 'active' : ''}`}
+                      onClick={() => {
+                        setNotifications((prev) => ({ ...prev, inAppNotifications: !prev.inAppNotifications }));
+                        toast.success(notifications.inAppNotifications ? 'In-app notifications disabled' : 'In-app notifications enabled');
+                      }}
                     >
-                      Dark
+                      <span className="settings-notification-toggle-dot" />
+                    </button>
+                  </div>
+
+                  <div className="settings-notification-item">
+                    <div className="settings-notification-info">
+                      <div className="settings-notification-icon">
+                        <FileText size={16} />
+                      </div>
+                      <div>
+                        <h3>Weekly Digest</h3>
+                        <p>Get a summary of platform activity every Monday</p>
+                      </div>
+                    </div>
+                    <button
+                      className={`settings-notification-toggle ${notifications.weeklyDigest ? 'active' : ''}`}
+                      onClick={() => {
+                        setNotifications((prev) => ({ ...prev, weeklyDigest: !prev.weeklyDigest }));
+                        toast.success(notifications.weeklyDigest ? 'Weekly digest disabled' : 'Weekly digest enabled');
+                      }}
+                    >
+                      <span className="settings-notification-toggle-dot" />
+                    </button>
+                  </div>
+
+                  <div className="settings-notification-item">
+                    <div className="settings-notification-info">
+                      <div className="settings-notification-icon">
+                        <BarChart2 size={16} />
+                      </div>
+                      <div>
+                        <h3>Study Completed</h3>
+                        <p>Notify when a study or analysis finishes running</p>
+                      </div>
+                    </div>
+                    <button
+                      className={`settings-notification-toggle ${notifications.studyCompleted ? 'active' : ''}`}
+                      onClick={() => {
+                        setNotifications((prev) => ({ ...prev, studyCompleted: !prev.studyCompleted }));
+                        toast.success(notifications.studyCompleted ? 'Study notifications disabled' : 'Study notifications enabled');
+                      }}
+                    >
+                      <span className="settings-notification-toggle-dot" />
+                    </button>
+                  </div>
+
+                  <div className="settings-notification-item">
+                    <div className="settings-notification-info">
+                      <div className="settings-notification-icon">
+                        <Download size={16} />
+                      </div>
+                      <div>
+                        <h3>Export Ready</h3>
+                        <p>Notify when a data export is ready for download</p>
+                      </div>
+                    </div>
+                    <button
+                      className={`settings-notification-toggle ${notifications.exportReady ? 'active' : ''}`}
+                      onClick={() => {
+                        setNotifications((prev) => ({ ...prev, exportReady: !prev.exportReady }));
+                        toast.success(notifications.exportReady ? 'Export notifications disabled' : 'Export notifications enabled');
+                      }}
+                    >
+                      <span className="settings-notification-toggle-dot" />
+                    </button>
+                  </div>
+
+                  <div className="settings-notification-item">
+                    <div className="settings-notification-info">
+                      <div className="settings-notification-icon">
+                        <Users size={16} />
+                      </div>
+                      <div>
+                        <h3>Team Updates</h3>
+                        <p>Notify when team members join, leave, or change roles</p>
+                      </div>
+                    </div>
+                    <button
+                      className={`settings-notification-toggle ${notifications.teamUpdates ? 'active' : ''}`}
+                      onClick={() => {
+                        setNotifications((prev) => ({ ...prev, teamUpdates: !prev.teamUpdates }));
+                        toast.success(notifications.teamUpdates ? 'Team update notifications disabled' : 'Team update notifications enabled');
+                      }}
+                    >
+                      <span className="settings-notification-toggle-dot" />
                     </button>
                   </div>
                 </div>
+              </div>
+            </>
+          )}
 
-                <Input
-                  label="Locale"
-                  type="text"
-                  value={preferences.locale}
-                  onChange={(e) => setPreferences({ ...preferences, locale: e.target.value })}
-                  hint="e.g. en-US, en-GB, de-DE"
-                  fullWidth
-                />
+          {/* API Tab */}
+          {activeTab === 'api' && (
+            <div className="settings-section">
+              <h2>API Keys</h2>
+              <p className="section-description">Manage API keys for programmatic access to GWI data</p>
 
-                <Input
-                  label="Timezone"
-                  type="text"
-                  value={preferences.timezone}
-                  onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
-                  hint="e.g. Europe/London, America/New_York"
-                  fullWidth
-                />
+              <div className="settings-api-keys">
+                {apiKeys.map((apiKey: ApiKeyEntry) => (
+                  <div key={apiKey.id} className="settings-api-key-card">
+                    <div className="settings-api-key-header">
+                      <div className="settings-api-key-name-group">
+                        <Key size={16} className="settings-api-key-icon" />
+                        <div>
+                          <h3>{apiKey.name}</h3>
+                          <p className="settings-api-key-created">Created {apiKey.created}</p>
+                        </div>
+                      </div>
+                      <div className="settings-api-key-stats">
+                        <span className="settings-api-key-stat">
+                          <span className="settings-api-key-stat-label">Requests</span>
+                          <span className="settings-api-key-stat-value">{apiKey.requests.toLocaleString()}</span>
+                        </span>
+                        <span className="settings-api-key-stat">
+                          <span className="settings-api-key-stat-label">Last used</span>
+                          <span className="settings-api-key-stat-value">{apiKey.lastUsed}</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div className="settings-api-key-value">
+                      <code className="settings-api-key-code">
+                        {visibleKeys[apiKey.id] ? apiKey.key : maskKey(apiKey.key)}
+                      </code>
+                      <div className="settings-api-key-actions">
+                        <button
+                          className="settings-api-key-btn"
+                          onClick={() => toggleKeyVisibility(apiKey.id)}
+                          title={visibleKeys[apiKey.id] ? 'Hide key' : 'Show key'}
+                        >
+                          {visibleKeys[apiKey.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                        <button
+                          className="settings-api-key-btn"
+                          onClick={() => copyKey(apiKey.key)}
+                          title="Copy key"
+                        >
+                          <Copy size={14} />
+                        </button>
+                        <button
+                          className="settings-api-key-btn settings-api-key-btn-warning"
+                          onClick={() => regenerateKey(apiKey.id)}
+                          title="Regenerate key"
+                        >
+                          <RefreshCw size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-                <Button
-                  type="submit"
-                  variant="primary"
-                  icon={<Save size={16} />}
-                  loading={updatePreferences.isPending}
-                >
-                  Save preferences
-                </Button>
-              </form>
+              <div className="settings-api-usage-summary">
+                <h3>Usage Summary</h3>
+                <div className="settings-api-usage-grid">
+                  <div className="settings-api-usage-item">
+                    <span className="settings-api-usage-label">Total Requests (30d)</span>
+                    <span className="settings-api-usage-value">16,138</span>
+                  </div>
+                  <div className="settings-api-usage-item">
+                    <span className="settings-api-usage-label">Rate Limit</span>
+                    <span className="settings-api-usage-value">1,000/min</span>
+                  </div>
+                  <div className="settings-api-usage-item">
+                    <span className="settings-api-usage-label">Active Keys</span>
+                    <span className="settings-api-usage-value">{apiKeys.length}</span>
+                  </div>
+                  <div className="settings-api-usage-item">
+                    <span className="settings-api-usage-label">Plan</span>
+                    <span className="settings-api-usage-value">Enterprise</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Activity Tab */}
+          {activeTab === 'activity' && (
+            <div className="settings-section">
+              <h2>Audit Log</h2>
+              <p className="section-description">Recent account activity and actions</p>
+
+              <div className="settings-audit-log">
+                {mockAuditLog.map((entry: AuditEntry) => (
+                  <div key={entry.id} className="settings-audit-entry">
+                    <div className="settings-audit-icon">{entry.icon}</div>
+                    <div className="settings-audit-content">
+                      <div className="settings-audit-action">{entry.action}</div>
+                      <div className="settings-audit-detail">{entry.detail}</div>
+                    </div>
+                    <div className="settings-audit-time">{entry.timestamp}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Integrations Tab */}
+          {activeTab === 'integrations' && (
+            <div className="settings-section">
+              <h2>Connected Integrations</h2>
+              <p className="section-description">Connect third-party tools to extend your GWI workflow</p>
+
+              <div className="settings-integrations-grid">
+                {integrations.map((integ: Integration) => (
+                  <div key={integ.id} className={`settings-integration-card ${integ.connected ? 'connected' : ''}`}>
+                    <div className="settings-integration-header">
+                      <div className="settings-integration-icon-wrapper">
+                        <span className="settings-integration-icon">{integ.icon}</span>
+                      </div>
+                      <div className="settings-integration-info">
+                        <h3>{integ.name}</h3>
+                        {integ.connected && integ.lastSync && (
+                          <span className="settings-integration-sync">Last synced: {integ.lastSync}</span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="settings-integration-desc">{integ.description}</p>
+                    <div className="settings-integration-footer">
+                      {integ.connected && (
+                        <span className="settings-integration-status">
+                          <Check size={12} />
+                          Connected
+                        </span>
+                      )}
+                      <Button
+                        variant={integ.connected ? 'ghost' : 'primary'}
+                        size="sm"
+                        icon={integ.connected ? <Unlink size={14} /> : <Link2 size={14} />}
+                        onClick={() => toggleIntegration(integ.id)}
+                      >
+                        {integ.connected ? 'Disconnect' : 'Connect'}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

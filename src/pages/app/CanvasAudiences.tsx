@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Users, ArrowLeft, Plus, Check, Loader2 } from 'lucide-react';
+import { Users, ArrowLeft, Plus, Check, Loader2, BarChart3 } from 'lucide-react';
 import { useAudiences } from '@/hooks/useAudiences';
 import { Button, SearchInput, EmptyState } from '@/components/shared';
 import { formatCompactNumber } from '@/utils/format';
@@ -16,6 +16,10 @@ const fallbackAudiences = [
   { id: 'fallback-4', name: 'Heavy Social Media Users', population_size: 156000000, description: '3+ hours daily on social platforms' },
   { id: 'fallback-5', name: 'Online Shoppers', population_size: 428000000, description: 'Made 5+ online purchases in past month' },
   { id: 'fallback-6', name: 'Health-Conscious Consumers', population_size: 189000000, description: 'Prioritize wellness in purchase decisions' },
+];
+
+const barColors = [
+  '#6366f1', '#8b5cf6', '#a78bfa', '#06b6d4', '#14b8a6', '#f59e0b',
 ];
 
 export default function CanvasAudiences(): React.JSX.Element {
@@ -64,6 +68,16 @@ export default function CanvasAudiences(): React.JSX.Element {
     }, 2000);
   };
 
+  // Get selected audience objects for the comparison chart
+  const selectedAudienceObjects = useMemo(() => {
+    return displayAudiences.filter((a) => selectedAudiences.includes(a.id));
+  }, [displayAudiences, selectedAudiences]);
+
+  const maxPopulation = useMemo(() => {
+    if (selectedAudienceObjects.length === 0) return 1;
+    return Math.max(...selectedAudienceObjects.map((a) => a.population_size));
+  }, [selectedAudienceObjects]);
+
   return (
     <div className="canvas-page">
       <div className="canvas-header">
@@ -85,6 +99,14 @@ export default function CanvasAudiences(): React.JSX.Element {
           <div className="step-info">
             <h3>Define Audiences</h3>
             <p>Who do you want to study?</p>
+          </div>
+        </div>
+        <div className="step-connector" />
+        <div className="step">
+          <div className="step-number">3</div>
+          <div className="step-info">
+            <h3>Review &amp; Generate</h3>
+            <p>Finalize your research brief</p>
           </div>
         </div>
       </div>
@@ -126,6 +148,85 @@ export default function CanvasAudiences(): React.JSX.Element {
               selectedAudiences={selectedAudiences}
               onToggle={toggleAudience}
             />
+          )}
+
+          {/* Audience Size Comparison Bar Chart */}
+          {selectedAudienceObjects.length >= 2 && (
+            <div className="audience-comparison">
+              <div className="audience-comparison-header">
+                <BarChart3 size={18} />
+                <h3>Audience Size Comparison</h3>
+              </div>
+              <svg
+                width="100%"
+                viewBox={`0 0 600 ${selectedAudienceObjects.length * 48 + 8}`}
+                style={{ overflow: 'visible' }}
+              >
+                {selectedAudienceObjects.map((audience, index) => {
+                  const barWidth = maxPopulation > 0
+                    ? (audience.population_size / maxPopulation) * 360
+                    : 0;
+                  const y = index * 48 + 4;
+                  const color = barColors[index % barColors.length];
+                  return (
+                    <g key={audience.id}>
+                      {/* Label */}
+                      <text
+                        x={148}
+                        y={y + 22}
+                        textAnchor="end"
+                        fontSize="12"
+                        fontWeight="500"
+                        fill="currentColor"
+                      >
+                        {audience.name.length > 22
+                          ? audience.name.substring(0, 22) + '...'
+                          : audience.name}
+                      </text>
+                      {/* Track */}
+                      <rect
+                        x={158}
+                        y={y + 4}
+                        width={360}
+                        height={28}
+                        rx={6}
+                        fill="#f1f5f9"
+                        stroke="#e2e8f0"
+                        strokeWidth={1}
+                      />
+                      {/* Bar fill */}
+                      <rect
+                        x={158}
+                        y={y + 4}
+                        width={Math.max(barWidth, 4)}
+                        height={28}
+                        rx={6}
+                        fill={color}
+                        opacity={0.85}
+                      >
+                        <animate
+                          attributeName="width"
+                          from="0"
+                          to={Math.max(barWidth, 4)}
+                          dur="0.6s"
+                          fill="freeze"
+                        />
+                      </rect>
+                      {/* Value label */}
+                      <text
+                        x={158 + Math.max(barWidth, 4) + 8}
+                        y={y + 22}
+                        fontSize="11"
+                        fontWeight="600"
+                        fill="#64748b"
+                      >
+                        {formatCompactNumber(audience.population_size)}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
           )}
 
           <Button variant="ghost" icon={<Plus size={16} />} className="add-custom-btn">

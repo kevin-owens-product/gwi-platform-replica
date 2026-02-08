@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, MoreHorizontal, Save, Users, Plus, X } from 'lucide-react';
+import { ArrowLeft, Download, Share2, MoreHorizontal, Save, Users, Plus, X, MessageSquarePlus, GitCompareArrows, Image, FileText, Presentation, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { chartsApi } from '@/api';
 import { useChart, useUpdateChart, useCreateChart, useDeleteChart } from '@/hooks/useCharts';
@@ -16,6 +16,12 @@ import type { ChartType, ChartDimension, MetricType, StatsQueryRequest, StatsDat
 interface ChartDataPoint {
   name: string;
   [key: string]: string | number;
+}
+
+interface Annotation {
+  id: string;
+  text: string;
+  timestamp: Date;
 }
 import './ChartDetail.css';
 
@@ -95,9 +101,21 @@ export default function ChartDetail(): React.JSX.Element {
   const [showLegend, setShowLegend] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
+  const [showConfidenceIntervals, setShowConfidenceIntervals] = useState(false);
 
   // Delete confirmation
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Annotations state
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [annotationText, setAnnotationText] = useState<string>('');
+  const [showAnnotationInput, setShowAnnotationInput] = useState(false);
+
+  // Compare Waves toggle
+  const [compareWaves, setCompareWaves] = useState(false);
+
+  // Export Options expanded section
+  const [exportOptionsOpen, setExportOptionsOpen] = useState(false);
 
   // Seed local state from the fetched chart once
   useEffect(() => {
@@ -194,6 +212,71 @@ export default function ChartDetail(): React.JSX.Element {
 
     return { chartData: data, series: seriesNames };
   }, [statsData, selectedMetric]);
+
+  // Statistical summary computed from chart data
+  const statisticalSummary = useMemo(() => {
+    const allValues: number[] = [];
+    for (const row of chartData) {
+      for (const s of series) {
+        const val = row[s];
+        if (typeof val === 'number') {
+          allValues.push(val);
+        }
+      }
+    }
+    if (allValues.length === 0) {
+      return null;
+    }
+    const sorted = [...allValues].sort((a, b) => a - b);
+    const sum = allValues.reduce((acc, v) => acc + v, 0);
+    const mean = sum / allValues.length;
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    const variance = allValues.reduce((acc, v) => acc + (v - mean) ** 2, 0) / allValues.length;
+    const stdDev = Math.sqrt(variance);
+    const min = sorted[0];
+    const max = sorted[sorted.length - 1];
+
+    // Mock p-values for significance indicators
+    const mockPValues = [
+      { comparison: 'vs. National Average', pValue: 0.003, significant: true },
+      { comparison: 'vs. Previous Wave', pValue: 0.042, significant: true },
+      { comparison: 'vs. Competitor Benchmark', pValue: 0.187, significant: false },
+    ];
+
+    return { mean, median, stdDev, min, max, count: allValues.length, mockPValues };
+  }, [chartData, series]);
+
+  // Annotation handlers
+  const handleAddAnnotation = () => {
+    if (!annotationText.trim()) return;
+    const newAnnotation: Annotation = {
+      id: `note-${Date.now()}`,
+      text: annotationText.trim(),
+      timestamp: new Date(),
+    };
+    setAnnotations((prev) => [newAnnotation, ...prev]);
+    setAnnotationText('');
+    setShowAnnotationInput(false);
+    toast.success('Annotation added');
+  };
+
+  const handleRemoveAnnotation = (annotationId: string) => {
+    setAnnotations((prev) => prev.filter((a) => a.id !== annotationId));
+  };
+
+  // Export option handlers (mock)
+  const handleExportPng = () => {
+    toast.success('Exporting as PNG...');
+  };
+
+  const handleExportPdf = () => {
+    toast.success('Exporting as PDF...');
+  };
+
+  const handleExportPptx = () => {
+    toast.success('Exporting as PowerPoint...');
+  };
 
   // Base audience picker handlers
   const handleBaseSelectSaved = (aud: Audience) => {
@@ -435,19 +518,52 @@ export default function ChartDetail(): React.JSX.Element {
           <div className="chart-canvas">
             {activeView === 'chart' && (
               <>
-                {isDataLoading ? (
-                  <div className="chart-detail-loading">
-                    <div className="charts-loading-spinner" />
-                    <p>Loading chart data...</p>
+                {compareWaves ? (
+                  <div className="compare-waves-container">
+                    <div className="compare-waves-panel">
+                      <div className="compare-waves-label">Current Wave</div>
+                      {isDataLoading ? (
+                        <div className="chart-detail-loading">
+                          <div className="charts-loading-spinner" />
+                          <p>Loading...</p>
+                        </div>
+                      ) : (
+                        <ChartRenderer
+                          type={chartType}
+                          data={chartData}
+                          series={series}
+                          showLegend={showLegend}
+                          showGrid={showGrid}
+                        />
+                      )}
+                    </div>
+                    <div className="compare-waves-divider" />
+                    <div className="compare-waves-panel">
+                      <div className="compare-waves-label">Previous Wave</div>
+                      <div className="compare-waves-placeholder">
+                        <GitCompareArrows size={32} />
+                        <p>Previous wave data would appear here for side-by-side comparison.</p>
+                        <span className="compare-waves-hint">Select a different wave to compare</span>
+                      </div>
+                    </div>
                   </div>
                 ) : (
-                  <ChartRenderer
-                    type={chartType}
-                    data={chartData}
-                    series={series}
-                    showLegend={showLegend}
-                    showGrid={showGrid}
-                  />
+                  <>
+                    {isDataLoading ? (
+                      <div className="chart-detail-loading">
+                        <div className="charts-loading-spinner" />
+                        <p>Loading chart data...</p>
+                      </div>
+                    ) : (
+                      <ChartRenderer
+                        type={chartType}
+                        data={chartData}
+                        series={series}
+                        showLegend={showLegend}
+                        showGrid={showGrid}
+                      />
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -483,31 +599,138 @@ export default function ChartDetail(): React.JSX.Element {
               </div>
             )}
             {activeView === 'summary' && (
-              <div className="chart-summary">
-                <div className="summary-stat">
-                  <span className="summary-label">Sample Size</span>
-                  <span className="summary-value">{statsData?.meta?.base_size?.toLocaleString() ?? '-'}</span>
+              <div className="chart-summary-full">
+                {/* Original summary stats */}
+                <div className="chart-summary">
+                  <div className="summary-stat">
+                    <span className="summary-label">Sample Size</span>
+                    <span className="summary-value">{statsData?.meta?.base_size?.toLocaleString() ?? '-'}</span>
+                  </div>
+                  <div className="summary-stat">
+                    <span className="summary-label">Wave</span>
+                    <span className="summary-value">{statsData?.meta?.wave_name ?? '-'}</span>
+                  </div>
+                  <div className="summary-stat">
+                    <span className="summary-label">Location</span>
+                    <span className="summary-value">{statsData?.meta?.location_name ?? '-'}</span>
+                  </div>
+                  <div className="summary-stat">
+                    <span className="summary-label">Data Source</span>
+                    <span className="summary-value">{selectedSource}</span>
+                  </div>
+                  <div className="summary-stat">
+                    <span className="summary-label">Audience</span>
+                    <span className="summary-value">{baseAudienceLabel}</span>
+                  </div>
+                  <div className="summary-stat">
+                    <span className="summary-label">Execution Time</span>
+                    <span className="summary-value">{statsData?.meta?.execution_time_ms ? `${statsData.meta.execution_time_ms}ms` : '-'}</span>
+                  </div>
                 </div>
-                <div className="summary-stat">
-                  <span className="summary-label">Wave</span>
-                  <span className="summary-value">{statsData?.meta?.wave_name ?? '-'}</span>
-                </div>
-                <div className="summary-stat">
-                  <span className="summary-label">Location</span>
-                  <span className="summary-value">{statsData?.meta?.location_name ?? '-'}</span>
-                </div>
-                <div className="summary-stat">
-                  <span className="summary-label">Data Source</span>
-                  <span className="summary-value">{selectedSource}</span>
-                </div>
-                <div className="summary-stat">
-                  <span className="summary-label">Audience</span>
-                  <span className="summary-value">{baseAudienceLabel}</span>
-                </div>
-                <div className="summary-stat">
-                  <span className="summary-label">Execution Time</span>
-                  <span className="summary-value">{statsData?.meta?.execution_time_ms ? `${statsData.meta.execution_time_ms}ms` : '-'}</span>
-                </div>
+
+                {/* Statistical Summary Panel */}
+                {statisticalSummary && (
+                  <div className="statistical-summary-panel">
+                    <div className="statistical-summary-header">
+                      <TrendingUp size={16} />
+                      <h4>Statistical Summary</h4>
+                    </div>
+                    <div className="statistical-summary-grid">
+                      <div className="stat-item">
+                        <span className="stat-item-label">Mean</span>
+                        <span className="stat-item-value">{statisticalSummary.mean.toFixed(2)}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-item-label">Median</span>
+                        <span className="stat-item-value">{statisticalSummary.median.toFixed(2)}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-item-label">Std Dev</span>
+                        <span className="stat-item-value">{statisticalSummary.stdDev.toFixed(2)}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-item-label">Min</span>
+                        <span className="stat-item-value">{statisticalSummary.min.toFixed(2)}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-item-label">Max</span>
+                        <span className="stat-item-value">{statisticalSummary.max.toFixed(2)}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-item-label">N (data points)</span>
+                        <span className="stat-item-value">{statisticalSummary.count}</span>
+                      </div>
+                    </div>
+
+                    {/* Significance Indicators */}
+                    <div className="significance-section">
+                      <h5 className="significance-title">Significance Tests</h5>
+                      <div className="significance-list">
+                        {statisticalSummary.mockPValues.map((item, idx) => (
+                          <div key={idx} className="significance-row">
+                            <span className="significance-comparison">{item.comparison}</span>
+                            <span className="significance-pvalue">p = {item.pValue.toFixed(3)}</span>
+                            <span className={`significance-badge ${item.significant ? 'significant' : 'not-significant'}`}>
+                              {item.significant ? 'Significant' : 'Not Significant'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Annotations Section */}
+          <div className="annotations-section">
+            <div className="annotations-header">
+              <h4>Annotations</h4>
+              <button
+                className="annotation-add-btn"
+                onClick={() => setShowAnnotationInput(!showAnnotationInput)}
+              >
+                <MessageSquarePlus size={14} />
+                <span>Add Note</span>
+              </button>
+            </div>
+
+            {showAnnotationInput && (
+              <div className="annotation-input-row">
+                <input
+                  type="text"
+                  className="annotation-input"
+                  value={annotationText}
+                  onChange={(e) => setAnnotationText(e.target.value)}
+                  placeholder="Type your annotation..."
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddAnnotation(); }}
+                  autoFocus
+                />
+                <button className="annotation-submit-btn" onClick={handleAddAnnotation} disabled={!annotationText.trim()}>
+                  Add
+                </button>
+                <button className="annotation-cancel-btn" onClick={() => { setShowAnnotationInput(false); setAnnotationText(''); }}>
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
+            {annotations.length > 0 && (
+              <div className="annotations-list">
+                {annotations.map((note) => (
+                  <div key={note.id} className="annotation-item">
+                    <div className="annotation-content">
+                      <p className="annotation-text">{note.text}</p>
+                      <span className="annotation-time">
+                        {note.timestamp.toLocaleString()}
+                      </span>
+                    </div>
+                    <button className="annotation-remove-btn" onClick={() => handleRemoveAnnotation(note.id)}>
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -599,6 +822,53 @@ export default function ChartDetail(): React.JSX.Element {
                 <input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} />
                 Show Labels
               </label>
+              <label className="config-checkbox">
+                <input type="checkbox" checked={showConfidenceIntervals} onChange={(e) => setShowConfidenceIntervals(e.target.checked)} />
+                Confidence Intervals
+              </label>
+              {showConfidenceIntervals && (
+                <span className="config-hint">Error bars will render on supported chart types.</span>
+              )}
+            </div>
+            <div className="config-divider" />
+            {/* Compare Waves Toggle */}
+            <div className="config-group">
+              <label>Comparison</label>
+              <label className="config-checkbox">
+                <input type="checkbox" checked={compareWaves} onChange={(e) => setCompareWaves(e.target.checked)} />
+                Compare Waves
+              </label>
+              {compareWaves && (
+                <span className="config-hint">Side-by-side wave comparison is enabled.</span>
+              )}
+            </div>
+            <div className="config-divider" />
+            {/* Export Options */}
+            <div className="config-group">
+              <button className="config-expand-btn" onClick={() => setExportOptionsOpen(!exportOptionsOpen)}>
+                <span>Export Options</span>
+                {exportOptionsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+              {exportOptionsOpen && (
+                <div className="export-options-list">
+                  <button className="export-option-btn" onClick={handleExportPng}>
+                    <Image size={14} />
+                    <span>Export as PNG</span>
+                  </button>
+                  <button className="export-option-btn" onClick={handleExportPdf}>
+                    <FileText size={14} />
+                    <span>Export as PDF</span>
+                  </button>
+                  <button className="export-option-btn" onClick={handleExportPptx}>
+                    <Presentation size={14} />
+                    <span>Export as PowerPoint</span>
+                  </button>
+                  <button className="export-option-btn" onClick={handleDownloadCsv}>
+                    <Download size={14} />
+                    <span>Export as CSV</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -64,6 +64,285 @@
   display: flex;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-xl);
+  align-items: center;
+}
+
+/* Chart Type Filter Dropdown */
+.charts-filter-type {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.charts-filter-type .filter-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.charts-type-select {
+  padding: 8px 32px 8px 30px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body-sm);
+  background-color: var(--color-white);
+  color: var(--color-text);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+  min-width: 140px;
+}
+
+.charts-type-select:hover {
+  border-color: var(--color-border-hover);
+}
+
+.charts-type-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+/* View Toggle (Grid / List) */
+.charts-view-toggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-left: auto;
+}
+
+.view-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background-color: var(--color-white);
+  color: var(--color-text-muted);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.view-toggle-btn:first-child {
+  border-right: 1px solid var(--color-border);
+}
+
+.view-toggle-btn:hover {
+  background-color: var(--color-surface-secondary);
+  color: var(--color-text);
+}
+
+.view-toggle-btn.active {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* Bulk Select Toggle Button */
+.bulk-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background-color: var(--color-white);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.bulk-toggle-btn:hover {
+  border-color: var(--color-border-hover);
+  background-color: var(--color-surface-secondary);
+  color: var(--color-text);
+}
+
+.bulk-toggle-btn.active {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* ============================================
+   Bulk Actions Bar
+   ============================================ */
+.charts-bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-primary-light);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-lg);
+  animation: fadeIn 0.15s ease;
+}
+
+.bulk-select-all {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.bulk-select-all input[type="checkbox"] {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.bulk-count {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+}
+
+.bulk-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-left: auto;
+}
+
+.bulk-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 6px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  background-color: var(--color-white);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.bulk-action-btn:hover:not(:disabled) {
+  background-color: var(--color-surface-secondary);
+  border-color: var(--color-border-hover);
+}
+
+.bulk-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bulk-action-danger {
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+.bulk-action-danger:hover:not(:disabled) {
+  background-color: var(--color-error-light);
+  border-color: var(--color-error);
+}
+
+/* ============================================
+   Recently Viewed Section
+   ============================================ */
+.recently-viewed-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.recently-viewed-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text-secondary);
+}
+
+.recently-viewed-header h3 {
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  margin: 0;
+}
+
+.recently-viewed-row {
+  display: flex;
+  gap: var(--spacing-md);
+  overflow-x: auto;
+  padding-bottom: var(--spacing-sm);
+}
+
+.recent-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  min-width: 240px;
+  max-width: 300px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.recent-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.recent-card-preview {
+  width: 56px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.recent-card-preview .chart-mini-svg {
+  width: 48px;
+  max-width: 48px;
+}
+
+.recent-card-preview .chart-mini-pie {
+  max-width: 32px;
+}
+
+.recent-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.recent-card-name {
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recent-card-type {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 /* ============================================
@@ -73,6 +352,43 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--spacing-lg);
+}
+
+/* ============================================
+   Chart Card Wrapper (for bulk selection)
+   ============================================ */
+.chart-card-wrapper {
+  position: relative;
+  border-radius: var(--radius-xl);
+  transition: box-shadow var(--transition-fast);
+}
+
+.chart-card-wrapper.selected {
+  box-shadow: 0 0 0 2px var(--color-primary);
+  border-radius: var(--radius-xl);
+}
+
+.chart-card-checkbox {
+  position: absolute;
+  top: var(--spacing-sm);
+  left: var(--spacing-sm);
+  z-index: 2;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: var(--color-white);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.chart-card-checkbox input[type="checkbox"] {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
 }
 
 /* ============================================
@@ -190,6 +506,82 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin-top: auto;
+}
+
+/* ============================================
+   List Table View
+   ============================================ */
+.charts-list-table-wrapper {
+  background: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.charts-list-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.charts-list-table th,
+.charts-list-table td {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: var(--font-size-body);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.charts-list-table th {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body-sm);
+  background-color: var(--color-surface-secondary);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.charts-list-table tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+.charts-list-table tbody tr:hover td {
+  background-color: var(--color-primary-50);
+}
+
+.charts-list-table tbody tr.selected td {
+  background-color: var(--color-primary-light);
+}
+
+.charts-list-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.list-checkbox-col {
+  width: 40px;
+  text-align: center;
+}
+
+.list-checkbox-col input[type="checkbox"] {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.list-chart-name {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+  transition: color var(--transition-fast);
+}
+
+.list-chart-name:hover {
+  color: var(--color-primary);
+}
+
+.list-updated-col {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body-sm);
 }
 
 /* ============================================

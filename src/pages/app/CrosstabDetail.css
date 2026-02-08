@@ -145,6 +145,207 @@
   z-index: 2; /* above table so dropdowns overlay the grid */
 }
 
+/* ============================================
+   Toolbar Row
+   ============================================ */
+.crosstab-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-top: none;
+  flex-shrink: 0;
+  gap: var(--spacing-md);
+}
+
+.crosstab-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.crosstab-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.toolbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-white);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.toolbar-toggle:hover {
+  border-color: var(--color-border-hover);
+  color: var(--color-text);
+  background: var(--color-surface-secondary);
+}
+
+.toolbar-toggle--active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.toolbar-toggle--active:hover {
+  border-color: var(--color-primary-hover);
+  color: var(--color-primary-hover);
+}
+
+.toolbar-select {
+  padding: 3px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  background-color: var(--color-white);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.toolbar-select:hover {
+  border-color: var(--color-border-hover);
+}
+
+.toolbar-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border-light);
+  margin: 0 var(--spacing-xs);
+}
+
+/* Export buttons in toolbar */
+.toolbar-export-group {
+  gap: 6px;
+}
+
+.toolbar-export-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+  margin-right: 2px;
+}
+
+.toolbar-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-white);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.toolbar-export-btn:hover {
+  border-color: var(--color-accent-blue);
+  color: var(--color-accent-blue);
+  background: var(--color-accent-blue-light);
+}
+
+/* ============================================
+   Significance Legend
+   ============================================ */
+.significance-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-info-light);
+  border: 1px solid var(--color-border-light);
+  border-top: none;
+  font-size: var(--font-size-sm);
+  color: var(--color-info-text);
+  flex-shrink: 0;
+}
+
+.significance-legend-text {
+  color: var(--color-text-secondary);
+}
+
+.significance-legend-text strong {
+  color: var(--color-text);
+}
+
+.significance-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.significance-legend-item::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+}
+
+.significance-legend-item--up {
+  background: var(--color-success-light);
+  color: var(--color-success-text);
+}
+
+.significance-legend-item--up::before {
+  background: var(--color-success);
+}
+
+.significance-legend-item--down {
+  background: var(--color-error-light);
+  color: var(--color-error-text);
+}
+
+.significance-legend-item--down::before {
+  background: var(--color-error);
+}
+
+.significance-legend-item--none {
+  background: var(--color-surface-tertiary);
+  color: var(--color-text-muted);
+}
+
+.significance-legend-item--none::before {
+  background: var(--color-text-muted);
+}
+
+/* ============================================
+   Table Container (with Freeze Headers support)
+   ============================================ */
 .crosstab-table-container {
   flex: 1;
   min-height: 0;
@@ -153,6 +354,35 @@
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-card);
+}
+
+/* Frozen headers mode - make the grid's th elements sticky */
+.crosstab-table-container--frozen .crosstab-grid th {
+  position: sticky;
+  z-index: 1;
+}
+
+.crosstab-table-container--frozen .crosstab-grid thead th {
+  top: 0;
+  z-index: 2;
+}
+
+.crosstab-table-container--frozen .crosstab-grid .crosstab-grid__row-header,
+.crosstab-table-container--frozen .crosstab-grid .crosstab-grid__group-header {
+  left: 0;
+  z-index: 1;
+}
+
+.crosstab-table-container--frozen .crosstab-grid .crosstab-grid__corner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 3;
+}
+
+/* Non-frozen mode: remove sticky positioning */
+.crosstab-table-container:not(.crosstab-table-container--frozen) .crosstab-grid th {
+  position: static;
 }
 
 .crosstab-table {
@@ -197,7 +427,106 @@
   filter: brightness(0.97);
 }
 
-/* Loading state */
+/* ============================================
+   Cell Detail Info Bar
+   ============================================ */
+.cell-detail-bar {
+  flex-shrink: 0;
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  animation: slideUp 200ms ease;
+}
+
+.cell-detail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-text-secondary);
+}
+
+.cell-detail-title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  flex: 1;
+}
+
+.cell-detail-close {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.cell-detail-close:hover {
+  background: var(--color-surface-tertiary);
+  color: var(--color-text);
+}
+
+.cell-detail-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--spacing-md);
+}
+
+@media (max-width: 1024px) {
+  .cell-detail-metrics {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .cell-detail-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.cell-detail-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cell-detail-metric-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cell-detail-metric-value {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+/* Cell detail hint */
+.cell-detail-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Loading state
+   ============================================ */
 .crosstab-detail-loading {
   display: flex;
   flex-direction: column;
@@ -213,7 +542,9 @@
   color: var(--color-text-secondary);
 }
 
-/* Empty grid state */
+/* ============================================
+   Empty grid state
+   ============================================ */
 .crosstab-empty-grid {
   display: flex;
   align-items: center;
@@ -227,7 +558,9 @@
   color: var(--color-text-secondary);
 }
 
-/* Footer */
+/* ============================================
+   Footer
+   ============================================ */
 .crosstab-footer {
   display: flex;
   align-items: center;
@@ -249,6 +582,14 @@
 .crosstab-stat strong {
   color: var(--color-text);
   font-weight: var(--font-weight-semibold);
+}
+
+.crosstab-stat--active {
+  color: var(--color-primary);
+}
+
+.crosstab-stat--active strong {
+  color: var(--color-primary);
 }
 
 .crosstab-color-legend {

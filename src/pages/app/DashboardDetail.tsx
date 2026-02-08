@@ -1,6 +1,10 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Plus, TrendingUp, TrendingDown, Edit, Save, Loader2, Users, LayoutDashboard } from 'lucide-react';
+import {
+  ArrowLeft, Download, Share2, Plus, TrendingUp, TrendingDown, Edit, Save,
+  Loader2, Users, LayoutDashboard, Maximize, StickyNote, RefreshCw,
+  Calendar, FileText, Image, Presentation, ChevronDown, X,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useDashboard, useUpdateDashboard } from '@/hooks/useDashboards';
 import { useAudiences } from '@/hooks/useAudiences';
@@ -56,6 +60,31 @@ interface SparkLineProps {
   data: number[];
   positive: boolean;
 }
+
+// --- Date Range types ---
+type DateRangeOption = '7d' | '30d' | 'quarter' | 'custom';
+
+const dateRangeLabels: Record<DateRangeOption, string> = {
+  '7d': 'Last 7 days',
+  '30d': 'Last 30 days',
+  'quarter': 'Last Quarter',
+  'custom': 'Custom',
+};
+
+// --- Auto-refresh types ---
+type RefreshInterval = '30s' | '1m' | '5m';
+
+const refreshIntervalLabels: Record<RefreshInterval, string> = {
+  '30s': '30 seconds',
+  '1m': '1 minute',
+  '5m': '5 minutes',
+};
+
+const refreshIntervalMs: Record<RefreshInterval, number> = {
+  '30s': 30000,
+  '1m': 60000,
+  '5m': 300000,
+};
 
 const kpiData: KpiItem[] = [
   { id: 1, title: 'Total Reach', value: '2.4M', change: '+12.3%', positive: true, sparkline: [30, 35, 32, 40, 38, 45, 50, 48, 55, 60] },
@@ -337,6 +366,26 @@ export default function DashboardDetail(): React.JSX.Element {
   // Widget maximize state
   const [maximizedWidgetId, setMaximizedWidgetId] = useState<string | null>(null);
 
+  // --- NEW: Presentation Mode ---
+  const [presentationMode, setPresentationMode] = useState(false);
+
+  // --- NEW: Dashboard Notes Panel ---
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notesContent, setNotesContent] = useState('');
+
+  // --- NEW: Auto-refresh ---
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<RefreshInterval>('1m');
+  const [showAutoRefreshMenu, setShowAutoRefreshMenu] = useState(false);
+  const autoRefreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // --- NEW: Date Range Selector ---
+  const [dateRange, setDateRange] = useState<DateRangeOption>('30d');
+  const [showDateRangeMenu, setShowDateRangeMenu] = useState(false);
+
+  // --- NEW: Export Menu ---
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
   // Seed base audience from dashboard data when it loads
   useEffect(() => {
     if (dashboard?.base_audience) {
@@ -360,6 +409,72 @@ export default function DashboardDetail(): React.JSX.Element {
     () => dashboard?.widgets?.find((w) => w.id === maximizedWidgetId),
     [dashboard?.widgets, maximizedWidgetId],
   );
+
+  // --- Presentation mode: toggle body class for hiding sidebar/header ---
+  useEffect(() => {
+    if (presentationMode) {
+      document.body.classList.add('presentation-mode');
+    } else {
+      document.body.classList.remove('presentation-mode');
+    }
+    return () => {
+      document.body.classList.remove('presentation-mode');
+    };
+  }, [presentationMode]);
+
+  // Handle Escape key to exit presentation mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && presentationMode) {
+        setPresentationMode(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [presentationMode]);
+
+  // --- Auto-refresh timer ---
+  const handleAutoRefreshTick = useCallback(() => {
+    toast.success('Dashboard data refreshed', { duration: 2000 });
+  }, []);
+
+  useEffect(() => {
+    if (autoRefreshTimerRef.current) {
+      clearInterval(autoRefreshTimerRef.current);
+      autoRefreshTimerRef.current = null;
+    }
+    if (autoRefreshEnabled) {
+      autoRefreshTimerRef.current = setInterval(handleAutoRefreshTick, refreshIntervalMs[autoRefreshInterval]);
+    }
+    return () => {
+      if (autoRefreshTimerRef.current) {
+        clearInterval(autoRefreshTimerRef.current);
+      }
+    };
+  }, [autoRefreshEnabled, autoRefreshInterval, handleAutoRefreshTick]);
+
+  // --- Export handlers ---
+  const handleExport = (format: string) => {
+    setShowExportMenu(false);
+    toast.success(`Exporting dashboard as ${format}...`, { duration: 3000 });
+  };
+
+  // Close dropdown menus on outside click
+  useEffect(() => {
+    const handleClick = () => {
+      setShowAutoRefreshMenu(false);
+      setShowDateRangeMenu(false);
+      setShowExportMenu(false);
+    };
+    if (showAutoRefreshMenu || showDateRangeMenu || showExportMenu) {
+      // Delay adding listener so the click that opened the menu doesn't immediately close it
+      const timer = setTimeout(() => window.addEventListener('click', handleClick), 0);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('click', handleClick);
+      };
+    }
+  }, [showAutoRefreshMenu, showDateRangeMenu, showExportMenu]);
 
   // Base audience picker handlers
   const handleBaseSelectSaved = (aud: Audience) => {
@@ -468,13 +583,88 @@ export default function DashboardDetail(): React.JSX.Element {
   }
 
   return (
-    <div className="dashboard-detail-page">
+    <div className={`dashboard-detail-page ${presentationMode ? 'is-presentation' : ''} ${notesOpen ? 'notes-panel-open' : ''}`}>
+      {/* Presentation mode exit bar */}
+      {presentationMode && (
+        <div className="presentation-exit-bar">
+          <span className="presentation-exit-label">Presentation Mode</span>
+          <button className="presentation-exit-btn" onClick={() => setPresentationMode(false)}>
+            <X size={14} />
+            Exit (Esc)
+          </button>
+        </div>
+      )}
+
       <div className="dashboard-detail-header">
         <Link to="/app/dashboards" className="back-link">
           <ArrowLeft size={18} />
           <span>Back to Dashboards</span>
         </Link>
         <div className="header-actions">
+          {/* Date Range Selector */}
+          <div className="header-dropdown-wrapper">
+            <button
+              className="header-dropdown-trigger"
+              onClick={(e) => { e.stopPropagation(); setShowDateRangeMenu(!showDateRangeMenu); }}
+            >
+              <Calendar size={14} />
+              <span>{dateRangeLabels[dateRange]}</span>
+              <ChevronDown size={12} />
+            </button>
+            {showDateRangeMenu && (
+              <div className="header-dropdown-menu">
+                {(Object.keys(dateRangeLabels) as DateRangeOption[]).map((key) => (
+                  <button
+                    key={key}
+                    className={`header-dropdown-item ${dateRange === key ? 'active' : ''}`}
+                    onClick={() => { setDateRange(key); setShowDateRangeMenu(false); }}
+                  >
+                    {dateRangeLabels[key]}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Auto-refresh Toggle */}
+          <div className="header-dropdown-wrapper">
+            <button
+              className={`header-dropdown-trigger ${autoRefreshEnabled ? 'active' : ''}`}
+              onClick={(e) => { e.stopPropagation(); setShowAutoRefreshMenu(!showAutoRefreshMenu); }}
+            >
+              <RefreshCw size={14} className={autoRefreshEnabled ? 'spin-slow' : ''} />
+              <span>{autoRefreshEnabled ? refreshIntervalLabels[autoRefreshInterval] : 'Auto-refresh'}</span>
+              <ChevronDown size={12} />
+            </button>
+            {showAutoRefreshMenu && (
+              <div className="header-dropdown-menu">
+                <div className="header-dropdown-toggle-row">
+                  <span>Auto-refresh</span>
+                  <button
+                    className={`toggle-switch ${autoRefreshEnabled ? 'on' : ''}`}
+                    onClick={(e) => { e.stopPropagation(); setAutoRefreshEnabled(!autoRefreshEnabled); }}
+                  >
+                    <span className="toggle-switch-knob" />
+                  </button>
+                </div>
+                <div className="header-dropdown-divider" />
+                {(Object.keys(refreshIntervalLabels) as RefreshInterval[]).map((key) => (
+                  <button
+                    key={key}
+                    className={`header-dropdown-item ${autoRefreshInterval === key ? 'active' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAutoRefreshInterval(key);
+                      setAutoRefreshEnabled(true);
+                    }}
+                  >
+                    {refreshIntervalLabels[key]}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button
             className="config-panel__control-select"
             onClick={() => setAudiencePickerOpen(true)}
@@ -503,53 +693,137 @@ export default function DashboardDetail(): React.JSX.Element {
               Edit
             </Button>
           )}
-          <button className="icon-btn" onClick={() => toast('Dashboard export coming soon')} title="Download"><Download size={18} /></button>
+
+          {/* Export Dropdown */}
+          <div className="header-dropdown-wrapper">
+            <button
+              className="icon-btn"
+              onClick={(e) => { e.stopPropagation(); setShowExportMenu(!showExportMenu); }}
+              title="Export Dashboard"
+            >
+              <Download size={18} />
+            </button>
+            {showExportMenu && (
+              <div className="header-dropdown-menu export-menu">
+                <button className="header-dropdown-item" onClick={() => handleExport('PDF')}>
+                  <FileText size={14} />
+                  Export as PDF
+                </button>
+                <button className="header-dropdown-item" onClick={() => handleExport('PNG')}>
+                  <Image size={14} />
+                  Export as PNG
+                </button>
+                <button className="header-dropdown-item" onClick={() => handleExport('PowerPoint')}>
+                  <Presentation size={14} />
+                  Export as PowerPoint
+                </button>
+              </div>
+            )}
+          </div>
+
           <button className="icon-btn" onClick={() => setShowShareModal(true)} title="Share"><Share2 size={18} /></button>
+
+          {/* Presentation Mode Button */}
+          <button
+            className="icon-btn"
+            onClick={() => setPresentationMode(true)}
+            title="Presentation Mode"
+          >
+            <Maximize size={18} />
+          </button>
+
+          {/* Notes Panel Toggle */}
+          <button
+            className={`icon-btn ${notesOpen ? 'active' : ''}`}
+            onClick={() => setNotesOpen(!notesOpen)}
+            title="Dashboard Notes"
+          >
+            <StickyNote size={18} />
+          </button>
+
           <Button variant="primary" icon={<Plus size={16} />} onClick={() => setShowAddWidget(true)}>
             Add widget
           </Button>
         </div>
       </div>
 
-      <div className="dashboard-detail-content">
-        {isEditing ? (
-          <input
-            type="text"
-            className="dashboard-title-input"
-            value={dashboardName}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDashboardName(e.target.value)}
-            placeholder="Dashboard name"
-          />
-        ) : (
-          <h1 className="dashboard-title-input" style={{ cursor: 'default' }}>{displayName}</h1>
-        )}
+      <div className="dashboard-detail-body">
+        <div className="dashboard-detail-content">
+          {isEditing ? (
+            <input
+              type="text"
+              className="dashboard-title-input"
+              value={dashboardName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDashboardName(e.target.value)}
+              placeholder="Dashboard name"
+            />
+          ) : (
+            <h1 className="dashboard-title-input" style={{ cursor: 'default' }}>{displayName}</h1>
+          )}
 
-        {dashboard?.updated_at && (
-          <p className="dashboard-meta" style={{ marginBottom: 'var(--spacing-lg)' }}>
-            Last updated {formatRelativeDate(dashboard.updated_at)}
-          </p>
-        )}
+          {dashboard?.updated_at && (
+            <p className="dashboard-meta" style={{ marginBottom: 'var(--spacing-lg)' }}>
+              Last updated {formatRelativeDate(dashboard.updated_at)}
+              {dateRange !== '30d' && (
+                <span className="date-range-indicator">
+                  <Calendar size={12} />
+                  {dateRangeLabels[dateRange]}
+                </span>
+              )}
+            </p>
+          )}
 
-        {hasApiWidgets ? (
-          <DashboardGrid
-            widgets={dashboard!.widgets}
-            editable={isEditing}
-            onWidgetRemove={handleRemoveWidget}
-            onWidgetMaximize={(widgetId) => setMaximizedWidgetId(widgetId)}
-            baseAudience={baseAudience}
-          />
-        ) : (
-          <EmptyState
-            icon={<LayoutDashboard size={48} />}
-            title="No widgets yet"
-            description="Start building your dashboard by adding charts, statistics, or text widgets."
-            action={
-              <Button variant="primary" icon={<Plus size={16} />} onClick={() => setShowAddWidget(true)}>
-                Add First Widget
-              </Button>
-            }
-          />
-        )}
+          {hasApiWidgets ? (
+            <DashboardGrid
+              widgets={dashboard!.widgets}
+              editable={isEditing}
+              onWidgetRemove={handleRemoveWidget}
+              onWidgetMaximize={(widgetId) => setMaximizedWidgetId(widgetId)}
+              baseAudience={baseAudience}
+            />
+          ) : (
+            <EmptyState
+              icon={<LayoutDashboard size={48} />}
+              title="No widgets yet"
+              description="Start building your dashboard by adding charts, statistics, or text widgets."
+              action={
+                <Button variant="primary" icon={<Plus size={16} />} onClick={() => setShowAddWidget(true)}>
+                  Add First Widget
+                </Button>
+              }
+            />
+          )}
+        </div>
+
+        {/* Dashboard Notes Panel */}
+        <div className={`notes-panel ${notesOpen ? 'open' : ''}`}>
+          <div className="notes-panel-header">
+            <div className="notes-panel-title">
+              <StickyNote size={16} />
+              <span>Dashboard Notes</span>
+            </div>
+            <button className="notes-panel-close" onClick={() => setNotesOpen(false)}>
+              <X size={16} />
+            </button>
+          </div>
+          <div className="notes-panel-body">
+            <textarea
+              className="notes-textarea"
+              value={notesContent}
+              onChange={(e) => setNotesContent(e.target.value)}
+              placeholder="Add notes and annotations about this dashboard..."
+            />
+            <div className="notes-panel-footer">
+              <span className="notes-char-count">{notesContent.length} characters</span>
+              <button
+                className="notes-save-btn"
+                onClick={() => toast.success('Notes saved')}
+              >
+                Save Notes
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Share Modal */}

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Globe, BarChart3 } from 'lucide-react';
+import { Plus, Globe, BarChart3, LayoutGrid, List, Download, Trash2, CheckSquare, Filter, Clock } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useCharts } from '@/hooks/useCharts';
 import { SearchInput, Tabs, Pagination, EmptyState, Badge } from '@/components/shared';
 import { formatRelativeDate } from '@/utils/format';
@@ -23,6 +24,17 @@ const chartTypeLabels: Record<string, string> = {
   scatter: 'Scatter Plot',
   table: 'Table',
 };
+
+const chartTypeFilterOptions: { value: string; label: string }[] = [
+  { value: 'all', label: 'All Types' },
+  { value: 'bar', label: 'Bar Chart' },
+  { value: 'stacked_bar', label: 'Stacked Bar' },
+  { value: 'line', label: 'Line Chart' },
+  { value: 'pie', label: 'Pie Chart' },
+  { value: 'donut', label: 'Donut Chart' },
+  { value: 'scatter', label: 'Scatter Plot' },
+  { value: 'table', label: 'Table' },
+];
 
 function MiniBar(): React.JSX.Element {
   const bars: number[] = [65, 45, 80, 35, 60, 50, 72];
@@ -92,6 +104,10 @@ export default function Charts(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [page, setPage] = useState<number>(1);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [chartTypeFilter, setChartTypeFilter] = useState<string>('all');
+  const [bulkMode, setBulkMode] = useState<boolean>(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { data: chartsResponse, isLoading, isError } = useCharts({
     page,
@@ -106,17 +122,71 @@ export default function Charts(): React.JSX.Element {
   const totalPages = meta?.total_pages ?? 1;
 
   // Client-side tab filtering (tabs represent ownership, not a server filter)
-  const filtered = charts.filter((chart: Chart) => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'my') return !chart.is_shared;
-    if (activeTab === 'shared') return chart.is_shared;
-    if (activeTab === 'gwi') return !chart.user_id;
-    return true;
-  });
+  const filtered = useMemo(() => {
+    return charts.filter((chart: Chart) => {
+      // Tab filter
+      if (activeTab === 'my' && chart.is_shared) return false;
+      if (activeTab === 'shared' && !chart.is_shared) return false;
+      if (activeTab === 'gwi' && chart.user_id) return false;
+
+      // Chart type filter
+      if (chartTypeFilter !== 'all' && chart.chart_type !== chartTypeFilter) return false;
+
+      return true;
+    });
+  }, [charts, activeTab, chartTypeFilter]);
+
+  // Recently viewed: take the first 3 charts as mock "recently viewed"
+  const recentlyViewed = useMemo(() => {
+    return charts.slice(0, 3);
+  }, [charts]);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     setPage(1);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((c) => c.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleBulkExport = () => {
+    if (selectedIds.size === 0) {
+      toast.error('No charts selected');
+      return;
+    }
+    toast.success(`Exporting ${selectedIds.size} chart(s)...`);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) {
+      toast.error('No charts selected');
+      return;
+    }
+    toast.success(`Deleted ${selectedIds.size} chart(s)`);
+    setSelectedIds(new Set());
+    setBulkMode(false);
+  };
+
+  const exitBulkMode = () => {
+    setBulkMode(false);
+    setSelectedIds(new Set());
   };
 
   return (
@@ -138,7 +208,68 @@ export default function Charts(): React.JSX.Element {
           onChange={handleSearchChange}
           placeholder="Search charts"
         />
+        <div className="charts-filter-type">
+          <Filter size={14} className="filter-icon" />
+          <select
+            className="charts-type-select"
+            value={chartTypeFilter}
+            onChange={(e) => { setChartTypeFilter(e.target.value); setPage(1); }}
+          >
+            {chartTypeFilterOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="charts-view-toggle">
+          <button
+            className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+            onClick={() => setViewMode('grid')}
+            title="Grid view"
+          >
+            <LayoutGrid size={16} />
+          </button>
+          <button
+            className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+            onClick={() => setViewMode('list')}
+            title="List view"
+          >
+            <List size={16} />
+          </button>
+        </div>
+        <button
+          className={`bulk-toggle-btn ${bulkMode ? 'active' : ''}`}
+          onClick={() => bulkMode ? exitBulkMode() : setBulkMode(true)}
+          title={bulkMode ? 'Exit selection mode' : 'Bulk select'}
+        >
+          <CheckSquare size={16} />
+          <span>{bulkMode ? 'Cancel' : 'Select'}</span>
+        </button>
       </div>
+
+      {/* Bulk actions bar */}
+      {bulkMode && (
+        <div className="charts-bulk-bar">
+          <label className="bulk-select-all">
+            <input
+              type="checkbox"
+              checked={filtered.length > 0 && selectedIds.size === filtered.length}
+              onChange={toggleSelectAll}
+            />
+            <span>Select all ({filtered.length})</span>
+          </label>
+          <span className="bulk-count">{selectedIds.size} selected</span>
+          <div className="bulk-actions">
+            <button className="bulk-action-btn" onClick={handleBulkExport} disabled={selectedIds.size === 0}>
+              <Download size={14} />
+              <span>Export</span>
+            </button>
+            <button className="bulk-action-btn bulk-action-danger" onClick={handleBulkDelete} disabled={selectedIds.size === 0}>
+              <Trash2 size={14} />
+              <span>Delete</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="charts-loading">
@@ -161,41 +292,129 @@ export default function Charts(): React.JSX.Element {
           title="No charts found"
           description={searchQuery ? 'No charts match your search' : 'Create your first chart to get started'}
           action={
-            <button className="charts-empty-btn" onClick={() => { setSearchQuery(''); setActiveTab('all'); }}>
+            <button className="charts-empty-btn" onClick={() => { setSearchQuery(''); setActiveTab('all'); setChartTypeFilter('all'); }}>
               Clear filters
             </button>
           }
         />
       ) : (
         <>
-          <div className="charts-grid">
-            {filtered.map((chart: Chart) => {
-              const MiniChart = miniCharts[chart.chart_type] || MiniBar;
-              return (
-                <Link key={chart.id} to={`/app/chart-builder/chart/${chart.id}`} className="chart-card">
-                  <div className="chart-preview">
-                    {chart.thumbnail_url ? (
-                      <img src={chart.thumbnail_url} alt={chart.name} className="chart-thumbnail" />
-                    ) : (
-                      <MiniChart />
+          {/* Recently Viewed Section */}
+          {!bulkMode && recentlyViewed.length > 0 && (
+            <div className="recently-viewed-section">
+              <div className="recently-viewed-header">
+                <Clock size={16} />
+                <h3>Recently Viewed</h3>
+              </div>
+              <div className="recently-viewed-row">
+                {recentlyViewed.map((chart: Chart) => {
+                  const MiniChart = miniCharts[chart.chart_type] || MiniBar;
+                  return (
+                    <Link key={`recent-${chart.id}`} to={`/app/chart-builder/chart/${chart.id}`} className="recent-card">
+                      <div className="recent-card-preview">
+                        <MiniChart />
+                      </div>
+                      <div className="recent-card-info">
+                        <span className="recent-card-name">{chart.name}</span>
+                        <span className="recent-card-type">{chartTypeLabels[chart.chart_type] ?? chart.chart_type}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Grid View */}
+          {viewMode === 'grid' && (
+            <div className="charts-grid">
+              {filtered.map((chart: Chart) => {
+                const MiniChart = miniCharts[chart.chart_type] || MiniBar;
+                return (
+                  <div key={chart.id} className={`chart-card-wrapper ${bulkMode && selectedIds.has(chart.id) ? 'selected' : ''}`}>
+                    {bulkMode && (
+                      <label className="chart-card-checkbox" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(chart.id)}
+                          onChange={() => toggleSelect(chart.id)}
+                        />
+                      </label>
                     )}
+                    <Link to={`/app/chart-builder/chart/${chart.id}`} className="chart-card">
+                      <div className="chart-preview">
+                        {chart.thumbnail_url ? (
+                          <img src={chart.thumbnail_url} alt={chart.name} className="chart-thumbnail" />
+                        ) : (
+                          <MiniChart />
+                        )}
+                      </div>
+                      <div className="chart-info">
+                        <h3 className="chart-name">{chart.name}</h3>
+                        <p className="chart-meta">
+                          <Badge variant="info" className="chart-type-badge">
+                            {chartTypeLabels[chart.chart_type] ?? chart.chart_type}
+                          </Badge>
+                          {chart.is_shared && <Badge variant="default">Shared</Badge>}
+                        </p>
+                        <p className="chart-updated">
+                          {chart.updated_at ? formatRelativeDate(chart.updated_at) : 'Unknown'}
+                        </p>
+                      </div>
+                    </Link>
                   </div>
-                  <div className="chart-info">
-                    <h3 className="chart-name">{chart.name}</h3>
-                    <p className="chart-meta">
-                      <Badge variant="info" className="chart-type-badge">
-                        {chartTypeLabels[chart.chart_type] ?? chart.chart_type}
-                      </Badge>
-                      {chart.is_shared && <Badge variant="default">Shared</Badge>}
-                    </p>
-                    <p className="chart-updated">
-                      {chart.updated_at ? formatRelativeDate(chart.updated_at) : 'Unknown'}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* List View */}
+          {viewMode === 'list' && (
+            <div className="charts-list-table-wrapper">
+              <table className="charts-list-table">
+                <thead>
+                  <tr>
+                    {bulkMode && <th className="list-checkbox-col" />}
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Last Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((chart: Chart) => (
+                    <tr key={chart.id} className={selectedIds.has(chart.id) ? 'selected' : ''}>
+                      {bulkMode && (
+                        <td className="list-checkbox-col">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(chart.id)}
+                            onChange={() => toggleSelect(chart.id)}
+                          />
+                        </td>
+                      )}
+                      <td>
+                        <Link to={`/app/chart-builder/chart/${chart.id}`} className="list-chart-name">
+                          {chart.name}
+                        </Link>
+                      </td>
+                      <td>
+                        <Badge variant="info" className="chart-type-badge">
+                          {chartTypeLabels[chart.chart_type] ?? chart.chart_type}
+                        </Badge>
+                      </td>
+                      <td>
+                        {chart.is_shared ? <Badge variant="default">Shared</Badge> : <Badge variant="default">Private</Badge>}
+                      </td>
+                      <td className="list-updated-col">
+                        {chart.updated_at ? formatRelativeDate(chart.updated_at) : 'Unknown'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <Pagination
             page={page}

@@ -595,6 +595,8 @@ interface SparkChatProps {
   onConversationCreated?: (id: string) => void
   onAction?: (action: SparkAction) => void
   onMessageSent?: (message: string) => void
+  agentName?: string
+  agentDescription?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -614,6 +616,8 @@ export default function SparkChat({
   onConversationCreated,
   onAction,
   onMessageSent,
+  agentName,
+  agentDescription,
 }: SparkChatProps) {
   const [messages, setMessages] = useState<SparkMessage[]>(initialMessages)
   const [input, setInput] = useState('')
@@ -822,10 +826,10 @@ export default function SparkChat({
           {messages.length === 0 && (
             <div className="spark-chat__empty">
               <Sparkles size={32} />
-              <h3>Agent Spark</h3>
+              <h3>{agentName || 'Agent Spark'}</h3>
               <p>{contextLabel
                 ? `I'm connected to your ${contextLabel.type.toLowerCase()}. Ask me anything about it.`
-                : 'Ask me anything about your data, audiences, or consumer insights.'
+                : agentDescription || 'Ask me anything about your data, audiences, or consumer insights.'
               }</p>
             </div>
           )}

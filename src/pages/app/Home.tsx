@@ -4,23 +4,18 @@ import {
   Users, ChevronDown, Send, ExternalLink, Loader2, LucideIcon,
   BarChart3, PieChart, Table2, LayoutDashboard, Microscope, FileText,
   TrendingUp, TrendingDown, AlertTriangle, Lightbulb, Target, Bell,
-  X, Eye, Activity, Clock, User, Sparkles,
+  X, Eye, Activity, Clock, User, Sparkles, ArrowRight,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
 import { useSparkChat, useSparkConversations } from '@/hooks/useSpark';
 import { formatRelativeDate } from '@/utils/format';
 import { Badge } from '@/components/shared';
+import { getFeaturedAgents } from '@/data/agents';
 import './Home.css';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-interface ExamplePrompt {
-  label: string;
-  prompt: string;
-  icon: LucideIcon;
-}
 
 type InsightSeverity = 'info' | 'notable' | 'important' | 'critical';
 type InsightType = 'anomaly' | 'trend' | 'opportunity' | 'alert' | 'recommendation';
@@ -60,12 +55,7 @@ interface KpiWidget {
 // Mock data
 // ---------------------------------------------------------------------------
 
-const examplePrompts: ExamplePrompt[] = [
-  { label: 'Understanding GWI taxonomy', prompt: 'Explain the GWI taxonomy structure and how questions, datapoints, and waves are organized', icon: ExternalLink },
-  { label: 'Strategy and consumer trends', prompt: 'What are the key consumer trends across markets for Q4 2024?', icon: ExternalLink },
-  { label: 'Audience profiling', prompt: 'Help me build a profile of Gen Z social media users and their key behaviors', icon: ExternalLink },
-  { label: 'Competitive positioning', prompt: 'How can I use GWI data to analyze competitive brand positioning?', icon: ExternalLink },
-];
+const featuredAgents = getFeaturedAgents(4);
 
 const mockInsights: ProactiveInsight[] = [
   {
@@ -238,57 +228,110 @@ export default function Home(): React.JSX.Element {
     <div className="home-page">
       <div className="home-content">
 
-        {/* ---- Proactive Insights Panel ---- */}
-        {visibleInsights.length > 0 && (
-          <section className="insights-panel">
-            <div className="insights-panel-header">
-              <Sparkles size={18} />
-              <h2 className="insights-panel-title">Proactive Insights</h2>
-              <span className="insights-panel-count">{visibleInsights.length}</span>
+        {/* ---- ZONE A: Welcome + Action ---- */}
+        <section className="home-zone home-zone--action">
+          {/* Agent Spark Hero (compact) */}
+          <div className="agent-spark-hero agent-spark-hero--compact">
+            <div className="agent-spark-hero-row">
+              <div className="agent-spark-avatar agent-spark-avatar--sm">
+                <span className="wave-emoji">👋</span>
+              </div>
+              <div className="agent-spark-hero-text">
+                <h1 className="agent-spark-title agent-spark-title--compact">
+                  Hi {firstName}, <span className="highlight">your AI agents</span> are ready
+                </h1>
+              </div>
             </div>
-            <div className="insights-grid">
-              {visibleInsights.map((insight) => {
-                const IconComp = insightIconMap[insight.type];
-                return (
-                  <div key={insight.id} className={`insight-card ${severityClassMap[insight.severity]}`}>
-                    <div className="insight-card-header">
-                      <div className="insight-card-icon">
+
+            {/* Input Area */}
+            <div className="agent-spark-input-container">
+              <input
+                type="text"
+                className="agent-spark-input"
+                placeholder="Ask your AI agents a question"
+                value={question}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuestion(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={sparkChat.isPending}
+              />
+              <div className="agent-spark-input-actions">
+                <button className="add-audience-btn">
+                  <Users size={16} />
+                  <span>Add audience</span>
+                </button>
+                <div className="agent-spark-input-right">
+                  <button className="dataset-selector">
+                    <span>{dataset}</span>
+                    <ChevronDown size={16} />
+                  </button>
+                  <button
+                    className="send-btn"
+                    disabled={!question.trim() || sparkChat.isPending}
+                    onClick={handleSend}
+                  >
+                    {sparkChat.isPending ? (
+                      <Loader2 size={18} className="spin" />
+                    ) : (
+                      <Send size={18} />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <p className="agent-spark-disclaimer">
+              AI can make mistakes. Consider checking important information.
+            </p>
+
+            {/* Featured Agents */}
+            <div className="featured-agents-section">
+              <div className="featured-agents-header">
+                <Sparkles size={16} />
+                <span>Featured Agents</span>
+              </div>
+              <div className="featured-agents-list">
+                {featuredAgents.map((agent) => {
+                  const IconComp = agent.icon;
+                  return (
+                    <button
+                      key={agent.id}
+                      className="featured-agent-card"
+                      onClick={() => navigate(`/app/agent-spark?agent=${agent.id}`)}
+                    >
+                      <div
+                        className="featured-agent-icon"
+                        style={{ background: agent.iconBg, color: agent.iconColor }}
+                      >
                         <IconComp size={16} />
                       </div>
-                      <Badge variant={insight.severity === 'critical' ? 'danger' : insight.severity === 'important' ? 'warning' : insight.severity === 'notable' ? 'info' : 'default'}>
-                        {insight.type}
-                      </Badge>
-                    </div>
-                    <h3 className="insight-card-title">{insight.title}</h3>
-                    <p className="insight-card-desc">{insight.description}</p>
-                    <div className="insight-card-metric">
-                      <span className={`insight-metric-value insight-metric--${insight.metricDirection}`}>
-                        {insight.metricDirection === 'up' && <TrendingUp size={14} />}
-                        {insight.metricDirection === 'down' && <TrendingDown size={14} />}
-                        {insight.metricChange}
-                      </span>
-                    </div>
-                    <div className="insight-card-actions">
-                      <button className="insight-action-btn insight-action-btn--primary">
-                        <Eye size={14} />
-                        View Details
-                      </button>
-                      <button
-                        className="insight-action-btn insight-action-btn--dismiss"
-                        onClick={() => handleDismissInsight(insight.id)}
-                      >
-                        <X size={14} />
-                        Dismiss
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                      <div className="featured-agent-info">
+                        <span className="featured-agent-name">{agent.name}</span>
+                        <span className="featured-agent-desc">{agent.examplePrompt}</span>
+                      </div>
+                      <ArrowRight size={14} className="featured-agent-arrow" />
+                    </button>
+                  );
+                })}
+              </div>
+              <Link to="/app/agent-catalog" className="view-all-agents-link">
+                View all agents
+                <ArrowRight size={14} />
+              </Link>
             </div>
-          </section>
-        )}
+          </div>
 
-        {/* ---- Dashboard Summary KPI Widgets ---- */}
+          {/* Quick Actions Bar */}
+          <section className="quick-actions">
+            {quickActions.map((action) => (
+              <Link key={action.label} to={action.path} className="quick-action-btn">
+                <action.icon size={20} />
+                <span>{action.label}</span>
+              </Link>
+            ))}
+          </section>
+        </section>
+
+        {/* ---- ZONE B: At-a-Glance KPI Widgets ---- */}
         <section className="kpi-widgets">
           {kpiWidgets.map((kpi) => (
             <div key={kpi.label} className="kpi-card">
@@ -306,152 +349,124 @@ export default function Home(): React.JSX.Element {
           ))}
         </section>
 
-        {/* ---- Quick Actions Bar ---- */}
-        <section className="quick-actions">
-          {quickActions.map((action) => (
-            <Link key={action.label} to={action.path} className="quick-action-btn">
-              <action.icon size={20} />
-              <span>{action.label}</span>
-            </Link>
-          ))}
-        </section>
-
-        {/* ---- Agent Spark Hero (compact) ---- */}
-        <div className="agent-spark-hero agent-spark-hero--compact">
-          <div className="agent-spark-hero-row">
-            <div className="agent-spark-avatar agent-spark-avatar--sm">
-              <span className="wave-emoji">👋</span>
+        {/* ---- ZONE C: Feeds (two-column) ---- */}
+        <div className="home-feeds">
+          {/* Left column: Recent Activity */}
+          <section className="activity-feed">
+            <div className="activity-feed-header">
+              <Activity size={18} />
+              <h2 className="activity-feed-title">Recent Activity</h2>
+              <Link to="/app/dashboards" className="activity-feed-viewall">View all</Link>
             </div>
-            <div className="agent-spark-hero-text">
-              <h1 className="agent-spark-title agent-spark-title--compact">
-                Hi {firstName}, what can <span className="highlight">Agent Spark</span> help you with?
-              </h1>
-            </div>
-          </div>
-
-          {/* Input Area */}
-          <div className="agent-spark-input-container">
-            <input
-              type="text"
-              className="agent-spark-input"
-              placeholder="Ask Agent Spark a question"
-              value={question}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuestion(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={sparkChat.isPending}
-            />
-            <div className="agent-spark-input-actions">
-              <button className="add-audience-btn">
-                <Users size={16} />
-                <span>Add audience</span>
-              </button>
-              <div className="agent-spark-input-right">
-                <button className="dataset-selector">
-                  <span>{dataset}</span>
-                  <ChevronDown size={16} />
-                </button>
-                <button
-                  className="send-btn"
-                  disabled={!question.trim() || sparkChat.isPending}
-                  onClick={handleSend}
-                >
-                  {sparkChat.isPending ? (
-                    <Loader2 size={18} className="spin" />
-                  ) : (
-                    <Send size={18} />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <p className="agent-spark-disclaimer">
-            AI can make mistakes. Consider checking important information.
-          </p>
-
-          {/* Example Prompts (inline) */}
-          <div className="example-prompts-inline">
-            <div className="example-prompts-header">
-              <span className="sparkle-icon">✨</span>
-              <span>Example prompts</span>
-            </div>
-            <div className="example-prompts-list">
-              {examplePrompts.map((prompt: ExamplePrompt, index: number) => (
-                <button
-                  key={index}
-                  className="example-prompt-btn"
-                  onClick={() => navigate(`/app/agent-spark?prompt=${encodeURIComponent(prompt.prompt)}`)}
-                >
-                  <span>{prompt.label}</span>
-                  <ExternalLink size={14} />
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ---- Recent Activity Feed ---- */}
-        <section className="activity-feed">
-          <div className="activity-feed-header">
-            <Activity size={18} />
-            <h2 className="activity-feed-title">Recent Activity</h2>
-            <Link to="/app/dashboards" className="activity-feed-viewall">View all</Link>
-          </div>
-          <div className="activity-feed-list">
-            {mockActivity.map((item) => {
-              const IconComp = activityIconMap[item.type] || FileText;
-              return (
-                <div key={item.id} className="activity-feed-item">
-                  <div className="activity-feed-item-icon">
-                    <IconComp size={16} />
-                  </div>
-                  <div className="activity-feed-item-content">
-                    <span className="activity-feed-item-name">{item.name}</span>
-                    <div className="activity-feed-item-meta">
-                      <Badge variant={activityBadgeVariant[item.type] || 'default'}>{item.type}</Badge>
-                      <span className="activity-feed-item-date">
-                        <Clock size={12} />
-                        {formatRelativeDate(item.date)}
-                      </span>
-                      <span className="activity-feed-item-author">
-                        <User size={12} />
-                        {item.author}
-                      </span>
+            <div className="activity-feed-list">
+              {mockActivity.map((item) => {
+                const IconComp = activityIconMap[item.type] || FileText;
+                return (
+                  <div key={item.id} className="activity-feed-item">
+                    <div className="activity-feed-item-icon">
+                      <IconComp size={16} />
+                    </div>
+                    <div className="activity-feed-item-content">
+                      <span className="activity-feed-item-name">{item.name}</span>
+                      <div className="activity-feed-item-meta">
+                        <Badge variant={activityBadgeVariant[item.type] || 'default'}>{item.type}</Badge>
+                        <span className="activity-feed-item-date">
+                          <Clock size={12} />
+                          {formatRelativeDate(item.date)}
+                        </span>
+                        <span className="activity-feed-item-author">
+                          <User size={12} />
+                          {item.author}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+                );
+              })}
+            </div>
+          </section>
 
-        {/* ---- Recent Spark Conversations ---- */}
-        <div className="recent-section">
-          <h2 className="recent-title">Recent Conversations</h2>
-          <div className="recent-list">
-            {conversationsLoading ? (
-              <div className="recent-item" style={{ justifyContent: 'center' }}>
-                <Loader2 size={20} className="spin" />
-              </div>
-            ) : conversations && conversations.length > 0 ? (
-              conversations.slice(0, 5).map((chat) => (
-                <Link key={chat.id} to={`/app/agent-spark/${chat.id}`} className="recent-item">
-                  <div className="recent-item-icon">
-                    <span className="sparkle-icon small">✨</span>
-                  </div>
-                  <div className="recent-item-content">
-                    <h3 className="recent-item-title">{chat.title}</h3>
-                    <p className="recent-item-date">{formatRelativeDate(chat.updated_at)}</p>
-                  </div>
-                </Link>
-              ))
-            ) : (
-              <div className="recent-item">
-                <div className="recent-item-content">
-                  <p className="recent-item-date">No recent conversations yet. Ask a question above to get started.</p>
+          {/* Right column: Insights + Conversations */}
+          <div className="home-feeds__sidebar">
+            {/* Proactive Insights */}
+            {visibleInsights.length > 0 && (
+              <section className="insights-panel">
+                <div className="insights-panel-header">
+                  <Sparkles size={18} />
+                  <h2 className="insights-panel-title">Proactive Insights</h2>
+                  <span className="insights-panel-count">{visibleInsights.length}</span>
                 </div>
-              </div>
+                <div className="insights-grid">
+                  {visibleInsights.map((insight) => {
+                    const IconComp = insightIconMap[insight.type];
+                    return (
+                      <div key={insight.id} className={`insight-card ${severityClassMap[insight.severity]}`}>
+                        <div className="insight-card-header">
+                          <div className="insight-card-icon">
+                            <IconComp size={16} />
+                          </div>
+                          <Badge variant={insight.severity === 'critical' ? 'danger' : insight.severity === 'important' ? 'warning' : insight.severity === 'notable' ? 'info' : 'default'}>
+                            {insight.type}
+                          </Badge>
+                        </div>
+                        <h3 className="insight-card-title">{insight.title}</h3>
+                        <p className="insight-card-desc">{insight.description}</p>
+                        <div className="insight-card-metric">
+                          <span className={`insight-metric-value insight-metric--${insight.metricDirection}`}>
+                            {insight.metricDirection === 'up' && <TrendingUp size={14} />}
+                            {insight.metricDirection === 'down' && <TrendingDown size={14} />}
+                            {insight.metricChange}
+                          </span>
+                        </div>
+                        <div className="insight-card-actions">
+                          <button className="insight-action-btn insight-action-btn--primary">
+                            <Eye size={14} />
+                            View Details
+                          </button>
+                          <button
+                            className="insight-action-btn insight-action-btn--dismiss"
+                            onClick={() => handleDismissInsight(insight.id)}
+                          >
+                            <X size={14} />
+                            Dismiss
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
             )}
+
+            {/* Recent Spark Conversations */}
+            <div className="recent-section">
+              <h2 className="recent-title">Recent Conversations</h2>
+              <div className="recent-list">
+                {conversationsLoading ? (
+                  <div className="recent-item" style={{ justifyContent: 'center' }}>
+                    <Loader2 size={20} className="spin" />
+                  </div>
+                ) : conversations && conversations.length > 0 ? (
+                  conversations.slice(0, 5).map((chat) => (
+                    <Link key={chat.id} to={`/app/agent-spark/${chat.id}`} className="recent-item">
+                      <div className="recent-item-icon">
+                        <span className="sparkle-icon small">✨</span>
+                      </div>
+                      <div className="recent-item-content">
+                        <h3 className="recent-item-title">{chat.title}</h3>
+                        <p className="recent-item-date">{formatRelativeDate(chat.updated_at)}</p>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="recent-item">
+                    <div className="recent-item-content">
+                      <p className="recent-item-date">No recent conversations yet. Ask a question above to get started.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

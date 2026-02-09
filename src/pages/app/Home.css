@@ -4,7 +4,7 @@
 
 .home-page {
   padding: var(--spacing-xl) var(--spacing-xl);
-  max-width: 1100px;
+  max-width: 1280px;
   margin: 0 auto;
   min-height: calc(100vh - var(--header-height));
 }
@@ -12,7 +12,7 @@
 .home-content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-xl);
   width: 100%;
   animation: fadeIn 0.3s ease;
 }
@@ -594,6 +594,131 @@
 }
 
 /* ============================================
+   Featured Agents (in compact hero)
+   ============================================ */
+.featured-agents-section {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.featured-agents-header {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.featured-agents-header svg {
+  color: var(--color-primary);
+}
+
+.featured-agents-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-sm);
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+  .featured-agents-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.featured-agent-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  background: var(--color-white);
+  box-shadow: var(--shadow-xs);
+  transition: all var(--transition-fast);
+  text-align: left;
+  cursor: pointer;
+}
+
+.featured-agent-card:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.featured-agent-card:active {
+  transform: translateY(0);
+}
+
+.featured-agent-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.featured-agent-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.featured-agent-name {
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  line-height: var(--line-height-snug);
+}
+
+.featured-agent-desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-snug);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.featured-agent-arrow {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+.featured-agent-card:hover .featured-agent-arrow {
+  color: var(--color-primary);
+  transform: translateX(2px);
+}
+
+.view-all-agents-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--spacing-md);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+}
+
+.view-all-agents-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* ============================================
    Activity Feed
    ============================================ */
 .activity-feed {
@@ -769,5 +894,86 @@
   font-size: var(--font-size-body-sm);
   color: var(--color-text-muted);
   line-height: var(--line-height-normal);
+}
+
+/* ============================================
+   Zone A: Welcome + Action wrapper
+   ============================================ */
+.home-zone {
+  border-radius: var(--radius-2xl);
+}
+
+.home-zone--action {
+  background: linear-gradient(
+    160deg,
+    var(--color-primary-light) 0%,
+    var(--color-surface-secondary) 100%
+  );
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.home-zone--action .agent-spark-hero {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: var(--spacing-lg) 0;
+}
+
+.home-zone--action .quick-actions {
+  justify-content: center;
+}
+
+.home-zone--action .quick-action-btn {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+}
+
+.home-zone--action .quick-action-btn:hover {
+  background: var(--color-white);
+}
+
+/* ============================================
+   Zone C: Feeds (two-column layout)
+   ============================================ */
+.home-feeds {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: var(--spacing-xl);
+  align-items: start;
+}
+
+.home-feeds__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.home-feeds__sidebar .insights-panel {
+  margin: 0;
+}
+
+.home-feeds__sidebar .insights-grid {
+  grid-template-columns: 1fr;
+}
+
+.home-feeds__sidebar .insight-card {
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.home-feeds__sidebar .recent-section {
+  margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .home-feeds {
+    grid-template-columns: 1fr;
+  }
+
+  .home-zone--action {
+    padding: var(--spacing-lg);
+  }
 }
 

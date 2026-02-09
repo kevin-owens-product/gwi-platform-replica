@@ -3,7 +3,7 @@ import {
   Search, Home, Sparkles, Users, UsersRound, BarChart2, Grid3X3,
   LayoutDashboard, Square, FileText, HelpCircle,
   Settings, LogOut, ChevronDown, ChevronUp, MessageCircle,
-  Tv, Newspaper, BookOpen, type LucideIcon,
+  Tv, Newspaper, type LucideIcon,
 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useAuthStore } from '@/stores/auth'
@@ -21,7 +21,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: '/app', icon: Home, label: 'Home', exact: true },
   { path: '/app/teams', icon: UsersRound, label: 'Teams' },
-  { path: '/app/agent-spark', icon: Sparkles, label: 'Agent Spark' },
+  { path: '/app/agent-catalog', icon: Sparkles, label: 'Agents' },
   { path: '/app/audiences', icon: Users, label: 'Audiences' },
   { path: '/app/chart-builder', icon: BarChart2, label: 'Charts' },
   { path: '/app/crosstabs', icon: Grid3X3, label: 'Crosstabs' },
@@ -30,7 +30,6 @@ const navItems: NavItem[] = [
   { path: '/app/reports', icon: FileText, label: 'Reports' },
   { path: '/app/tv-study', icon: Tv, label: 'TV Study' },
   { path: '/app/printrf', icon: Newspaper, label: 'Print R&F' },
-  { path: '/app/questions', icon: BookOpen, label: 'Questions' },
 ]
 
 export default function Sidebar() {

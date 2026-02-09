@@ -34,6 +34,16 @@
   color: var(--color-primary);
 }
 
+.spark-agent-indicator {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .spark-title {
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-semibold);

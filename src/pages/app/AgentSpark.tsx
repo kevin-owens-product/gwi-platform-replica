@@ -14,6 +14,7 @@ import { useWorkspaceStore } from '@/stores/workspace';
 import { formatRelativeDate } from '@/utils/format';
 import type { SparkConversation, SparkAction, SparkContext } from '@/api/types';
 import SparkContextBadge from '@/components/workspace/SparkContextBadge';
+import { getAgentById } from '@/data/agents';
 import './AgentSpark.css';
 
 const SUGGESTED_PROMPTS = [
@@ -59,6 +60,8 @@ export default function AgentSpark(): React.JSX.Element {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const promptParam = searchParams.get('prompt') ?? undefined;
+  const agentParam = searchParams.get('agent') ?? undefined;
+  const activeAgent = agentParam ? getAgentById(agentParam) : undefined;
 
   // Parse SparkContext from URL query params once on mount.
   // The route uses an optional :id? param so the component is never remounted
@@ -243,8 +246,22 @@ export default function AgentSpark(): React.JSX.Element {
     <div className="agent-spark-page">
       <div className="spark-top-bar">
         <div className="spark-top-left">
-          <Sparkles size={18} className="spark-logo-icon" />
-          <span className="spark-title">Agent Spark</span>
+          {activeAgent ? (
+            <>
+              <span
+                className="spark-agent-indicator"
+                style={{ background: activeAgent.iconBg, color: activeAgent.iconColor }}
+              >
+                <activeAgent.icon size={16} />
+              </span>
+              <span className="spark-title">{activeAgent.name}</span>
+            </>
+          ) : (
+            <>
+              <Sparkles size={18} className="spark-logo-icon" />
+              <span className="spark-title">Agent Spark</span>
+            </>
+          )}
           <span className="spark-badge">AI</span>
 
           {/* Context Indicator */}
@@ -514,6 +531,8 @@ export default function AgentSpark(): React.JSX.Element {
               } : undefined)}
               onConversationCreated={handleConversationCreated}
               onAction={handleSparkAction}
+              agentName={activeAgent?.name}
+              agentDescription={activeAgent?.description}
             />
           )}
         </div>

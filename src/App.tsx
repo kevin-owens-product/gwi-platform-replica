@@ -16,6 +16,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute'
 // Lazy-loaded App Pages
 const Home = lazy(() => import('./pages/app/Home'))
 const AgentSpark = lazy(() => import('./pages/app/AgentSpark'))
+const AgentCatalog = lazy(() => import('./pages/app/AgentCatalog'))
 const Audiences = lazy(() => import('./pages/app/Audiences'))
 const AudienceDetail = lazy(() => import('./pages/app/AudienceDetail'))
 const Charts = lazy(() => import('./pages/app/Charts'))
@@ -56,6 +57,7 @@ function App() {
         {/* App Routes */}
         <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
           <Route index element={<Suspense fallback={<PageLoader />}><Home /></Suspense>} />
+          <Route path="agent-catalog" element={<Suspense fallback={<PageLoader />}><AgentCatalog /></Suspense>} />
           <Route path="agent-spark/:id?" element={<Suspense fallback={<PageLoader />}><AgentSpark /></Suspense>} />
           <Route path="audiences" element={<Suspense fallback={<PageLoader />}><Audiences /></Suspense>} />
           <Route path="audiences/new" element={<Suspense fallback={<PageLoader />}><AudienceDetail isNew /></Suspense>} />

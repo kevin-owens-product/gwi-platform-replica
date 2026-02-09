@@ -4,7 +4,7 @@ import {
   Users, ChevronDown, Send, ExternalLink, Loader2, LucideIcon,
   BarChart3, PieChart, Table2, LayoutDashboard, Microscope, FileText,
   TrendingUp, TrendingDown, AlertTriangle, Lightbulb, Target, Bell,
-  X, Eye, Activity, Clock, User, Sparkles, ArrowRight,
+  X, Eye, Activity, Clock, User, Sparkles, ArrowRight, ChevronRight,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
 import { useSparkChat, useSparkConversations } from '@/hooks/useSpark';
@@ -56,6 +56,12 @@ interface KpiWidget {
 // ---------------------------------------------------------------------------
 
 const featuredAgents = getFeaturedAgents(4);
+
+const suggestedPrompts = [
+  'What are the top social media trends?',
+  'Compare Gen Z vs Millennials',
+  'Analyze brand health metrics',
+];
 
 const mockInsights: ProactiveInsight[] = [
   {
@@ -124,6 +130,8 @@ const kpiWidgets: KpiWidget[] = [
 // Helpers
 // ---------------------------------------------------------------------------
 
+const INITIAL_INSIGHTS_COUNT = 2;
+
 const insightIconMap: Record<InsightType, LucideIcon> = {
   anomaly: AlertTriangle,
   trend: TrendingUp,
@@ -191,6 +199,7 @@ export default function Home(): React.JSX.Element {
   const [question, setQuestion] = useState<string>('');
   const [dataset, setDataset] = useState<string>('GWI Core');
   const [dismissedInsights, setDismissedInsights] = useState<Set<string>>(new Set());
+  const [insightsExpanded, setInsightsExpanded] = useState(false);
   const navigate = useNavigate();
 
   const user = useAuthStore((state) => state.user);
@@ -200,6 +209,10 @@ export default function Home(): React.JSX.Element {
   const firstName = user?.name?.split(' ')[0] ?? 'there';
 
   const visibleInsights = mockInsights.filter((ins) => !dismissedInsights.has(ins.id));
+  const displayedInsights = insightsExpanded
+    ? visibleInsights
+    : visibleInsights.slice(0, INITIAL_INSIGHTS_COUNT);
+  const hiddenInsightsCount = visibleInsights.length - INITIAL_INSIGHTS_COUNT;
 
   const handleDismissInsight = (id: string) => {
     setDismissedInsights((prev) => new Set(prev).add(id));
@@ -224,14 +237,17 @@ export default function Home(): React.JSX.Element {
     }
   };
 
+  const handlePromptClick = (prompt: string) => {
+    setQuestion(prompt);
+  };
+
   return (
     <div className="home-page">
       <div className="home-content">
 
-        {/* ---- ZONE A: Welcome + Action ---- */}
-        <section className="home-zone home-zone--action">
-          {/* Agent Spark Hero (compact) */}
-          <div className="agent-spark-hero agent-spark-hero--compact">
+        {/* ---- HERO: Focused AI Input ---- */}
+        <section className="home-hero">
+          <div className="home-hero-inner">
             <div className="agent-spark-hero-row">
               <div className="agent-spark-avatar agent-spark-avatar--sm">
                 <span className="wave-emoji">👋</span>
@@ -243,7 +259,6 @@ export default function Home(): React.JSX.Element {
               </div>
             </div>
 
-            {/* Input Area */}
             <div className="agent-spark-input-container">
               <input
                 type="text"
@@ -279,77 +294,97 @@ export default function Home(): React.JSX.Element {
               </div>
             </div>
 
-            <p className="agent-spark-disclaimer">
-              AI can make mistakes. Consider checking important information.
-            </p>
-
-            {/* Featured Agents */}
-            <div className="featured-agents-section">
-              <div className="featured-agents-header">
-                <Sparkles size={16} />
-                <span>Featured Agents</span>
-              </div>
-              <div className="featured-agents-list">
-                {featuredAgents.map((agent) => {
-                  const IconComp = agent.icon;
-                  return (
-                    <button
-                      key={agent.id}
-                      className="featured-agent-card"
-                      onClick={() => navigate(`/app/agent-spark?agent=${agent.id}`)}
-                    >
-                      <div
-                        className="featured-agent-icon"
-                        style={{ background: agent.iconBg, color: agent.iconColor }}
-                      >
-                        <IconComp size={16} />
-                      </div>
-                      <div className="featured-agent-info">
-                        <span className="featured-agent-name">{agent.name}</span>
-                        <span className="featured-agent-desc">{agent.examplePrompt}</span>
-                      </div>
-                      <ArrowRight size={14} className="featured-agent-arrow" />
-                    </button>
-                  );
-                })}
-              </div>
-              <Link to="/app/agent-catalog" className="view-all-agents-link">
-                View all agents
-                <ArrowRight size={14} />
-              </Link>
+            {/* Suggested prompt pills */}
+            <div className="suggested-prompts">
+              {suggestedPrompts.map((prompt) => (
+                <button
+                  key={prompt}
+                  className="suggested-prompt-pill"
+                  onClick={() => handlePromptClick(prompt)}
+                >
+                  <Sparkles size={12} />
+                  {prompt}
+                </button>
+              ))}
             </div>
           </div>
-
-          {/* Quick Actions Bar */}
-          <section className="quick-actions">
-            {quickActions.map((action) => (
-              <Link key={action.label} to={action.path} className="quick-action-btn">
-                <action.icon size={20} />
-                <span>{action.label}</span>
-              </Link>
-            ))}
-          </section>
         </section>
 
-        {/* ---- ZONE B: At-a-Glance KPI Widgets ---- */}
-        <section className="kpi-widgets">
-          {kpiWidgets.map((kpi) => (
-            <div key={kpi.label} className="kpi-card">
-              <div className="kpi-card-info">
-                <span className="kpi-card-count">{kpi.count}</span>
-                <span className="kpi-card-label">{kpi.label}</span>
-              </div>
-              <div className="kpi-card-right">
-                <MiniSparkline data={kpi.trend} />
-                <span className={`kpi-card-change ${kpi.change >= 0 ? 'kpi-card-change--up' : 'kpi-card-change--down'}`}>
-                  {kpi.change >= 0 ? '+' : ''}{kpi.change}%
-                </span>
-              </div>
-            </div>
+        {/* ---- QUICK ACTIONS: Lightweight horizontal row ---- */}
+        <section className="home-quick-actions">
+          {quickActions.map((action) => (
+            <Link key={action.label} to={action.path} className="home-quick-action-btn">
+              <action.icon size={16} />
+              <span>{action.label}</span>
+            </Link>
           ))}
         </section>
 
-        {/* ---- ZONE C: Feeds (two-column) ---- */}
+        {/* ---- FEATURED AGENTS: Compact horizontal strip ---- */}
+        <section className="home-featured-agents">
+          <div className="home-section-header">
+            <div className="home-section-header-left">
+              <Sparkles size={16} />
+              <h2 className="home-section-title">Featured Agents</h2>
+            </div>
+            <Link to="/app/agent-catalog" className="home-section-link">
+              View all
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="featured-agents-strip">
+            {featuredAgents.map((agent) => {
+              const IconComp = agent.icon;
+              return (
+                <button
+                  key={agent.id}
+                  className="featured-agent-strip-card"
+                  onClick={() => navigate(`/app/agent-spark?agent=${agent.id}`)}
+                >
+                  <div
+                    className="featured-agent-strip-icon"
+                    style={{ background: agent.iconBg, color: agent.iconColor }}
+                  >
+                    <IconComp size={16} />
+                  </div>
+                  <div className="featured-agent-strip-info">
+                    <span className="featured-agent-strip-name">{agent.name}</span>
+                    <span className="featured-agent-strip-desc">{agent.examplePrompt}</span>
+                  </div>
+                  <ChevronRight size={14} className="featured-agent-strip-arrow" />
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ---- KPI WIDGETS ---- */}
+        <section className="home-kpi-section">
+          <div className="home-section-header">
+            <div className="home-section-header-left">
+              <Activity size={16} />
+              <h2 className="home-section-title">Your Workspace</h2>
+            </div>
+          </div>
+          <div className="kpi-widgets">
+            {kpiWidgets.map((kpi) => (
+              <div key={kpi.label} className="kpi-card">
+                <div className="kpi-card-info">
+                  <span className="kpi-card-count">{kpi.count}</span>
+                  <span className="kpi-card-label">{kpi.label}</span>
+                </div>
+                <div className="kpi-card-right">
+                  <MiniSparkline data={kpi.trend} />
+                  <span className={`kpi-card-change ${kpi.change >= 0 ? 'kpi-card-change--up' : 'kpi-card-change--down'}`}>
+                    {kpi.change >= 0 ? '+' : ''}{kpi.change}%
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ---- FEEDS (two-column) ---- */}
         <div className="home-feeds">
           {/* Left column: Recent Activity */}
           <section className="activity-feed">
@@ -397,7 +432,7 @@ export default function Home(): React.JSX.Element {
                   <span className="insights-panel-count">{visibleInsights.length}</span>
                 </div>
                 <div className="insights-grid">
-                  {visibleInsights.map((insight) => {
+                  {displayedInsights.map((insight) => {
                     const IconComp = insightIconMap[insight.type];
                     return (
                       <div key={insight.id} className={`insight-card ${severityClassMap[insight.severity]}`}>
@@ -405,19 +440,19 @@ export default function Home(): React.JSX.Element {
                           <div className="insight-card-icon">
                             <IconComp size={16} />
                           </div>
-                          <Badge variant={insight.severity === 'critical' ? 'danger' : insight.severity === 'important' ? 'warning' : insight.severity === 'notable' ? 'info' : 'default'}>
-                            {insight.type}
-                          </Badge>
+                          <div className="insight-card-header-right">
+                            <Badge variant={insight.severity === 'critical' ? 'danger' : insight.severity === 'important' ? 'warning' : insight.severity === 'notable' ? 'info' : 'default'}>
+                              {insight.type}
+                            </Badge>
+                            <span className={`insight-metric-value insight-metric--${insight.metricDirection}`}>
+                              {insight.metricDirection === 'up' && <TrendingUp size={12} />}
+                              {insight.metricDirection === 'down' && <TrendingDown size={12} />}
+                              {insight.metricChange}
+                            </span>
+                          </div>
                         </div>
                         <h3 className="insight-card-title">{insight.title}</h3>
                         <p className="insight-card-desc">{insight.description}</p>
-                        <div className="insight-card-metric">
-                          <span className={`insight-metric-value insight-metric--${insight.metricDirection}`}>
-                            {insight.metricDirection === 'up' && <TrendingUp size={14} />}
-                            {insight.metricDirection === 'down' && <TrendingDown size={14} />}
-                            {insight.metricChange}
-                          </span>
-                        </div>
                         <div className="insight-card-actions">
                           <button className="insight-action-btn insight-action-btn--primary">
                             <Eye size={14} />
@@ -435,11 +470,27 @@ export default function Home(): React.JSX.Element {
                     );
                   })}
                 </div>
+                {!insightsExpanded && hiddenInsightsCount > 0 && (
+                  <button
+                    className="insights-show-more"
+                    onClick={() => setInsightsExpanded(true)}
+                  >
+                    Show {hiddenInsightsCount} more
+                  </button>
+                )}
+                {insightsExpanded && visibleInsights.length > INITIAL_INSIGHTS_COUNT && (
+                  <button
+                    className="insights-show-more"
+                    onClick={() => setInsightsExpanded(false)}
+                  >
+                    Show less
+                  </button>
+                )}
               </section>
             )}
 
             {/* Recent Spark Conversations */}
-            <div className="recent-section">
+            <section className="recent-conversations-panel">
               <h2 className="recent-title">Recent Conversations</h2>
               <div className="recent-list">
                 {conversationsLoading ? (
@@ -466,7 +517,7 @@ export default function Home(): React.JSX.Element {
                   </div>
                 )}
               </div>
-            </div>
+            </section>
           </div>
         </div>
       </div>

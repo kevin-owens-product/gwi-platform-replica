@@ -90,11 +90,10 @@ export interface SparkChatRequest {
 export interface SparkContext {
   audience_id?: string
   chart_id?: string
+  dashboard_id?: string
+  crosstab_id?: string
   wave_ids?: string[]
   location_ids?: string[]
-  // New context fields
-  crosstab_id?: string
-  dashboard_id?: string
   question_ids?: string[]
   report_id?: string
   canvas_id?: string

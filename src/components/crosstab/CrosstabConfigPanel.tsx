@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, FlaskConical, Scale, Layers, BarChart3, TrendingUp } from 'lucide-react'
+import { Plus, ChevronDown, FlaskConical, Scale, Layers, BarChart3, TrendingUp } from 'lucide-react'
 import { Dropdown } from '@/components/shared'
 import ConfigPill from './ConfigPill'
 import type { CrosstabConfig, CrosstabDimension, MetricType, WaveId, Question, Audience, Wave, Study } from '@/api/types'
@@ -90,13 +90,13 @@ interface CrosstabConfigPanelProps {
   waves?: Wave[]
   studies?: Study[]
   highlightMode: string
-  timeframe?: string
+  timeframe: string
   onRemoveRow: (index: number) => void
   onRemoveColumn: (index: number) => void
   onToggleMetric: (metric: MetricType) => void
   onRemoveWave: (index: number) => void
   onHighlightChange: (mode: string) => void
-  onTimeframeChange?: (value: string) => void
+  onTimeframeChange: (value: string) => void
   onOpenRowPicker: () => void
   onOpenColumnPicker: () => void
   onOpenBasePicker: () => void
@@ -331,8 +331,9 @@ export default function CrosstabConfigPanel({
           <span className="config-panel__control-label">Highlight</span>
           <Dropdown
             trigger={
-              <button className="config-panel__control-btn">
+              <button className="config-panel__control-select">
                 {highlightOptions.find((h) => h.value === highlightMode)?.label ?? 'None'}
+                <ChevronDown size={12} />
               </button>
             }
             items={highlightOptions}
@@ -347,8 +348,9 @@ export default function CrosstabConfigPanel({
           </span>
           <Dropdown
             trigger={
-              <button className="config-panel__control-btn">
+              <button className="config-panel__control-select">
                 {statTestOptions.find((s) => s.value === currentStatTest)?.label ?? 'None'}
+                <ChevronDown size={12} />
               </button>
             }
             items={statTestOptions}
@@ -357,8 +359,9 @@ export default function CrosstabConfigPanel({
           {currentStatTest !== 'none' && (
             <Dropdown
               trigger={
-                <button className="config-panel__control-btn config-panel__confidence-btn">
+                <button className="config-panel__control-select config-panel__confidence-btn">
                   {currentConfidence}%
+                  <ChevronDown size={12} />
                 </button>
               }
               items={confidenceLevelOptions}
@@ -368,22 +371,21 @@ export default function CrosstabConfigPanel({
         </div>
 
         {/* Timeframe */}
-        {onTimeframeChange && (
-          <div className="config-panel__control">
-            <span className="config-panel__control-label">
-              <TrendingUp size={12} /> Timeframe
-            </span>
-            <Dropdown
-              trigger={
-                <button className="config-panel__control-btn">
-                  {timeframeOptions.find((t) => t.value === (timeframe ?? 'none'))?.label ?? 'None'}
-                </button>
-              }
-              items={timeframeOptions}
-              onSelect={(value) => onTimeframeChange(value)}
-            />
-          </div>
-        )}
+        <div className="config-panel__control">
+          <span className="config-panel__control-label">
+            <TrendingUp size={12} /> Timeframe
+          </span>
+          <Dropdown
+            trigger={
+              <button className="config-panel__control-select">
+                {timeframeOptions.find((t) => t.value === timeframe)?.label ?? 'None'}
+                <ChevronDown size={12} />
+              </button>
+            }
+            items={timeframeOptions}
+            onSelect={(value) => onTimeframeChange(value)}
+          />
+        </div>
 
         {/* Advanced toggle */}
         <button

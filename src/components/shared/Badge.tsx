@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import './Badge.css'
 
 type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info'
 

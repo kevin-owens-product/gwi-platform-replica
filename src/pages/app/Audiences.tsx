@@ -49,10 +49,8 @@ function getHealthColor(score: number): string {
 
 function getAudienceTypeBadgeVariant(type?: string): 'primary' | 'success' | 'warning' | 'info' | 'default' {
   switch (type) {
-    case 'custom': return 'primary';
-    case 'lookalike': return 'warning';
-    case 'template': return 'info';
     case 'dynamic': return 'success';
+    case 'static': return 'info';
     default: return 'default';
   }
 }

@@ -18,6 +18,7 @@ import './Home.css';
 
 interface ExamplePrompt {
   label: string;
+  prompt: string;
   icon: LucideIcon;
 }
 
@@ -60,10 +61,10 @@ interface KpiWidget {
 // ---------------------------------------------------------------------------
 
 const examplePrompts: ExamplePrompt[] = [
-  { label: 'Understanding GWI taxonomy', icon: ExternalLink },
-  { label: 'Strategy and consumer trends', icon: ExternalLink },
-  { label: 'Audience profiling', icon: ExternalLink },
-  { label: 'Competitive positioning', icon: ExternalLink },
+  { label: 'Understanding GWI taxonomy', prompt: 'Explain the GWI taxonomy structure and how questions, datapoints, and waves are organized', icon: ExternalLink },
+  { label: 'Strategy and consumer trends', prompt: 'What are the key consumer trends across markets for Q4 2024?', icon: ExternalLink },
+  { label: 'Audience profiling', prompt: 'Help me build a profile of Gen Z social media users and their key behaviors', icon: ExternalLink },
+  { label: 'Competitive positioning', prompt: 'How can I use GWI data to analyze competitive brand positioning?', icon: ExternalLink },
 ];
 
 const mockInsights: ProactiveInsight[] = [
@@ -376,7 +377,11 @@ export default function Home(): React.JSX.Element {
             </div>
             <div className="example-prompts-list">
               {examplePrompts.map((prompt: ExamplePrompt, index: number) => (
-                <button key={index} className="example-prompt-btn">
+                <button
+                  key={index}
+                  className="example-prompt-btn"
+                  onClick={() => navigate(`/app/agent-spark?prompt=${encodeURIComponent(prompt.prompt)}`)}
+                >
                   <span>{prompt.label}</span>
                   <ExternalLink size={14} />
                 </button>

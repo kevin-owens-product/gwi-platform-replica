@@ -11,5 +11,11 @@ export default defineConfig({
   },
   server: {
     port: 3008,
+    proxy: {
+      '/fonts': {
+        target: 'https://signin-alpha.globalwebindex.com',
+        changeOrigin: true,
+      },
+    },
   },
 })

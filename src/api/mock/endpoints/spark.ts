@@ -32,13 +32,10 @@ export const sparkApi = {
     const assistantMsg = {
       id: newId('msg'),
       role: 'assistant' as const,
-      content: generateResponse(data.message),
+      content: generateResponse(data.message, data.context),
       created_at: now(),
       citations: [{ text: 'Based on GWI Q4 2024 data', source: 'GWI Core Q4 2024' }],
-      suggested_actions: [
-        { type: 'create_chart' as const, label: 'Visualize This Data', payload: {} },
-        { type: 'show_data' as const, label: 'View Raw Data', payload: {} },
-      ],
+      suggested_actions: buildSuggestedActions(data.context),
     }
     conversation.messages.push(assistantMsg)
     conversation.updated_at = now()
@@ -87,17 +84,64 @@ export const sparkApi = {
   },
 }
 
-function generateResponse(message: string): string {
+function buildSuggestedActions(context?: SparkChatRequest['context']) {
+  if (context?.chart_id) {
+    return [
+      { type: 'create_chart' as const, label: 'Open This Chart', payload: { chart_id: context.chart_id } },
+      { type: 'show_data' as const, label: 'View Chart as Crosstab', payload: { crosstab_id: context.crosstab_id ?? '' } },
+    ]
+  }
+  if (context?.crosstab_id) {
+    return [
+      { type: 'show_data' as const, label: 'Open This Crosstab', payload: { crosstab_id: context.crosstab_id } },
+      { type: 'create_chart' as const, label: 'Chart This Data', payload: { chart_id: '' } },
+    ]
+  }
+  if (context?.audience_id) {
+    return [
+      { type: 'create_audience' as const, label: 'Edit This Audience', payload: { audience_id: context.audience_id } },
+      { type: 'create_chart' as const, label: 'Chart This Audience', payload: { chart_id: '' } },
+    ]
+  }
+  if (context?.dashboard_id) {
+    return [
+      { type: 'navigate' as const, label: 'Back to Dashboard', payload: { path: `/app/dashboards/${context.dashboard_id}` } },
+      { type: 'create_chart' as const, label: 'Add a Chart', payload: { chart_id: '' } },
+    ]
+  }
+  // No context — generic actions
+  return [
+    { type: 'create_chart' as const, label: 'Create a Chart', payload: {} },
+    { type: 'show_data' as const, label: 'Explore Data', payload: {} },
+  ]
+}
+
+function generateResponse(message: string, context?: SparkChatRequest['context']): string {
   const lower = message.toLowerCase()
 
+  // Context-aware prefix so the user can see Spark knows what they were looking at
+  const contextPrefix = context?.chart_id
+    ? `I can see you're working with chart **${context.chart_id}**${context.wave_ids?.length ? ` (wave: ${context.wave_ids.join(', ')})` : ''}${context.location_ids?.length ? ` in ${context.location_ids.join(', ')}` : ''}. `
+    : context?.crosstab_id
+      ? `I can see you're viewing crosstab **${context.crosstab_id}**${context.wave_ids?.length ? ` (wave: ${context.wave_ids.join(', ')})` : ''}. `
+      : context?.dashboard_id
+        ? `I can see you're on dashboard **${context.dashboard_id}**. `
+        : context?.audience_id
+          ? `I can see you're working with audience **${context.audience_id}**. `
+          : ''
+
   if (lower.includes('social media') || lower.includes('social platform')) {
-    return 'Based on Q4 2024 data, social media usage continues to grow across all demographics. YouTube leads with 88% penetration, followed by Facebook (62%), Instagram (51%), and TikTok (38%). The most notable trend is TikTok\'s rapid growth among 16-24 year olds, reaching 52% in that age group.\n\nWould you like me to create a chart showing platform usage by age group?'
+    return contextPrefix + 'Based on Q4 2024 data, social media usage continues to grow across all demographics. YouTube leads with 88% penetration, followed by Facebook (62%), Instagram (51%), and TikTok (38%). The most notable trend is TikTok\'s rapid growth among 16-24 year olds, reaching 52% in that age group.\n\nWould you like me to create a chart showing platform usage by age group?'
   }
   if (lower.includes('audience') || lower.includes('segment')) {
-    return 'I can help you build an audience segment. Our data covers 45,200 respondents across 20 markets in Q4 2024. You can combine demographic filters (age, gender, income) with behavioral data (media usage, purchase behavior, attitudes) to create precise audience definitions.\n\nWhat criteria would you like to use for your audience?'
+    return contextPrefix + 'I can help you build an audience segment. Our data covers 45,200 respondents across 20 markets in Q4 2024. You can combine demographic filters (age, gender, income) with behavioral data (media usage, purchase behavior, attitudes) to create precise audience definitions.\n\nWhat criteria would you like to use for your audience?'
   }
   if (lower.includes('trend') || lower.includes('change')) {
-    return 'Looking at quarterly trends in our data:\n\n- **Social media time** has increased 8% YoY\n- **Streaming subscriptions** average 2.8 per household (up from 2.4)\n- **AI tool adoption** has grown from 28% to 42% in the past year\n- **E-commerce** now accounts for 31% of retail purchases\n\nWould you like me to dive deeper into any of these trends?'
+    return contextPrefix + 'Looking at quarterly trends in our data:\n\n- **Social media time** has increased 8% YoY\n- **Streaming subscriptions** average 2.8 per household (up from 2.4)\n- **AI tool adoption** has grown from 28% to 42% in the past year\n- **E-commerce** now accounts for 31% of retail purchases\n\nWould you like me to dive deeper into any of these trends?'
+  }
+
+  if (contextPrefix) {
+    return contextPrefix + `Here are the key findings related to your query:\n\n1. **Primary Trend**: The data shows significant shifts in consumer behavior across digital platforms\n2. **Age Differences**: Younger demographics (16-34) show markedly different patterns from 35+\n3. **Market Variation**: US and UK markets lead in adoption, while emerging markets show fastest growth\n\nWould you like me to dive deeper into this data?`
   }
 
   return `Great question! Based on the GWI Q4 2024 dataset covering 45,200 respondents across 20 markets, I can provide detailed insights on this topic.\n\nHere are the key findings related to your query:\n\n1. **Primary Trend**: The data shows significant shifts in consumer behavior across digital platforms\n2. **Age Differences**: Younger demographics (16-34) show markedly different patterns from 35+\n3. **Market Variation**: US and UK markets lead in adoption, while emerging markets show fastest growth\n\nWould you like me to create a visualization, build an audience segment, or explore specific data points?`

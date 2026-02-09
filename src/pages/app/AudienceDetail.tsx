@@ -14,12 +14,12 @@ import {
   EyeOff,
   Share2,
   X,
-  Plus,
   AlertTriangle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAudience, useCreateAudience, useUpdateAudience, useAudiences } from '@/hooks/useAudiences';
 import AudienceBuilder from '@/components/audience/AudienceBuilder';
+import SparkPanel from '@/components/spark/SparkPanel';
 import { Button, Modal, SearchInput } from '@/components/shared';
 import { formatCompactNumber } from '@/utils/format';
 import type { AudienceExpression, Audience, ActivationDestinationType, SharingVisibility } from '@/api/types';
@@ -30,10 +30,8 @@ interface AudienceDetailProps {
 }
 
 const audienceTypeOptions: { label: string; value: string }[] = [
-  { label: 'Custom', value: 'custom' },
-  { label: 'Lookalike', value: 'lookalike' },
-  { label: 'Template', value: 'template' },
   { label: 'Dynamic', value: 'dynamic' },
+  { label: 'Static', value: 'static' },
 ];
 
 const activationDestinations: { label: string; value: ActivationDestinationType }[] = [
@@ -76,7 +74,7 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
   const [expression, setExpression] = useState<AudienceExpression | undefined>(undefined);
 
   // Audience type
-  const [audienceType, setAudienceType] = useState<string>('custom');
+  const [audienceType, setAudienceType] = useState<string>('dynamic');
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
 
   // Tags
@@ -100,13 +98,23 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
     if (audience && !isNew) {
       setAudienceName(audience.name);
       setExpression(audience.expression);
-      setAudienceType(audience.audience_type ?? 'custom');
+      setAudienceType(audience.audience_type ?? 'dynamic');
       setTags(audience.tags ?? []);
       setVisibility(audience.sharing?.visibility ?? 'private');
     }
   }, [audience, isNew]);
 
   const isSaving = createAudience.isPending || updateAudience.isPending;
+
+  const sparkContext = useMemo(() => ({
+    audience_id: isNew ? undefined : id,
+  }), [id, isNew]);
+
+  const sparkPrompts = [
+    { label: 'Profile this audience' },
+    { label: 'Suggest targeting refinements' },
+    { label: 'Compare to general population' },
+  ];
 
   const handleSave = () => {
     if (!audienceName.trim()) return;
@@ -117,7 +125,7 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
           name: audienceName.trim(),
           expression: expression ?? { and: [] },
           tags,
-          audience_type: audienceType === 'dynamic' ? 'dynamic' : 'static',
+          audience_type: (audienceType as 'dynamic' | 'static'),
         },
         {
           onSuccess: () => {
@@ -133,7 +141,7 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
             name: audienceName.trim(),
             expression,
             tags,
-            audience_type: audienceType === 'dynamic' ? 'dynamic' : 'static',
+            audience_type: (audienceType as 'dynamic' | 'static'),
           },
         },
         {
@@ -586,6 +594,13 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
               </div>
             </div>
           )}
+        </div>
+
+        <div className="audience-spark-panel">
+          <SparkPanel
+            context={sparkContext}
+            suggestedPrompts={sparkPrompts}
+          />
         </div>
       </div>
 

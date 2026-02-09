@@ -33,13 +33,13 @@ export const queriesApi = {
       return generateCrosstabResult(0, 0, {
         rows: matchingCrosstab.config.rows,
         columns: matchingCrosstab.config.columns,
-      })
+      }, data.timeframe)
     }
 
     // Fallback for unmatched requests
     const rowCount = data.row_question_ids.length * 4
     const colCount = (data.column_question_ids?.length ?? 0) * 4 + (data.column_audience_ids?.length ?? 0)
-    return generateCrosstabResult(Math.max(rowCount, 3), Math.max(colCount, 3))
+    return generateCrosstabResult(Math.max(rowCount, 3), Math.max(colCount, 3), undefined, data.timeframe)
   },
 
   async intersection(data: IntersectionQueryRequest): Promise<IntersectionResult> {

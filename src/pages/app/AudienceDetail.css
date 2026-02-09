@@ -569,6 +569,14 @@
   background-color: var(--color-accent-blue-lighter);
 }
 
+/* ---------- Spark Panel Placement ---------- */
+.audience-spark-panel {
+  grid-column: 2 / 3;
+  position: sticky;
+  top: var(--spacing-lg);
+  align-self: start;
+}
+
 /* ---------- Loading State ---------- */
 .audience-detail-loading {
   display: flex;
@@ -595,6 +603,10 @@
     grid-column: 1;
     grid-row: auto;
     position: static;
+  }
+
+  .audience-spark-panel {
+    grid-column: 1;
   }
 
   .preview-card {

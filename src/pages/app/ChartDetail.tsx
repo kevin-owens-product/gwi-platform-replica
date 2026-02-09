@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
+import SparkPanel from '@/components/spark/SparkPanel';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, MoreHorizontal, Save, Users, Plus, X, MessageSquare, TrendingUp, Eye, Accessibility, FileImage, FileText, Image } from 'lucide-react';
+import { ArrowLeft, Download, Share2, MoreHorizontal, Save, Users, Plus, X, MessageSquare, TrendingUp, Eye, Accessibility } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { chartsApi } from '@/api';
 import { useChart, useUpdateChart, useCreateChart, useDeleteChart } from '@/hooks/useCharts';
@@ -553,6 +554,18 @@ export default function ChartDetail(): React.JSX.Element {
     });
   }, [rows, questions]);
 
+  const sparkContext = useMemo(() => ({
+    chart_id: isNew ? undefined : id,
+    wave_ids: selectedWave ? [selectedWave] : [],
+    location_ids: chart?.config.location_ids ?? [],
+  }), [id, isNew, selectedWave, chart?.config.location_ids]);
+
+  const sparkPrompts = [
+    { label: 'Summarize this chart' },
+    { label: 'What trends stand out?' },
+    { label: 'Compare to benchmarks' },
+  ];
+
   if (chartLoading && !isNew) {
     return (
       <div className="chart-detail-page">
@@ -610,6 +623,7 @@ export default function ChartDetail(): React.JSX.Element {
         </p>
       </div>
 
+      <div className="chart-detail-body">
       <div className="chart-detail-content">
         <div className="chart-main-area">
           <div className="chart-view-tabs">
@@ -976,6 +990,14 @@ export default function ChartDetail(): React.JSX.Element {
             </div>
           </div>
         </div>
+
+      </div>
+      <div className="spark-panel-sidebar">
+        <SparkPanel
+          context={sparkContext}
+          suggestedPrompts={sparkPrompts}
+        />
+      </div>
       </div>
 
       {/* Question Picker Modal */}

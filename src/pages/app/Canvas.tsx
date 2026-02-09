@@ -1,16 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Users, ArrowRight, BarChart2, TrendingUp, ShoppingCart, Tv, Shield, Globe,
-  type LucideIcon, FileText, Loader2, Plus, Trash2, Clock, CheckCircle2,
-  Target, Lightbulb, Search as SearchIcon, Zap, Eye, Layers,
+  type LucideIcon, FileText, Plus, Trash2, Clock, CheckCircle2,
+  Target, Lightbulb, Zap, Eye, Layers,
   BookOpen, Compass, PieChart, UserCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Button, Modal, SearchInput, EmptyState } from '@/components/shared';
+import { Button, Modal } from '@/components/shared';
 import { useAuthStore } from '@/stores/auth';
 import { useWorkspaceStore } from '@/stores/workspace';
-import { formatRelativeDate } from '@/utils/format';
 import './Canvas.css';
 
 interface Goal {
@@ -79,7 +78,6 @@ export default function Canvas(): React.JSX.Element {
   const isGoalsStep: boolean = location.pathname.includes('goals') || location.pathname === '/app/canvas';
 
   const [viewMode, setViewMode] = useState<ViewMode>('new');
-  const [projectSearch, setProjectSearch] = useState('');
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [researchQuestion, setResearchQuestion] = useState('');

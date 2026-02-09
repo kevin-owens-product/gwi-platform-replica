@@ -51,6 +51,7 @@ export interface CrosstabQueryRequest {
   wave_ids: WaveId[]
   location_ids: string[]
   base_audience?: AudienceExpression
+  timeframe?: 'daily' | 'weekly' | 'monthly'
   // New fields
   stat_test_type?: 'chi_square' | 'z_test' | 'z_test_bonferroni' | 't_test'
   confidence_level?: number

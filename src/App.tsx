@@ -54,8 +54,7 @@ function App() {
         {/* App Routes */}
         <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
           <Route index element={<Suspense fallback={<PageLoader />}><Home /></Suspense>} />
-          <Route path="agent-spark" element={<Suspense fallback={<PageLoader />}><AgentSpark /></Suspense>} />
-          <Route path="agent-spark/:id" element={<Suspense fallback={<PageLoader />}><AgentSpark /></Suspense>} />
+          <Route path="agent-spark/:id?" element={<Suspense fallback={<PageLoader />}><AgentSpark /></Suspense>} />
           <Route path="audiences" element={<Suspense fallback={<PageLoader />}><Audiences /></Suspense>} />
           <Route path="audiences/new" element={<Suspense fallback={<PageLoader />}><AudienceDetail isNew /></Suspense>} />
           <Route path="audiences/:id" element={<Suspense fallback={<PageLoader />}><AudienceDetail /></Suspense>} />

@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react'
 import { ChevronUp, ChevronDown } from 'lucide-react'
+import './DataTable.css'
 
 export interface Column<T> {
   key: string

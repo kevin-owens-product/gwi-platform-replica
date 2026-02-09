@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import './EmptyState.css'
 
 interface EmptyStateProps {
   icon?: ReactNode

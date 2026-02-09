@@ -284,14 +284,46 @@ export interface CrosstabDimensionInfo {
   columns: CrosstabDimension[]
 }
 
+function generateTimeframeColumns(timeframe: 'daily' | 'weekly' | 'monthly'): CrosstabQueryResult['columns'] {
+  const now = new Date(2024, 11, 15) // Dec 15, 2024 as reference
+  const columns: CrosstabQueryResult['columns'] = []
+
+  if (timeframe === 'daily') {
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(d.getDate() - i)
+      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      columns.push({ id: `day_${i}`, label })
+    }
+  } else if (timeframe === 'weekly') {
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(d.getDate() - i * 7)
+      const weekNum = Math.ceil(d.getDate() / 7)
+      const month = d.toLocaleDateString('en-US', { month: 'short' })
+      columns.push({ id: `week_${i}`, label: `W${weekNum} ${month}` })
+    }
+  } else {
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now)
+      d.setMonth(d.getMonth() - i)
+      const label = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      columns.push({ id: `month_${i}`, label })
+    }
+  }
+
+  return columns
+}
+
 export function generateCrosstabResult(
   rowCount: number,
   colCount: number,
   dimensionInfo?: CrosstabDimensionInfo,
+  timeframe?: 'daily' | 'weekly' | 'monthly',
 ): CrosstabQueryResult {
   // If we have dimension info, build rows/columns from actual config
   if (dimensionInfo) {
-    return generateFromDimensions(dimensionInfo)
+    return generateFromDimensions(dimensionInfo, timeframe)
   }
 
   // Fallback: generic rows/columns (legacy path)
@@ -300,22 +332,31 @@ export function generateCrosstabResult(
     label: `Row ${i + 1}`,
   }))
 
-  const columns = Array.from({ length: colCount }, (_, i) => ({
-    id: `col_${i}`,
-    label: `Column ${i + 1}`,
-  }))
+  const columns = timeframe
+    ? generateTimeframeColumns(timeframe)
+    : Array.from({ length: colCount }, (_, i) => ({
+        id: `col_${i}`,
+        label: `Column ${i + 1}`,
+      }))
 
   const cells = rows.map(() =>
-    columns.map(() => ({
-      values: {
-        audience_percentage: Math.round(Math.random() * 60 + 5),
-        audience_index: Math.round(Math.random() * 100 + 50),
-        audience_size: Math.round(Math.random() * 5000 + 500),
-      } as Record<string, number>,
-      significant: Math.random() > 0.7,
-      sample_size: Math.round(Math.random() * 800 + 100),
-    })),
+    columns.map((_, colIdx) => {
+      const basePct = Math.round(Math.random() * 60 + 5)
+      const trend = timeframe ? Math.round((colIdx - columns.length / 2) * (Math.random() * 2)) : 0
+      const pct = Math.max(1, Math.min(99, basePct + trend))
+      return {
+        values: {
+          audience_percentage: pct,
+          audience_index: Math.round(Math.random() * 100 + 50),
+          audience_size: Math.round(Math.random() * 5000 + 500),
+        } as Record<string, number>,
+        significant: Math.random() > 0.7,
+        sample_size: Math.round(Math.random() * 800 + 100),
+      }
+    }),
   )
+
+  const timeframeLabel = timeframe === 'daily' ? 'Daily' : timeframe === 'weekly' ? 'Weekly' : timeframe === 'monthly' ? 'Monthly' : undefined
 
   return {
     rows,
@@ -323,7 +364,7 @@ export function generateCrosstabResult(
     cells,
     meta: {
       base_size: 45200,
-      wave_name: 'Q4 2024',
+      wave_name: timeframeLabel ? `${timeframeLabel} Trend` : 'Q4 2024',
       location_name: 'United States',
       effective_base: 43800,
       weighted_base: 45200,
@@ -331,7 +372,7 @@ export function generateCrosstabResult(
   }
 }
 
-function generateFromDimensions(info: CrosstabDimensionInfo): CrosstabQueryResult {
+function generateFromDimensions(info: CrosstabDimensionInfo, timeframe?: 'daily' | 'weekly' | 'monthly'): CrosstabQueryResult {
   // Build rows: flatten all row dimensions, preserving parent question as group
   const rows: CrosstabQueryResult['rows'] = []
   for (const dim of info.rows) {
@@ -347,23 +388,29 @@ function generateFromDimensions(info: CrosstabDimensionInfo): CrosstabQueryResul
     }
   }
 
-  // Build columns: flatten all column dimensions
-  const columns: CrosstabQueryResult['columns'] = []
-  for (const dim of info.columns) {
-    if (dim.type === 'question' && dim.datapoint_ids) {
-      for (const dpId of dim.datapoint_ids) {
-        columns.push({ id: dpId, label: resolveLabel(dpId) })
+  // Build columns: use timeframe columns when set, otherwise flatten column dimensions
+  let columns: CrosstabQueryResult['columns'] = []
+  if (timeframe) {
+    columns = generateTimeframeColumns(timeframe)
+  } else {
+    for (const dim of info.columns) {
+      if (dim.type === 'question' && dim.datapoint_ids) {
+        for (const dpId of dim.datapoint_ids) {
+          columns.push({ id: dpId, label: resolveLabel(dpId) })
+        }
+      } else if (dim.type === 'audience' && dim.audience_id) {
+        const label = dim.audience_id.replace(/^aud_/, '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+        columns.push({ id: dim.audience_id, label })
       }
-    } else if (dim.type === 'audience' && dim.audience_id) {
-      const label = dim.audience_id.replace(/^aud_/, '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-      columns.push({ id: dim.audience_id, label })
     }
   }
 
-  // Generate cell data with enhanced fields
+  // Generate cell data with enhanced fields and timeframe trend variation
   const cells = rows.map(() =>
-    columns.map(() => {
-      const pct = Math.round(Math.random() * 60 + 5)
+    columns.map((_, colIdx) => {
+      const basePct = Math.round(Math.random() * 60 + 5)
+      const trend = timeframe ? Math.round((colIdx - columns.length / 2) * (Math.random() * 2)) : 0
+      const pct = Math.max(1, Math.min(99, basePct + trend))
       const sampleSize = Math.round(Math.random() * 800 + 100)
       const isSignificant = Math.random() > 0.7
       return {
@@ -391,13 +438,15 @@ function generateFromDimensions(info: CrosstabDimensionInfo): CrosstabQueryResul
     }),
   )
 
+  const timeframeLabel = timeframe === 'daily' ? 'Daily' : timeframe === 'weekly' ? 'Weekly' : timeframe === 'monthly' ? 'Monthly' : undefined
+
   return {
     rows,
     columns,
     cells,
     meta: {
       base_size: 45200,
-      wave_name: 'Q4 2024',
+      wave_name: timeframeLabel ? `${timeframeLabel} Trend` : 'Q4 2024',
       location_name: 'United States',
       effective_base: 43800,
       weighted_base: 45200,

@@ -1,15 +1,15 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import {
   FileText, Download, ExternalLink, Loader2, Plus, Share2, Copy, Grid,
   List, SlidersHorizontal, ChevronDown, ChevronUp, GripVertical, Trash2,
-  Eye, EyeOff, Sparkles, Save, Send, Play, Image, BarChart3, Table2,
-  Type, BookOpen, FileSearch, Layers, Minus, PenLine, Layout, Clock,
+  Eye, Sparkles, Save, Send, Play, Image, BarChart3, Table2,
+  Type, BookOpen, FileSearch, Layers, Minus, Layout, Clock,
   Users, Calendar, Mail, ToggleLeft, ToggleRight, Star, Presentation,
-  FileSpreadsheet, Film, FileType2, Palette, Settings2, X, Check,
-  ArrowUpDown, MessageSquare, Bookmark, Megaphone, Target, TrendingUp,
-  Heart, Award, AlertCircle, ChevronLeft, ChevronRight, MoreVertical
+  FileSpreadsheet, Film, FileType2, Palette, Settings2, X,
+  ArrowUpDown, MessageSquare, Megaphone, Target, TrendingUp,
+  Heart, Award, AlertCircle, ChevronLeft, ChevronRight,
 } from 'lucide-react';
-import { SearchInput, Tabs, Pagination, EmptyState, Badge, Dropdown } from '@/components/shared';
+import { SearchInput, Tabs, Pagination, EmptyState, Badge } from '@/components/shared';
 import { useReports } from '@/hooks/useReports';
 import { formatDate, formatRelativeDate } from '@/utils/format';
 import type {

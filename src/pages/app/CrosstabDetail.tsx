@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import SparkPanel from '@/components/spark/SparkPanel';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Share2, Save, ChevronLeft, FileSpreadsheet, Presentation, Layers, X } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -439,6 +440,18 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
     return dpList;
   }, [crosstabConfig.config.rows, questions]);
 
+  const sparkContext = useMemo(() => ({
+    crosstab_id: isNew ? undefined : id,
+    wave_ids: crosstabConfig.config.wave_ids.map((w) => w.wave_id),
+    location_ids: crosstabConfig.config.location_ids,
+  }), [id, isNew, crosstabConfig.config.wave_ids, crosstabConfig.config.location_ids]);
+
+  const sparkPrompts = [
+    { label: 'Explain key differences' },
+    { label: 'Which segments over-index?' },
+    { label: 'Suggest column breakdowns' },
+  ];
+
   if (crosstabLoading && !isNew) {
     return (
       <div className="crosstab-detail-page">
@@ -479,6 +492,7 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
         </div>
       </div>
 
+      <div className="crosstab-detail-body">
       <div className="crosstab-detail-content">
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--spacing-lg)' }}>
           <input
@@ -587,6 +601,14 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
             </div>
           )}
         </div>
+
+      </div>
+      <div className="spark-panel-sidebar">
+        <SparkPanel
+          context={sparkContext}
+          suggestedPrompts={sparkPrompts}
+        />
+      </div>
       </div>
 
       {/* ==================== MODALS ==================== */}

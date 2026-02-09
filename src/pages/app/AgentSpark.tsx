@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Sparkles, Plus, Trash2, MessageSquare, Loader2,
   Search, Pin, PinOff, Download, Tag, X,
@@ -7,10 +7,12 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SparkChat from '@/components/spark/SparkChat';
+import Modal from '@/components/shared/Modal';
+import Button from '@/components/shared/Button';
 import { useSparkConversations, useSparkConversation, useDeleteSparkConversation } from '@/hooks/useSpark';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { formatRelativeDate } from '@/utils/format';
-import type { SparkConversation } from '@/api/types';
+import type { SparkConversation, SparkAction, SparkContext } from '@/api/types';
 import './AgentSpark.css';
 
 const SUGGESTED_PROMPTS = [
@@ -53,7 +55,35 @@ const CATEGORY_OPTIONS = ['General', 'Research', 'Audience', 'Data Analysis', 'R
 
 export default function AgentSpark(): React.JSX.Element {
   const { id: routeId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const promptParam = searchParams.get('prompt') ?? undefined;
+
+  // Parse SparkContext from URL query params once on mount.
+  // The route uses an optional :id? param so the component is never remounted
+  // when navigating from /agent-spark to /agent-spark/:id.
+  const [sparkContext] = useState<SparkContext | undefined>(() => {
+    const contextType = searchParams.get('context_type');
+    const contextId = searchParams.get('context_id');
+    if (!contextType || !contextId) return undefined;
+    const ctx: SparkContext = {};
+    if (contextType === 'chart') ctx.chart_id = contextId;
+    else if (contextType === 'crosstab') ctx.crosstab_id = contextId;
+    else if (contextType === 'dashboard') ctx.dashboard_id = contextId;
+    else if (contextType === 'audience') ctx.audience_id = contextId;
+    const waveIds = searchParams.get('wave_ids');
+    if (waveIds) ctx.wave_ids = waveIds.split(',');
+    const locationIds = searchParams.get('location_ids');
+    if (locationIds) ctx.location_ids = locationIds.split(',');
+    return ctx;
+  });
+
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>(routeId);
+  // Track when a conversation was just created in-page so we skip the loading
+  // spinner (which would unmount SparkChat and lose the messages it already has)
+  const justCreatedRef = useRef(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const { data: conversations, isLoading: conversationsLoading } = useSparkConversations();
   const { data: activeConversation, isLoading: conversationLoading } = useSparkConversation(activeConversationId ?? '');
@@ -72,21 +102,39 @@ export default function AgentSpark(): React.JSX.Element {
   const [conversationCategories, setConversationCategories] = useState<Record<string, string>>({});
   const [showCategoryPicker, setShowCategoryPicker] = useState<string | null>(null);
 
+  // Sync activeConversationId when route param changes
+  useEffect(() => {
+    setActiveConversationId(routeId);
+  }, [routeId]);
+
   const handleNewChat = () => {
+    justCreatedRef.current = false;
     setActiveConversationId(undefined);
+    navigate('/app/agent-spark');
   };
 
   const handleSelectConversation = (id: string) => {
+    justCreatedRef.current = false;
     setActiveConversationId(id);
+    navigate(`/app/agent-spark/${id}`);
   };
 
-  const handleDeleteConversation = (e: React.MouseEvent, id: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    deleteConversation.mutate(id, {
+    setPendingDeleteId(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!pendingDeleteId) return;
+    deleteConversation.mutate(pendingDeleteId, {
       onSuccess: () => {
-        if (activeConversationId === id) {
+        if (activeConversationId === pendingDeleteId) {
           setActiveConversationId(undefined);
+          navigate('/app/agent-spark');
         }
+        setShowDeleteModal(false);
+        setPendingDeleteId(null);
       },
     });
   };
@@ -160,6 +208,36 @@ export default function AgentSpark(): React.JSX.Element {
   // Context indicator
   const contextMeta = activeContext?.type ? CONTEXT_TYPE_META[activeContext.type] : null;
 
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setPendingDeleteId(null);
+  };
+
+  const handleConversationCreated = (id: string) => {
+    justCreatedRef.current = true;
+    setActiveConversationId(id);
+    navigate(`/app/agent-spark/${id}`, { replace: true });
+  };
+
+  const handleSparkAction = (action: SparkAction) => {
+    const p = action.payload;
+    switch (action.type) {
+      case 'create_chart':
+        navigate(p.chart_id ? `/app/chart-builder/chart/${p.chart_id}` : '/app/chart-builder/chart/new');
+        break;
+      case 'create_audience':
+        navigate(p.audience_id ? `/app/audiences/${p.audience_id}` : '/app/audiences/new');
+        break;
+      case 'show_data':
+        navigate(p.crosstab_id ? `/app/crosstabs/${p.crosstab_id}` : '/app/crosstabs/new');
+        break;
+      case 'navigate':
+        navigate(p.path as string);
+        break;
+    }
+    toast.success(action.label);
+  };
+
   return (
     <div className="agent-spark-page">
       <div className="spark-top-bar">
@@ -209,7 +287,7 @@ export default function AgentSpark(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="chat-container" style={{ display: 'flex', gap: 0 }}>
+      <div className="chat-container">
         {/* Sidebar with conversation list */}
         <div className="chat-sidebar" style={{
           width: '280px',
@@ -392,7 +470,7 @@ export default function AgentSpark(): React.JSX.Element {
                       )}
                     </div>
                     <button
-                      onClick={(e) => handleDeleteConversation(e, convo.id)}
+                      onClick={(e) => handleDeleteClick(e, convo.id)}
                       disabled={deleteConversation.isPending}
                       style={{
                         background: 'none',
@@ -419,7 +497,7 @@ export default function AgentSpark(): React.JSX.Element {
 
         {/* Main chat area */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          {conversationLoading && activeConversationId ? (
+          {conversationLoading && activeConversationId && !justCreatedRef.current ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
               <Loader2 size={24} className="spin" />
             </div>
@@ -427,13 +505,40 @@ export default function AgentSpark(): React.JSX.Element {
             <SparkChat
               conversationId={activeConversationId}
               initialMessages={activeConversation?.messages ?? []}
-              context={activeContext?.type && activeContext?.id ? {
+              initialInput={promptParam}
+              autoSend={!!promptParam}
+              context={sparkContext ?? (activeContext?.type && activeContext?.id ? {
                 [`${activeContext.type}_id`]: activeContext.id,
-              } : undefined}
+              } : undefined)}
+              onConversationCreated={handleConversationCreated}
+              onAction={handleSparkAction}
             />
           )}
         </div>
       </div>
+
+      <Modal
+        open={showDeleteModal}
+        onClose={handleCancelDelete}
+        title="Delete conversation"
+        size="sm"
+        footer={
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <Button variant="ghost" onClick={handleCancelDelete}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleConfirmDelete}
+              loading={deleteConversation.isPending}
+            >
+              Delete
+            </Button>
+          </div>
+        }
+      >
+        <p>Are you sure you want to delete this conversation? This action cannot be undone.</p>
+      </Modal>
     </div>
   );
 }

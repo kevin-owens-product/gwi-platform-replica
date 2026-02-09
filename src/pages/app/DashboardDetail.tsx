@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import SparkPanel from '@/components/spark/SparkPanel';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Download, Share2, Plus, TrendingUp, TrendingDown, Edit, Save, Loader2,
@@ -525,6 +526,16 @@ export default function DashboardDetail(): React.JSX.Element {
     toast.success('Link copied to clipboard');
   };
 
+  const sparkContext = useMemo(() => ({
+    dashboard_id: id,
+  }), [id]);
+
+  const sparkPrompts = [
+    { label: 'Summarize this dashboard' },
+    { label: 'What KPIs are trending up?' },
+    { label: 'Suggest new widgets' },
+  ];
+
   if (isLoading) {
     return (
       <div className="dashboard-detail-page">
@@ -662,6 +673,7 @@ export default function DashboardDetail(): React.JSX.Element {
         </div>
       </div>
 
+      <div className="dashboard-detail-body">
       <div className="dashboard-detail-content">
         {isEditing ? (
           <input
@@ -746,6 +758,14 @@ export default function DashboardDetail(): React.JSX.Element {
             }
           />
         )}
+
+      </div>
+      <div className="spark-panel-sidebar">
+        <SparkPanel
+          context={sparkContext}
+          suggestedPrompts={sparkPrompts}
+        />
+      </div>
       </div>
 
       {/* Presentation mode overlay exit button */}

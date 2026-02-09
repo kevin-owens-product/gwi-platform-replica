@@ -147,7 +147,7 @@ export function useCrosstabConfig() {
   }, [])
 
   // --- Timeframe ---
-  const setTimeframe = useCallback((timeframe: 'daily' | 'weekly' | 'monthly' | undefined) => {
+  const setTimeframe = useCallback((timeframe: CrosstabConfig['timeframe']) => {
     setConfig((prev) => ({ ...prev, timeframe }))
   }, [])
 
@@ -233,7 +233,6 @@ export function useCrosstabConfig() {
     setConfig((prev) => ({
       ...prev,
       rebasing: {
-        enabled: true,
         percentage_base: base as RebasingConfig['percentage_base'],
         exclude_no_answer: prev.rebasing?.exclude_no_answer ?? false,
       },
@@ -285,6 +284,7 @@ export function useCrosstabConfig() {
   const setBanner = useCallback((banner: BannerConfig | undefined) => {
     setConfig((prev) => ({ ...prev, banner }))
   }, [])
+
 
   // --- Dirty tracking ---
   const isDirty = JSON.stringify(config) !== JSON.stringify(savedRef.current)

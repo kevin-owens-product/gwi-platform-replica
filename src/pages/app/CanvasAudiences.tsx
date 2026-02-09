@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Users, ArrowLeft, ArrowRight, Plus, Check, Loader2, Globe, Clock,
   Layers, Eye, Lightbulb, Target, CheckCircle2, Sparkles,

@@ -64,6 +64,17 @@
   box-shadow: var(--shadow-xs);
 }
 
+/* --- Body - flex row wrapping content + Spark sidebar --- */
+.dashboard-detail-body {
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.dashboard-detail-body > .dashboard-detail-content {
+  flex: 1;
+  min-width: 0;
+}
+
 /* --- Content Area --- */
 .dashboard-detail-content {
   position: relative;
@@ -544,8 +555,63 @@
 }
 
 /* ============================================
+   Base Audience Picker Button
+   (duplicated from CrosstabConfigPanel so the
+    dashboard page is self-contained)
+   ============================================ */
+
+.dashboard-detail-page .config-panel__control-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.dashboard-detail-page .config-panel__control-select:hover {
+  border-color: var(--color-border-hover);
+  background-color: var(--color-surface-secondary);
+}
+
+.dashboard-detail-page .config-panel__control-select svg {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Presentation Mode
+   ============================================ */
+
+.dashboard-detail-page.presentation-mode {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: var(--color-white);
+  padding: var(--spacing-xl);
+  overflow: auto;
+}
+
+.dashboard-detail-page.presentation-mode .dashboard-detail-header {
+  display: none;
+}
+
+/* ============================================
    Responsive
    ============================================ */
+
+@media (max-width: 1100px) {
+  .dashboard-detail-body {
+    flex-direction: column;
+  }
+}
 
 @media (max-width: 1200px) {
   .kpi-grid {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Globe, LayoutDashboard, MoreVertical, Edit, Copy, Trash2, LucideIcon, Loader2, Calendar, Bell, Eye } from 'lucide-react';
+import { Plus, Globe, LayoutDashboard, MoreVertical, Edit, Copy, Trash2, Loader2, Calendar, Bell, Eye } from 'lucide-react';
 import { useDashboards, useDeleteDashboard } from '@/hooks/useDashboards';
 import { SearchInput, Tabs, Pagination, EmptyState, Badge, Dropdown } from '@/components/shared';
 import { formatRelativeDate } from '@/utils/format';

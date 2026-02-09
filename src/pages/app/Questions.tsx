@@ -76,7 +76,7 @@ export default function Questions(): React.JSX.Element {
         navigate(`/app/audiences/new?questions=${qParam}`);
         break;
       case 'spark':
-        navigate(`/app/spark?questions=${qParam}`);
+        navigate(`/app/agent-spark?questions=${qParam}`);
         break;
     }
   };

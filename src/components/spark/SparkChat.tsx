@@ -10,7 +10,9 @@ import {
   ChevronDown,
   ChevronRight,
   BarChart2,
+  BarChart3,
   Table,
+  Table2,
   X,
   AlertTriangle,
   TrendingUp,
@@ -25,11 +27,14 @@ import {
   EyeOff,
   Shield,
   ChevronUp,
+  Link2,
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 import ChartRenderer from '@/components/chart/ChartRenderer'
 import { useSparkChat } from '@/hooks/useSpark'
 import type {
   SparkMessage,
+  SparkAction,
   SparkContext,
   SparkVisualization,
   SparkDataTable,
@@ -580,11 +585,16 @@ function ConfidenceBadge({ level }: { level: 'high' | 'medium' | 'low' }) {
 interface SparkChatProps {
   conversationId?: string
   initialMessages?: SparkMessage[]
+  initialInput?: string
+  autoSend?: boolean
   context?: SparkContext
   compact?: boolean
   insights?: SparkInsight[]
   onDismissInsight?: (id: string) => void
   showInsights?: boolean
+  onConversationCreated?: (id: string) => void
+  onAction?: (action: SparkAction) => void
+  onMessageSent?: (message: string) => void
 }
 
 // ---------------------------------------------------------------------------
@@ -594,11 +604,16 @@ interface SparkChatProps {
 export default function SparkChat({
   conversationId,
   initialMessages = [],
+  initialInput,
+  autoSend = false,
   context: initialContext,
   compact = false,
   insights = [],
   onDismissInsight,
   showInsights = false,
+  onConversationCreated,
+  onAction,
+  onMessageSent,
 }: SparkChatProps) {
   const [messages, setMessages] = useState<SparkMessage[]>(initialMessages)
   const [input, setInput] = useState('')
@@ -621,22 +636,86 @@ export default function SparkChat({
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Auto-send: fire the initial prompt immediately on mount
+  const didAutoSend = useRef(false)
+  useEffect(() => {
+    if (autoSend && initialInput?.trim() && !didAutoSend.current) {
+      didAutoSend.current = true
+      const text = initialInput.trim()
+      const userMessage: SparkMessage = {
+        id: `temp-${Date.now()}`,
+        role: 'user',
+        content: text,
+        created_at: new Date().toISOString(),
+      }
+      setMessages((prev) => [...prev, userMessage])
+      setInput('')
+      onMessageSent?.(text)
+      sparkChat.mutate(
+        { message: text, conversation_id: activeConversation, context },
+        {
+          onSuccess: (response) => {
+            setActiveConversation(response.conversation_id)
+            setMessages((prev) => [...prev, response.message])
+            if (!activeConversation) {
+              onConversationCreated?.(response.conversation_id)
+            }
+          },
+          onError: () => {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: `error-${Date.now()}`,
+                role: 'assistant',
+                content: 'Sorry, I encountered an error. Please try again.',
+                created_at: new Date().toISOString(),
+              },
+            ])
+          },
+        }
+      )
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Sync input when initialInput changes externally (non-autoSend case)
+  useEffect(() => {
+    if (!autoSend && initialInput != null) {
+      setInput(initialInput)
+      // Auto-resize textarea to fit the new content
+      if (inputRef.current) {
+        inputRef.current.style.height = 'auto'
+        inputRef.current.style.height = inputRef.current.scrollHeight + 'px'
+      }
+    }
+  }, [initialInput, autoSend])
+
+  // Auto-resize textarea
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value)
+    const el = e.target
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }, [])
+
   const handleSend = useCallback(() => {
     if (!input.trim() || sparkChat.isPending) return
 
+    const text = input.trim()
     const userMessage: SparkMessage = {
       id: `temp-${Date.now()}`,
       role: 'user',
-      content: input.trim(),
+      content: text,
       created_at: new Date().toISOString(),
     }
 
     setMessages((prev) => [...prev, userMessage])
     setInput('')
+    onMessageSent?.(text)
 
     sparkChat.mutate(
       {
-        message: input.trim(),
+        message: text,
         conversation_id: activeConversation,
         context,
       },
@@ -645,6 +724,9 @@ export default function SparkChat({
           setActiveConversation(response.conversation_id)
           setNewMessageIds((prev) => new Set(prev).add(response.message.id))
           setMessages((prev) => [...prev, response.message])
+          if (!activeConversation) {
+            onConversationCreated?.(response.conversation_id)
+          }
         },
         onError: () => {
           setMessages((prev) => [
@@ -659,7 +741,7 @@ export default function SparkChat({
         },
       }
     )
-  }, [input, sparkChat, activeConversation, context])
+  }, [input, sparkChat, activeConversation, context, onMessageSent, onConversationCreated])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -704,12 +786,36 @@ export default function SparkChat({
     [insights, dismissedInsights]
   )
 
+  const contextLabel = context?.chart_id
+    ? { icon: BarChart3, type: 'Chart', id: context.chart_id }
+    : context?.crosstab_id
+      ? { icon: Table2, type: 'Crosstab', id: context.crosstab_id }
+      : context?.dashboard_id
+        ? { icon: LayoutDashboard, type: 'Dashboard', id: context.dashboard_id }
+        : context?.audience_id
+          ? { icon: Users, type: 'Audience', id: context.audience_id }
+          : null
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
 
   return (
     <div className={`spark-chat ${compact ? 'spark-chat--compact' : ''} ${insightsPanelOpen && visibleInsights.length > 0 ? 'spark-chat--with-insights' : ''}`}>
+      {/* Context Banner */}
+      {contextLabel && (
+        <div className="spark-chat__context-banner">
+          <Link2 size={14} />
+          <contextLabel.icon size={14} />
+          <span>Connected to <strong>{contextLabel.type}:</strong> {contextLabel.id.replace(/_/g, ' ')}</span>
+          {context?.wave_ids?.length ? (
+            <span className="spark-chat__context-tag">Wave: {context.wave_ids.join(', ')}</span>
+          ) : null}
+          {context?.location_ids?.length ? (
+            <span className="spark-chat__context-tag">{context.location_ids.join(', ')}</span>
+          ) : null}
+        </div>
+      )}
       {/* Main chat area */}
       <div className="spark-chat__main">
         <div className="spark-chat__messages">
@@ -717,9 +823,10 @@ export default function SparkChat({
             <div className="spark-chat__empty">
               <Sparkles size={32} />
               <h3>Agent Spark</h3>
-              <p>
-                Ask me anything about your data, audiences, or consumer insights.
-              </p>
+              <p>{contextLabel
+                ? `I'm connected to your ${contextLabel.type.toLowerCase()}. Ask me anything about it.`
+                : 'Ask me anything about your data, audiences, or consumer insights.'
+              }</p>
             </div>
           )}
 
@@ -806,7 +913,7 @@ export default function SparkChat({
                   {msg.suggested_actions && msg.suggested_actions.length > 0 && (
                     <div className="spark-chat__actions">
                       {msg.suggested_actions.map((action, i) => (
-                        <button key={i} className="spark-chat__action-btn">
+                        <button key={i} className="spark-chat__action-btn" onClick={() => onAction?.(action)}>
                           {ACTION_ICONS[action.type] || <Eye size={14} />}
                           <span>{action.label}</span>
                         </button>

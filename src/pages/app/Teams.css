@@ -1,0 +1,35 @@
+.teams-page {
+  padding: 32px;
+  max-width: 960px;
+}
+
+.teams-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.teams-page__subtitle {
+  font-size: 14px;
+  color: var(--text-secondary, #64748b);
+  margin-top: 4px;
+}
+
+.teams-page__search {
+  margin-bottom: 20px;
+  max-width: 360px;
+}
+
+.teams-page__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.teams-page__loading {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-secondary, #64748b);
+}

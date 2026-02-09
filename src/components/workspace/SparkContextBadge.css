@@ -1,0 +1,29 @@
+.spark-context-badge {
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--card-bg, #f0fdf4);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.spark-context-badge__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a2e);
+  margin-bottom: 4px;
+}
+
+.spark-context-badge__detail {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-secondary, #64748b);
+  padding: 2px 0;
+}
+
+.spark-context-badge__detail--active {
+  color: #16a34a;
+}

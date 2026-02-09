@@ -1,0 +1,165 @@
+.ws-settings {
+  max-width: 720px;
+}
+
+.ws-settings__loading,
+.ws-settings__empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-secondary, #64748b);
+}
+
+.ws-settings__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.ws-settings__title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.ws-settings__subtitle {
+  font-size: 13px;
+  color: var(--text-secondary, #64748b);
+  margin-top: 4px;
+}
+
+.ws-settings__section {
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  background: var(--card-bg, #fff);
+}
+
+.ws-settings__section h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--text-primary, #1a1a2e);
+}
+
+.ws-settings__section-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.ws-settings__section--half {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.ws-settings__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ws-settings__list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  padding: 6px 0;
+  color: var(--text-primary, #1a1a2e);
+}
+
+.ws-settings__list-item::before {
+  content: '•';
+  color: var(--primary, #E31C79);
+  font-weight: bold;
+}
+
+.ws-settings__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.ws-settings__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--bg-secondary, #f1f5f9);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-primary, #1a1a2e);
+}
+
+.ws-settings__tag-remove {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 13px;
+  color: var(--text-secondary, #64748b);
+  line-height: 1;
+}
+
+.ws-settings__tag-remove:hover {
+  color: #ef4444;
+}
+
+.ws-settings__tag-add input {
+  border: 1px dashed var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 13px;
+  width: 100px;
+  outline: none;
+}
+
+.ws-settings__tag-add input:focus {
+  border-color: var(--primary, #E31C79);
+}
+
+.ws-settings__remove-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #ef4444;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.ws-settings__remove-btn:hover {
+  background: #fef2f2;
+}
+
+.ws-settings__notes {
+  font-size: 14px;
+  color: var(--text-secondary, #64748b);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.ws-settings__defaults {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ws-settings__default-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ws-settings__default-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #64748b);
+  min-width: 80px;
+}

@@ -30,6 +30,9 @@ interface WorkspaceState {
   projectId: string | null
   canvasGoals: string[]
 
+  // Active team context
+  activeTeamId: string | null
+
   // Canvas workflow
   canvasWorkflow: CanvasWorkflowState
 
@@ -79,6 +82,7 @@ interface WorkspaceState {
   setDefaultWave: (wave: string | null) => void
   setClipboard: (type: WorkspaceState['clipboard']['type'], items: string[]) => void
   clearClipboard: () => void
+  setActiveTeamId: (teamId: string | null) => void
 }
 
 const defaultCanvasWorkflow: CanvasWorkflowState = {
@@ -97,6 +101,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       selectedLocations: [],
       projectId: null,
       canvasGoals: [],
+      activeTeamId: null,
       canvasWorkflow: { ...defaultCanvasWorkflow },
       recentItems: [],
       favorites: [],
@@ -174,6 +179,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
       setClipboard: (type, items) => set({ clipboard: { type, items } }),
       clearClipboard: () => set({ clipboard: { type: null, items: [] } }),
+      setActiveTeamId: (activeTeamId) => set({ activeTeamId }),
     }),
     {
       name: 'gwi-workspace',
@@ -182,6 +188,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         selectedLocationIds: state.selectedLocationIds,
         projectId: state.projectId,
         canvasGoals: state.canvasGoals,
+        activeTeamId: state.activeTeamId,
         recentItems: state.recentItems,
         favorites: state.favorites,
         defaultMetric: state.defaultMetric,

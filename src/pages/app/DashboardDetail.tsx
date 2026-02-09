@@ -13,8 +13,10 @@ import { useQuestions } from '@/hooks/useTaxonomy';
 import { useCharts } from '@/hooks/useCharts';
 import DashboardGrid, { WidgetChart } from '@/components/dashboard/DashboardGrid';
 import { Button, Modal, EmptyState, BaseAudiencePicker, getBaseAudienceLabel } from '@/components/shared';
+import ShareDialog from '@/components/sharing/ShareDialog';
+import GuardrailsPanel from '@/components/workspace/GuardrailsPanel';
 import { formatRelativeDate } from '@/utils/format';
-import type { DashboardWidget, DashboardWidgetType, AudienceExpression, AudienceQuestion, Audience } from '@/api/types';
+import type { DashboardWidget, DashboardWidgetType, AudienceExpression, AudienceQuestion, Audience, SharingConfig } from '@/api/types';
 import './DashboardDetail.css';
 
 // --- Mock data used as fallback when API returns no widgets ---
@@ -520,10 +522,9 @@ export default function DashboardDetail(): React.JSX.Element {
     );
   };
 
-  // Share copy handler
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    toast.success('Link copied to clipboard');
+  // Share handler
+  const handleSaveSharing = (config: SharingConfig) => {
+    toast.success(`Sharing updated: ${config.visibility}`);
   };
 
   const sparkContext = useMemo(() => ({
@@ -738,6 +739,8 @@ export default function DashboardDetail(): React.JSX.Element {
           </div>
         )}
 
+        <GuardrailsPanel compact />
+
         {hasApiWidgets ? (
           <DashboardGrid
             widgets={dashboard!.widgets}
@@ -794,23 +797,13 @@ export default function DashboardDetail(): React.JSX.Element {
         </button>
       )}
 
-      {/* Share Modal */}
-      <Modal
+      {/* Share Dialog */}
+      <ShareDialog
         open={showShareModal}
         onClose={() => setShowShareModal(false)}
-        title="Share Dashboard"
-        footer={
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <Button variant="secondary" onClick={() => setShowShareModal(false)}>Close</Button>
-          </div>
-        }
-      >
-        <p style={{ marginBottom: 'var(--spacing-md)' }}>Share this dashboard by copying the link below.</p>
-        <div className="share-url-row">
-          <input type="text" readOnly value={typeof window !== 'undefined' ? window.location.href : ''} />
-          <Button variant="primary" onClick={handleCopyLink}>Copy</Button>
-        </div>
-      </Modal>
+        title={dashboardName || 'Dashboard'}
+        onSave={handleSaveSharing}
+      />
 
       {/* Add Widget Modal -- all 12 types */}
       <Modal

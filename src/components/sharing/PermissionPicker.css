@@ -1,0 +1,118 @@
+.perm-picker__input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.perm-picker__email {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+
+.perm-picker__email:focus {
+  border-color: var(--primary, #E31C79);
+}
+
+.perm-picker__select {
+  padding: 8px 10px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.perm-picker__select--small {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.perm-picker__add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  background: var(--card-bg, #fff);
+  cursor: pointer;
+  color: var(--text-secondary, #64748b);
+}
+
+.perm-picker__add-btn:hover:not(:disabled) {
+  border-color: var(--primary, #E31C79);
+  color: var(--primary, #E31C79);
+}
+
+.perm-picker__add-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.perm-picker__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.perm-picker__entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+}
+
+.perm-picker__entry-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #6b7280;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.perm-picker__entry-id {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary, #1a1a2e);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.perm-picker__remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 4px;
+  color: var(--text-secondary, #64748b);
+}
+
+.perm-picker__remove:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.perm-picker__empty {
+  font-size: 13px;
+  color: var(--text-secondary, #64748b);
+  margin-top: 8px;
+}

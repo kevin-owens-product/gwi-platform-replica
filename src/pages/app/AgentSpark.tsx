@@ -13,6 +13,7 @@ import { useSparkConversations, useSparkConversation, useDeleteSparkConversation
 import { useWorkspaceStore } from '@/stores/workspace';
 import { formatRelativeDate } from '@/utils/format';
 import type { SparkConversation, SparkAction, SparkContext } from '@/api/types';
+import SparkContextBadge from '@/components/workspace/SparkContextBadge';
 import './AgentSpark.css';
 
 const SUGGESTED_PROMPTS = [
@@ -497,6 +498,7 @@ export default function AgentSpark(): React.JSX.Element {
 
         {/* Main chat area */}
         <div style={{ flex: 1, minWidth: 0 }}>
+          <SparkContextBadge />
           {conversationLoading && activeConversationId && !justCreatedRef.current ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
               <Loader2 size={24} className="spin" />

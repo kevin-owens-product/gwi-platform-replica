@@ -1,4 +1,4 @@
-import type { Audience, CreateAudienceRequest, UpdateAudienceRequest, AudienceListParams, AudienceExpression, PaginatedResponse } from '../../types'
+import type { Audience, CreateAudienceRequest, UpdateAudienceRequest, AudienceListParams, AudienceExpression, AudienceEstimateResult, PaginatedResponse } from '../../types'
 import { mockAudiences } from '../data/audiences'
 import { delay, paginate, findById, newId, now } from '../helpers'
 
@@ -70,12 +70,33 @@ export const audiencesApi = {
     return { valid: true }
   },
 
-  async estimate(_expression: AudienceExpression): Promise<{ population_size: number; sample_size: number; universe_size: number }> {
+  async estimate(_expression: AudienceExpression): Promise<AudienceEstimateResult> {
     await delay()
+    const population_size = Math.floor(Math.random() * 20000000) + 1000000
+    const sample_size = Math.floor(Math.random() * 5000) + 500
+    const universe_size = 50000000
     return {
-      population_size: Math.floor(Math.random() * 20000000) + 1000000,
-      sample_size: Math.floor(Math.random() * 5000) + 500,
-      universe_size: 50000000,
+      population_size,
+      sample_size,
+      percentage_of_universe: parseFloat(((population_size / universe_size) * 100).toFixed(1)),
+      confidence_interval: {
+        lower: Math.max(0, population_size - Math.floor(population_size * 0.05)),
+        upper: population_size + Math.floor(population_size * 0.05),
+      },
+      demographic_preview: {
+        age_groups: {
+          '16-24': 18,
+          '25-34': 27,
+          '35-44': 22,
+          '45-54': 19,
+          '55-64': 14,
+        },
+        gender: {
+          Male: 48,
+          Female: 49,
+          'Non-binary': 3,
+        },
+      },
     }
   },
 

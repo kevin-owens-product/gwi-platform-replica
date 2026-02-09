@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Globe, BarChart3, LayoutGrid, List, ChevronDown, FolderOpen, Tag } from 'lucide-react';
 import { useCharts } from '@/hooks/useCharts';
 import { SearchInput, Tabs, Pagination, EmptyState, Badge } from '@/components/shared';
+import ChartRenderer from '@/components/chart/ChartRenderer';
+import { DATAPOINT_LABELS } from '@/api/mock/data/queries';
 import { formatRelativeDate } from '@/utils/format';
 import type { Chart, ChartType } from '@/api/types';
 import './Charts.css';
@@ -297,6 +299,66 @@ const miniCharts: Record<string, () => React.JSX.Element> = {
   table: MiniTable,
 };
 
+// Deterministic hash for stable preview values (no Math.random)
+function stableHash(str: string): number {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
+}
+
+// Types that render poorly at small preview sizes - keep Mini SVG for these
+const MINI_SVG_ONLY_TYPES = new Set<string>(['table', 'sankey', 'geo_map']);
+
+type ChartDataPoint = { name: string; [key: string]: string | number };
+
+interface PreviewData {
+  data: ChartDataPoint[];
+  series: string[];
+}
+
+function generateChartPreviewData(chart: Chart): PreviewData {
+  const rowDpIds = chart.config?.rows?.[0]?.datapoint_ids ?? [];
+  const colDpIds = chart.config?.columns?.[0]?.datapoint_ids ?? [];
+
+  // If no datapoints configured, generate generic fallback data
+  if (rowDpIds.length === 0) {
+    const seed = stableHash(chart.id);
+    const data: ChartDataPoint[] = Array.from({ length: 5 }, (_, i) => ({
+      name: `Item ${i + 1}`,
+      value: 20 + ((seed * (i + 1) * 7) % 60),
+    }));
+    return { data, series: ['value'] };
+  }
+
+  // For multi-series chart types, use columns as series
+  const isMultiSeries = colDpIds.length > 0 &&
+    ['stacked_bar', 'grouped_bar', 'stacked_area', 'radar', 'heatmap'].includes(chart.chart_type);
+
+  if (isMultiSeries) {
+    const seriesNames = colDpIds.slice(0, 4).map(
+      (id) => DATAPOINT_LABELS[id] ?? id.replace(/^dp_/, '').replace(/_/g, ' ')
+    );
+    const data: ChartDataPoint[] = rowDpIds.slice(0, 6).map((dpId) => {
+      const label = DATAPOINT_LABELS[dpId] ?? dpId.replace(/^dp_/, '').replace(/_/g, ' ');
+      const row: ChartDataPoint = { name: label };
+      seriesNames.forEach((s, j) => {
+        row[s] = 10 + ((stableHash(chart.id + dpId + s) * (j + 1)) % 55);
+      });
+      return row;
+    });
+    return { data, series: seriesNames };
+  }
+
+  // Single-series charts (bar, line, pie, donut, area, etc.)
+  const data: ChartDataPoint[] = rowDpIds.slice(0, 8).map((dpId) => ({
+    name: DATAPOINT_LABELS[dpId] ?? dpId.replace(/^dp_/, '').replace(/_/g, ' '),
+    value: 10 + (stableHash(chart.id + dpId) % 65),
+  }));
+  return { data, series: ['value'] };
+}
+
 export default function Charts(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -318,6 +380,17 @@ export default function Charts(): React.JSX.Element {
   const totalPages = meta?.total_pages ?? 1;
 
   // Client-side tab filtering (tabs represent ownership, not a server filter)
+  // Pre-compute preview data for all visible charts (stable across re-renders)
+  const previewDataMap = useMemo(() => {
+    const map = new Map<string, PreviewData>();
+    for (const chart of charts) {
+      if (!MINI_SVG_ONLY_TYPES.has(chart.chart_type)) {
+        map.set(chart.id, generateChartPreviewData(chart));
+      }
+    }
+    return map;
+  }, [charts]);
+
   const filtered = charts.filter((chart: Chart) => {
     if (activeTab === 'all') { /* pass */ }
     else if (activeTab === 'my' && chart.is_shared) return false;
@@ -437,12 +510,25 @@ export default function Charts(): React.JSX.Element {
         <>
           <div className="charts-grid">
             {filtered.map((chart: Chart) => {
+              const preview = previewDataMap.get(chart.id);
               const MiniChart = miniCharts[chart.chart_type] || MiniBar;
               return (
                 <Link key={chart.id} to={`/app/chart-builder/chart/${chart.id}`} className="chart-card">
-                  <div className="chart-preview">
+                  <div className={`chart-preview ${preview ? 'chart-preview--renderer' : ''}`}>
                     {chart.thumbnail_url ? (
                       <img src={chart.thumbnail_url} alt={chart.name} className="chart-thumbnail" />
+                    ) : preview ? (
+                      <div className="chart-preview__renderer-wrap">
+                        <ChartRenderer
+                          type={chart.chart_type}
+                          data={preview.data}
+                          series={preview.series}
+                          height={130}
+                          showLegend={false}
+                          showGrid={false}
+                          enableAnimation={false}
+                        />
+                      </div>
                     ) : (
                       <MiniChart />
                     )}

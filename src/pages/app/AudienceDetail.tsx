@@ -17,7 +17,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAudience, useCreateAudience, useUpdateAudience, useAudiences } from '@/hooks/useAudiences';
+import { useAudience, useCreateAudience, useUpdateAudience, useAudiences, useAudienceEstimate } from '@/hooks/useAudiences';
 import AudienceBuilder from '@/components/audience/AudienceBuilder';
 import SparkPanel from '@/components/spark/SparkPanel';
 import { Button, Modal, SearchInput } from '@/components/shared';
@@ -72,6 +72,9 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
 
   const [audienceName, setAudienceName] = useState<string>('');
   const [expression, setExpression] = useState<AudienceExpression | undefined>(undefined);
+
+  // Estimate audience size from the current expression
+  const { data: estimateData, isLoading: isEstimating } = useAudienceEstimate(expression);
 
   // Audience type
   const [audienceType, setAudienceType] = useState<string>('dynamic');
@@ -386,6 +389,14 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
             <AudienceBuilder
               expression={expression}
               onChange={setExpression}
+              estimatedSize={estimateData}
+              isEstimating={isEstimating}
+              healthScore={audience?.health_score}
+              audienceType={(audienceType as 'dynamic' | 'static')}
+              onAudienceTypeChange={(t) => setAudienceType(t)}
+              tags={tags}
+              onTagsChange={setTags}
+              marketSizes={marketSizes}
             />
           </div>
 

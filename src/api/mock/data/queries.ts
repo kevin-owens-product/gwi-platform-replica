@@ -1,7 +1,7 @@
 import type { StatsQueryResponse, CrosstabQueryResult, IntersectionResult, CrosstabDimension } from '../../types'
 
 // Comprehensive label lookup for all datapoint IDs used across mock crosstabs
-const DATAPOINT_LABELS: Record<string, string> = {
+export const DATAPOINT_LABELS: Record<string, string> = {
   // Social platforms
   dp_facebook: 'Facebook', dp_instagram: 'Instagram', dp_tiktok: 'TikTok', dp_twitter: 'X / Twitter',
   dp_linkedin: 'LinkedIn', dp_youtube: 'YouTube', dp_snapchat: 'Snapchat', dp_pinterest: 'Pinterest',

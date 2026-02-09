@@ -19,12 +19,18 @@ import {
   AlertTriangle,
   CheckCircle,
   MinusCircle,
+  Check,
+  Search,
 } from 'lucide-react'
 import type {
   AudienceExpression,
   AudienceEstimateResult,
   AudienceHealthScore,
+  Question,
+  Datapoint,
 } from '@/api/types'
+import QuestionBrowser from '@/components/taxonomy/QuestionBrowser'
+import { Modal, Button } from '@/components/shared'
 import './AudienceBuilder.css'
 
 // ---------------------------------------------------------------------------
@@ -533,6 +539,7 @@ interface GroupRendererProps {
   onUpdate: (id: string, updater: (g: ConditionGroup) => ConditionGroup) => void
   onRemove: (id: string) => void
   onQuestionSearch?: () => void
+  onOpenQuestionPicker: (groupId: string, conditionId?: string) => void
 }
 
 function GroupRenderer({
@@ -542,6 +549,7 @@ function GroupRenderer({
   onUpdate,
   onRemove,
   onQuestionSearch,
+  onOpenQuestionPicker,
 }: GroupRendererProps) {
   const borderColor = depthColor(depth)
 
@@ -566,20 +574,7 @@ function GroupRenderer({
   }
 
   const addCondition = () => {
-    if (onQuestionSearch) onQuestionSearch()
-    onUpdate(group.id, (g) => ({
-      ...g,
-      conditions: [
-        ...g.conditions,
-        {
-          id: uid(),
-          questionId: '',
-          questionName: 'Select a question...',
-          datapointIds: [],
-          datapointNames: [],
-        },
-      ],
-    }))
+    onOpenQuestionPicker(group.id)
   }
 
   const removeCondition = (conditionId: string) => {
@@ -700,7 +695,10 @@ function GroupRenderer({
                 <span className="ab-group__condition-op">{operatorLabel}</span>
               )}
               <div className="ab-group__condition-content">
-                <button className="ab-group__condition-question">
+                <button
+                  className="ab-group__condition-question"
+                  onClick={() => onOpenQuestionPicker(group.id, condition.id)}
+                >
                   <span>{condition.questionName}</span>
                   <ChevronDown size={14} />
                 </button>
@@ -745,6 +743,7 @@ function GroupRenderer({
                 onUpdate={onUpdate}
                 onRemove={onRemove}
                 onQuestionSearch={onQuestionSearch}
+                onOpenQuestionPicker={onOpenQuestionPicker}
               />
             </div>
           ))}
@@ -786,6 +785,13 @@ export default function AudienceBuilder({
   const [groups, setGroups] = useState<ConditionGroup[]>([createEmptyGroup()])
   const [groupConnectors, setGroupConnectors] = useState<Record<string, GroupConnector>>({})
   const [expressionViewerOpen, setExpressionViewerOpen] = useState(showExpressionViewerProp ?? false)
+
+  // Question picker state
+  const [questionPickerOpen, setQuestionPickerOpen] = useState(false)
+  const [pickerTargetGroupId, setPickerTargetGroupId] = useState<string | null>(null)
+  const [pickerTargetConditionId, setPickerTargetConditionId] = useState<string | null>(null)
+  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
+  const [selectedDatapointIds, setSelectedDatapointIds] = useState<Set<string>>(new Set())
 
   // Retrieve connector for the gap after a given group
   const getConnector = useCallback(
@@ -877,6 +883,84 @@ export default function AudienceBuilder({
   const addGroup = useCallback(() => {
     setGroups((prev) => [...prev, createEmptyGroup()])
   }, [])
+
+  // Question picker handlers
+  const openQuestionPicker = useCallback((groupId: string, conditionId?: string) => {
+    setPickerTargetGroupId(groupId)
+    setPickerTargetConditionId(conditionId ?? null)
+    setSelectedQuestion(null)
+    setSelectedDatapointIds(new Set())
+    setQuestionPickerOpen(true)
+  }, [])
+
+  const closeQuestionPicker = useCallback(() => {
+    setQuestionPickerOpen(false)
+    setPickerTargetGroupId(null)
+    setPickerTargetConditionId(null)
+    setSelectedQuestion(null)
+    setSelectedDatapointIds(new Set())
+  }, [])
+
+  const handleSelectQuestion = useCallback((question: Question) => {
+    setSelectedQuestion(question)
+    // Auto-select all datapoints when question is first picked
+    setSelectedDatapointIds(new Set(question.datapoints.map((dp) => dp.id)))
+  }, [])
+
+  const toggleDatapoint = useCallback((dpId: string) => {
+    setSelectedDatapointIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(dpId)) {
+        next.delete(dpId)
+      } else {
+        next.add(dpId)
+      }
+      return next
+    })
+  }, [])
+
+  const handleApplyQuestionSelection = useCallback(() => {
+    if (!selectedQuestion || !pickerTargetGroupId || selectedDatapointIds.size === 0) return
+
+    const selectedDps = selectedQuestion.datapoints.filter((dp) =>
+      selectedDatapointIds.has(dp.id)
+    )
+
+    if (pickerTargetConditionId) {
+      // Update existing condition
+      updateGroup(pickerTargetGroupId, (g) => ({
+        ...g,
+        conditions: g.conditions.map((c) =>
+          c.id === pickerTargetConditionId
+            ? {
+                ...c,
+                questionId: selectedQuestion.id,
+                questionName: selectedQuestion.name,
+                datapointIds: selectedDps.map((dp) => dp.id),
+                datapointNames: selectedDps.map((dp) => dp.name),
+              }
+            : c
+        ),
+      }))
+    } else {
+      // Add new condition
+      updateGroup(pickerTargetGroupId, (g) => ({
+        ...g,
+        conditions: [
+          ...g.conditions,
+          {
+            id: uid(),
+            questionId: selectedQuestion.id,
+            questionName: selectedQuestion.name,
+            datapointIds: selectedDps.map((dp) => dp.id),
+            datapointNames: selectedDps.map((dp) => dp.name),
+          },
+        ],
+      }))
+    }
+
+    closeQuestionPicker()
+  }, [selectedQuestion, pickerTargetGroupId, pickerTargetConditionId, selectedDatapointIds, updateGroup, closeQuestionPicker])
 
   // Compute the current expression (for the viewer)
   const currentExpression = useMemo(() => {
@@ -973,6 +1057,7 @@ export default function AudienceBuilder({
               onUpdate={updateGroup}
               onRemove={removeGroup}
               onQuestionSearch={onQuestionSearch}
+              onOpenQuestionPicker={openQuestionPicker}
             />
           </div>
         ))}
@@ -985,6 +1070,100 @@ export default function AudienceBuilder({
 
       {/* Expression viewer */}
       {expressionViewerOpen && <ExpressionViewer expression={currentExpression} />}
+
+      {/* Question Picker Modal */}
+      <Modal
+        open={questionPickerOpen}
+        onClose={closeQuestionPicker}
+        title={pickerTargetConditionId ? 'Edit Condition' : 'Add Condition'}
+        size="lg"
+        footer={
+          <div className="ab-picker__footer">
+            <Button variant="secondary" onClick={closeQuestionPicker}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleApplyQuestionSelection}
+              disabled={!selectedQuestion || selectedDatapointIds.size === 0}
+            >
+              {pickerTargetConditionId ? 'Update Condition' : 'Add Condition'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="ab-picker">
+          <div className="ab-picker__left">
+            <QuestionBrowser
+              onSelectQuestion={handleSelectQuestion}
+              selectedQuestionIds={selectedQuestion ? [selectedQuestion.id] : []}
+            />
+          </div>
+          <div className="ab-picker__right">
+            {selectedQuestion ? (
+              <>
+                <div className="ab-picker__question-header">
+                  <h4 className="ab-picker__question-name">{selectedQuestion.name}</h4>
+                  <span className="ab-picker__question-type">{selectedQuestion.type}</span>
+                </div>
+                <div className="ab-picker__dp-actions">
+                  <button
+                    className="ab-picker__select-all-btn"
+                    onClick={() =>
+                      setSelectedDatapointIds(
+                        new Set(selectedQuestion.datapoints.map((dp) => dp.id))
+                      )
+                    }
+                  >
+                    Select all
+                  </button>
+                  <button
+                    className="ab-picker__select-all-btn"
+                    onClick={() => setSelectedDatapointIds(new Set())}
+                  >
+                    Clear
+                  </button>
+                  <span className="ab-picker__dp-count">
+                    {selectedDatapointIds.size} of {selectedQuestion.datapoints.length} selected
+                  </span>
+                </div>
+                <div className="ab-picker__dp-list">
+                  {selectedQuestion.datapoints.map((dp) => {
+                    const checked = selectedDatapointIds.has(dp.id)
+                    return (
+                      <label
+                        key={dp.id}
+                        className={`ab-picker__dp-item ${checked ? 'ab-picker__dp-item--checked' : ''}`}
+                      >
+                        <span
+                          className={`ab-picker__dp-checkbox ${checked ? 'ab-picker__dp-checkbox--checked' : ''}`}
+                        >
+                          {checked && <Check size={12} />}
+                        </span>
+                        <span className="ab-picker__dp-name">{dp.name}</span>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleDatapoint(dp.id)}
+                          className="ab-picker__dp-hidden-input"
+                        />
+                      </label>
+                    )
+                  })}
+                </div>
+              </>
+            ) : (
+              <div className="ab-picker__empty">
+                <Search size={32} className="ab-picker__empty-icon" />
+                <p>Select a question from the left panel</p>
+                <p className="ab-picker__empty-hint">
+                  Browse categories or search to find questions, then pick the datapoints to include.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

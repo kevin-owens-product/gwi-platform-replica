@@ -533,7 +533,7 @@ export default function ChartDetail(): React.JSX.Element {
     });
   };
 
-  const isDataLoading = chartLoading || statsLoading;
+  const isDataLoading = chartLoading || statsLoading || (!isNew && !isInitialized);
   const isSaving = updateChart.isPending || createChart.isPending;
 
   // More actions dropdown with expanded export formats

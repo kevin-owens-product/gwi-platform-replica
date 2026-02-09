@@ -2,6 +2,7 @@ import { apiClient } from '../client'
 import type {
   Audience,
   AudienceListParams,
+  AudienceEstimateResult,
   CreateAudienceRequest,
   UpdateAudienceRequest,
   PaginatedResponse,
@@ -33,7 +34,7 @@ export const audiencesApi = {
 
   estimate: (expression: CreateAudienceRequest['expression']) =>
     apiClient.post('v3/audiences/estimate', { json: { expression } })
-      .json<{ population_size: number; sample_size: number; universe_size: number }>(),
+      .json<AudienceEstimateResult>(),
 
   overlap: (audienceIds: string[]) =>
     apiClient.post('v3/audiences/overlap', { json: { audience_ids: audienceIds } })

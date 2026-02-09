@@ -250,14 +250,14 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
 
       <div className="audience-detail-content">
         <div className="audience-name-section">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)', flexWrap: 'wrap' }}>
             <input
               type="text"
               className="audience-name-input"
               placeholder="Untitled Audience"
               value={audienceName}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAudienceName(e.target.value)}
-              style={{ flex: 1 }}
+              style={{ flex: '1 1 250px', minWidth: 0 }}
             />
 
             {/* Health Score Badge */}
@@ -346,40 +346,40 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
           </div>
         </div>
 
-        {/* Health Score Warnings */}
-        {audience?.health_score?.warnings && audience.health_score.warnings.length > 0 && (
-          <div style={{ gridColumn: '1 / -1', marginBottom: 'var(--spacing-md)' }}>
-            {audience.health_score.warnings.map((warning, idx) => (
-              <div
-                key={idx}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--spacing-sm)',
-                  padding: 'var(--spacing-sm) var(--spacing-md)',
-                  borderRadius: 'var(--radius-md)',
-                  marginBottom: 'var(--spacing-xs)',
-                  fontSize: 'var(--font-size-body-sm)',
-                  background: warning.severity === 'error'
-                    ? 'var(--color-error-light, rgba(239,68,68,0.08))'
-                    : warning.severity === 'warning'
-                    ? 'var(--color-warning-light, rgba(245,158,11,0.08))'
-                    : 'var(--color-surface-secondary)',
-                  color: warning.severity === 'error'
-                    ? 'var(--color-error, #ef4444)'
-                    : warning.severity === 'warning'
-                    ? 'var(--color-warning, #f59e0b)'
-                    : 'var(--color-text-secondary)',
-                }}
-              >
-                <AlertTriangle size={14} />
-                <span>{warning.message}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
         <div className="conditions-section">
+          {/* Health Score Warnings */}
+          {audience?.health_score?.warnings && audience.health_score.warnings.length > 0 && (
+            <div style={{ marginBottom: 'var(--spacing-md)' }}>
+              {audience.health_score.warnings.map((warning, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--spacing-sm)',
+                    padding: 'var(--spacing-sm) var(--spacing-md)',
+                    borderRadius: 'var(--radius-md)',
+                    marginBottom: 'var(--spacing-xs)',
+                    fontSize: 'var(--font-size-body-sm)',
+                    background: warning.severity === 'error'
+                      ? 'var(--color-error-light, rgba(239,68,68,0.08))'
+                      : warning.severity === 'warning'
+                      ? 'var(--color-warning-light, rgba(245,158,11,0.08))'
+                      : 'var(--color-surface-secondary)',
+                    color: warning.severity === 'error'
+                      ? 'var(--color-error, #ef4444)'
+                      : warning.severity === 'warning'
+                      ? 'var(--color-warning, #f59e0b)'
+                      : 'var(--color-text-secondary)',
+                  }}
+                >
+                  <AlertTriangle size={14} />
+                  <span>{warning.message}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           <h3 className="section-title">Build your audience</h3>
           <p className="section-description">
             Add conditions to define who belongs to this audience.

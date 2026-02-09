@@ -2,12 +2,11 @@
 
 .canvas-page {
   padding: var(--spacing-xl);
-  max-width: 900px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
 }
 
 .canvas-header {
-  text-align: center;
   margin-bottom: var(--spacing-xl);
 }
 
@@ -21,21 +20,30 @@
 .canvas-steps {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   margin-bottom: var(--spacing-2xl);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: var(--spacing-xs);
+}
+
+.canvas-steps::-webkit-scrollbar {
+  display: none;
 }
 
 .step {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
   background-color: var(--color-white);
   border: 2px solid var(--color-border-light);
   border-radius: var(--radius-xl);
   transition: all var(--transition-fast);
   box-shadow: var(--shadow-card);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .step:hover {
@@ -52,15 +60,15 @@
 }
 
 .step-number {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: var(--color-surface-tertiary);
   border-radius: var(--radius-full);
   font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-body);
+  font-size: var(--font-size-body-sm);
   color: var(--color-text-secondary);
   flex-shrink: 0;
   transition: all var(--transition-fast);
@@ -77,21 +85,27 @@
 }
 
 .step-info h3 {
-  font-size: 0.9375rem;
+  font-size: var(--font-size-body-sm);
   font-weight: var(--font-weight-semibold);
-  margin-bottom: 2px;
+  margin-bottom: 0;
+  line-height: 1.3;
 }
 
 .step-info p {
-  font-size: var(--font-size-body-sm);
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }
 
 .step-connector {
-  width: 40px;
+  width: 24px;
+  min-width: 24px;
   height: 2px;
   background-color: var(--color-border);
   flex-shrink: 0;
+}
+
+.step-connector.completed {
+  background-color: var(--color-success);
 }
 
 /* Content Card */
@@ -101,6 +115,7 @@
   border-radius: var(--radius-xl);
   padding: var(--spacing-xl);
   box-shadow: var(--shadow-card);
+  max-width: 900px;
 }
 
 /* Goals */
@@ -670,4 +685,51 @@ textarea.canvas-field-input {
 .canvas-result-card p {
   font-size: var(--font-size-body-sm);
   color: var(--color-text-secondary);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1024px) {
+  .goals-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .canvas-template-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .canvas-review-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .canvas-waves-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .canvas-page {
+    padding: var(--spacing-md);
+  }
+
+  .step-info p {
+    display: none;
+  }
+
+  .goals-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .canvas-content {
+    padding: var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .goals-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .step-info {
+    display: none;
+  }
 }

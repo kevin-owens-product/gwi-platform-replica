@@ -1,0 +1,46 @@
+.guardrails-panel {
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  background: var(--card-bg, #fefce8);
+  padding: 14px;
+  font-size: 13px;
+}
+
+.guardrails-panel--compact {
+  padding: 10px;
+  font-size: 12px;
+}
+
+.guardrails-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a2e);
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.guardrails-panel__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary, #64748b);
+  padding: 4px 0;
+}
+
+.guardrails-panel__item--warning {
+  color: #d97706;
+}
+
+.guardrails-panel__colors {
+  display: flex;
+  gap: 4px;
+}
+
+.guardrails-panel__swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}

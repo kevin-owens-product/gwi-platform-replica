@@ -31,6 +31,8 @@ const Questions = lazy(() => import('./pages/app/Questions'))
 const TvStudy = lazy(() => import('./pages/app/TvStudy'))
 const PrintRF = lazy(() => import('./pages/app/PrintRF'))
 const Settings = lazy(() => import('./pages/app/Settings'))
+const Teams = lazy(() => import('./pages/app/Teams'))
+const TeamDetail = lazy(() => import('./pages/app/TeamDetail'))
 
 function PageLoader() {
   return (
@@ -73,6 +75,8 @@ function App() {
           <Route path="reports" element={<Suspense fallback={<PageLoader />}><Reports /></Suspense>} />
           <Route path="tv-study" element={<Suspense fallback={<PageLoader />}><TvStudy /></Suspense>} />
           <Route path="printrf" element={<Suspense fallback={<PageLoader />}><PrintRF /></Suspense>} />
+          <Route path="teams" element={<Suspense fallback={<PageLoader />}><Teams /></Suspense>} />
+          <Route path="teams/:id" element={<Suspense fallback={<PageLoader />}><TeamDetail /></Suspense>} />
           <Route path="account-settings" element={<Suspense fallback={<PageLoader />}><Settings /></Suspense>} />
           <Route path="account-settings/:tab" element={<Suspense fallback={<PageLoader />}><Settings /></Suspense>} />
         </Route>

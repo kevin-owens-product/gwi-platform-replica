@@ -11,8 +11,10 @@ import CrosstabGrid from '@/components/crosstab/CrosstabGrid';
 import CrosstabConfigPanel from '@/components/crosstab/CrosstabConfigPanel';
 import QuestionBrowser from '@/components/taxonomy/QuestionBrowser';
 import { Button, Modal, SearchInput, BaseAudiencePicker } from '@/components/shared';
+import ShareDialog from '@/components/sharing/ShareDialog';
+import GuardrailsPanel from '@/components/workspace/GuardrailsPanel';
 import { formatRelativeDate, formatMetricValue } from '@/utils/format';
-import type { MetricType, CrosstabQueryRequest, Question, Study, AudienceQuestion, Audience } from '@/api/types';
+import type { MetricType, CrosstabQueryRequest, Question, Study, AudienceQuestion, Audience, SharingConfig } from '@/api/types';
 import './CrosstabDetail.css';
 
 interface CrosstabDetailProps {
@@ -387,10 +389,15 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
     toast.success('PowerPoint export started. Your file will download shortly.');
   };
 
-  // Share handler
+  // Share dialog
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    toast.success('Link copied to clipboard');
+    setShareDialogOpen(true);
+  };
+
+  const handleSaveSharing = (config: SharingConfig) => {
+    toast.success(`Sharing updated: ${config.visibility}`);
   };
 
   // Unsaved changes tracking
@@ -495,6 +502,7 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
         </div>
 
         <div className="crosstab-config-wrapper">
+          <GuardrailsPanel compact />
           <CrosstabConfigPanel
             config={crosstabConfig.config}
             questions={questions}
@@ -842,6 +850,13 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
           </div>
         </div>
       </Modal>
+
+      <ShareDialog
+        open={shareDialogOpen}
+        onClose={() => setShareDialogOpen(false)}
+        title={crosstabName || 'Untitled Crosstab'}
+        onSave={handleSaveSharing}
+      />
     </div>
   );
 }

@@ -21,4 +21,5 @@ export const {
   adminApi,
   canvasApi,
   mediaApi,
+  teamsApi,
 } = source

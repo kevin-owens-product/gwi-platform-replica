@@ -10,6 +10,9 @@ import { useStatsQuery } from '@/hooks/useQueries';
 import ChartRenderer from '@/components/chart/ChartRenderer';
 import QuestionBrowser from '@/components/taxonomy/QuestionBrowser';
 import { Button, Dropdown, Modal, BaseAudiencePicker, getBaseAudienceLabel } from '@/components/shared';
+import ShareDialog from '@/components/sharing/ShareDialog';
+import GuardrailsPanel from '@/components/workspace/GuardrailsPanel';
+import type { SharingConfig } from '@/api/types';
 import { formatRelativeDate } from '@/utils/format';
 import type {
   ChartType,
@@ -484,10 +487,15 @@ export default function ChartDetail(): React.JSX.Element {
     // In a real implementation, this would use jsPDF or similar
   };
 
-  // Share handler
+  // Share dialog
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    toast.success('Link copied to clipboard');
+    setShareDialogOpen(true);
+  };
+
+  const handleSaveSharing = (config: SharingConfig) => {
+    toast.success(`Sharing updated: ${config.visibility}`);
   };
 
   // More actions handler
@@ -700,6 +708,7 @@ export default function ChartDetail(): React.JSX.Element {
         </div>
 
         <div className="chart-config-panel">
+          <GuardrailsPanel compact />
           <h3>Configuration</h3>
           <div className="config-options">
             {/* Questions section */}
@@ -1068,6 +1077,13 @@ export default function ChartDetail(): React.JSX.Element {
         onSelectSaved={handleBaseSelectSaved}
         onApplyQuestion={handleBaseApplyQuestion}
         onClear={handleBaseClear}
+      />
+
+      <ShareDialog
+        open={shareDialogOpen}
+        onClose={() => setShareDialogOpen(false)}
+        title={chartName || 'Untitled Chart'}
+        onSave={handleSaveSharing}
       />
     </div>
   );

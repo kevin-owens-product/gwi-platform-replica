@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import {
-  Search, Home, Sparkles, Users, BarChart2, Grid3X3,
+  Search, Home, Sparkles, Users, UsersRound, BarChart2, Grid3X3,
   LayoutDashboard, Square, FileText, HelpCircle,
   Settings, LogOut, ChevronDown, ChevronUp, MessageCircle,
   Tv, Newspaper, BookOpen, type LucideIcon,
@@ -20,6 +20,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { path: '/app', icon: Home, label: 'Home', exact: true },
+  { path: '/app/teams', icon: UsersRound, label: 'Teams' },
   { path: '/app/agent-spark', icon: Sparkles, label: 'Agent Spark' },
   { path: '/app/audiences', icon: Users, label: 'Audiences' },
   { path: '/app/chart-builder', icon: BarChart2, label: 'Charts' },

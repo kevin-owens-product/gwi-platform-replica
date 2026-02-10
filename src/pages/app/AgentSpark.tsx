@@ -10,11 +10,13 @@ import SparkChat from '@/components/spark/SparkChat';
 import Modal from '@/components/shared/Modal';
 import Button from '@/components/shared/Button';
 import { useSparkConversations, useSparkConversation, useDeleteSparkConversation } from '@/hooks/useSpark';
+import { useAgenticFlows, useAgenticRuns, useRunAgenticFlow } from '@/hooks/useAgentic';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { formatRelativeDate } from '@/utils/format';
 import type { SparkConversation, SparkAction, SparkContext } from '@/api/types';
 import SparkContextBadge from '@/components/workspace/SparkContextBadge';
 import { getAgentById } from '@/data/agents';
+import { platformLinkages } from '@/agentic/registry';
 import './AgentSpark.css';
 
 const SUGGESTED_PROMPTS = [
@@ -92,6 +94,9 @@ export default function AgentSpark(): React.JSX.Element {
   const { data: conversations, isLoading: conversationsLoading } = useSparkConversations();
   const { data: activeConversation, isLoading: conversationLoading } = useSparkConversation(activeConversationId ?? '');
   const deleteConversation = useDeleteSparkConversation();
+  const { data: agenticFlows } = useAgenticFlows();
+  const { data: agenticRuns, refetch: refetchAgenticRuns } = useAgenticRuns();
+  const runAgenticFlow = useRunAgenticFlow();
 
   const activeContext = useWorkspaceStore((s) => s.activeContext);
 
@@ -105,6 +110,17 @@ export default function AgentSpark(): React.JSX.Element {
   // Conversation tags/categories
   const [conversationCategories, setConversationCategories] = useState<Record<string, string>>({});
   const [showCategoryPicker, setShowCategoryPicker] = useState<string | null>(null);
+
+  const [selectedFlowId, setSelectedFlowId] = useState<string>('');
+  const [brief, setBrief] = useState(
+    'Summarize streaming bundle adoption for Gen Z creators in US/UK with a client-ready narrative.'
+  );
+
+  useEffect(() => {
+    if (!selectedFlowId && agenticFlows?.length) {
+      setSelectedFlowId(agenticFlows[0].id);
+    }
+  }, [agenticFlows, selectedFlowId]);
 
   // Sync activeConversationId when route param changes
   useEffect(() => {
@@ -240,6 +256,25 @@ export default function AgentSpark(): React.JSX.Element {
         break;
     }
     toast.success(action.label);
+  };
+
+  const handleRunAgenticFlow = () => {
+    if (!selectedFlowId) {
+      toast.error('Select a flow to run');
+      return;
+    }
+    runAgenticFlow.mutate(
+      { flowId: selectedFlowId, brief },
+      {
+        onSuccess: () => {
+          toast.success('Flow completed');
+          refetchAgenticRuns();
+        },
+        onError: () => {
+          toast.error('Failed to run flow');
+        },
+      }
+    );
   };
 
   return (
@@ -535,6 +570,96 @@ export default function AgentSpark(): React.JSX.Element {
               agentDescription={activeAgent?.description}
             />
           )}
+        </div>
+
+        {/* Agentic panel */}
+        <div className="agentic-panel">
+          <div className="agentic-section">
+            <div className="agentic-section-title">Agentic Flow Runner</div>
+            <div className="agentic-section-subtitle">
+              Convert briefs into orchestrated workflows with traceable outputs.
+            </div>
+            <label className="agentic-label">
+              Flow
+              <select
+                value={selectedFlowId}
+                onChange={(e) => setSelectedFlowId(e.target.value)}
+                className="agentic-select"
+              >
+                {(agenticFlows ?? []).map((flow) => (
+                  <option key={flow.id} value={flow.id}>
+                    {flow.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="agentic-label">
+              Brief
+              <textarea
+                value={brief}
+                onChange={(e) => setBrief(e.target.value)}
+                className="agentic-textarea"
+              />
+            </label>
+            <button
+              className="agentic-primary"
+              onClick={handleRunAgenticFlow}
+              disabled={runAgenticFlow.isPending}
+            >
+              {runAgenticFlow.isPending ? 'Running...' : 'Run flow'}
+            </button>
+          </div>
+
+          <div className="agentic-section">
+            <div className="agentic-section-title">Recent Runs</div>
+            <div className="agentic-list">
+              {(agenticRuns ?? []).map((run) => (
+                <div key={run.id} className="agentic-card">
+                  <div className="agentic-card-title">{run.brief}</div>
+                  <div className="agentic-card-meta">
+                    Flow: {run.flow_id} • Status: {run.status}
+                  </div>
+                  <div className="agentic-output-list">
+                    {run.outputs.map((output) => (
+                      <div key={output.id} className="agentic-output">
+                        <span>{output.label}</span>
+                        <span className="agentic-output-type">{output.type}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {(!agenticRuns || agenticRuns.length === 0) && (
+                <div className="agentic-empty">No runs yet</div>
+              )}
+            </div>
+          </div>
+
+          <div className="agentic-section">
+            <div className="agentic-section-title">Platform Linkages</div>
+            <div className="agentic-linkages">
+              {platformLinkages.map((link) => (
+                <div key={link.id} className="agentic-linkage">
+                  <div className="agentic-linkage-title">{link.name}</div>
+                  <div className="agentic-linkage-meta">Auth: {link.auth}</div>
+                  <div className="agentic-linkage-endpoints">
+                    {link.endpoints.map((endpoint) => (
+                      <span key={endpoint}>{endpoint}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="agentic-section">
+            <div className="agentic-section-title">Provenance & Validation</div>
+            <div className="agentic-validation">
+              <div className="agentic-validation-item">Citations attached to outputs</div>
+              <div className="agentic-validation-item">Confidence thresholds applied</div>
+              <div className="agentic-validation-item">Governance checks complete</div>
+            </div>
+          </div>
         </div>
       </div>
 

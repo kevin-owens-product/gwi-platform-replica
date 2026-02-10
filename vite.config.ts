@@ -10,7 +10,9 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3008,
+    host: '::',
+    port: 3003,
+    strictPort: true,
     proxy: {
       '/fonts': {
         target: 'https://signin-alpha.globalwebindex.com',

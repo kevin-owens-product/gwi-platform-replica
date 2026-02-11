@@ -1,24 +1,39 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   User, Shield, Building2, Save, Users, BarChart2, Settings2, Loader2,
   ScrollText, Keyboard, Mail, Bell, BellOff, Palette, Globe, Clock,
   Search, Plus, FileText, BarChart3, Table2, LayoutDashboard, Trash2,
   Eye, Edit3, Download, LogIn, UserPlus, Command, Code2, Key, Webhook,
-  Copy, Check, RefreshCw, ExternalLink, AlertTriangle, Zap, Server,
+  Copy, Check, RefreshCw, AlertTriangle, Zap, Server, Plug,
   MessageSquare, Activity, ChevronDown, ChevronRight,
 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useProfile } from '@/hooks/useAuth';
+import {
+  useIntegrationCatalog,
+  useIntegrationConnections,
+  useConnectIntegration,
+  useDisconnectIntegration,
+  useTestIntegrationConnection,
+  useIntegrationDeliveryHistory,
+} from '@/hooks/useIntegrations';
 import { useAuthStore } from '@/stores/auth';
+import { useWorkspaceStore } from '@/stores/workspace';
 import { authApi } from '@/api';
 import { Tabs, Button, Input, Badge, DataTable } from '@/components/shared';
 import type { Column } from '@/components/shared';
 import UserManagement from '@/components/admin/UserManagement';
 import UsageStats from '@/components/admin/UsageStats';
 import ChartRenderer from '@/components/chart/ChartRenderer';
-import type { User as UserType } from '@/api/types';
+import type {
+  User as UserType,
+  IntegrationCategory,
+  IntegrationAppId,
+  IntegrationConnection,
+  IntegrationActivity,
+} from '@/api/types';
 import { formatDate, formatRelativeDate } from '@/utils/format';
 import './Settings.css';
 
@@ -283,6 +298,15 @@ const mcpIntegrationSnippets: { platform: string; config: string }[] = [
   },
 ];
 
+const integrationCategoryTabs: Array<{ id: 'all' | IntegrationCategory; label: string }> = [
+  { id: 'all', label: 'All' },
+  { id: 'collaboration', label: 'Collaboration' },
+  { id: 'crm', label: 'CRM' },
+  { id: 'bi', label: 'BI' },
+  { id: 'automation', label: 'Automation' },
+  { id: 'ai_assistant', label: 'AI' },
+];
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -335,7 +359,17 @@ function getInitials(name: string): string {
 // ---------------------------------------------------------------------------
 
 function DeveloperSettings(): React.JSX.Element {
-  const [devSubTab, setDevSubTab] = useState<'api-keys' | 'api-usage' | 'mcp' | 'webhooks'>('api-keys');
+  const [searchParams] = useSearchParams();
+  const resolveDevSubTab = (value: string | null): 'api-keys' | 'api-usage' | 'mcp' | 'integrations' | 'webhooks' => {
+    if (value === 'api-keys' || value === 'api-usage' || value === 'mcp' || value === 'integrations' || value === 'webhooks') {
+      return value;
+    }
+    return 'api-keys';
+  };
+  const [devSubTab, setDevSubTab] = useState<'api-keys' | 'api-usage' | 'mcp' | 'integrations' | 'webhooks'>(
+    () => resolveDevSubTab(searchParams.get('dev_sub_tab'))
+  );
+  const requestedDevSubTab = searchParams.get('dev_sub_tab');
   const [showCreateKeyModal, setShowCreateKeyModal] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyScope, setNewKeyScope] = useState<'platform' | 'spark' | 'both'>('platform');
@@ -344,7 +378,27 @@ function DeveloperSettings(): React.JSX.Element {
   const [expandedMcpTool, setExpandedMcpTool] = useState<string | null>(null);
   const [activeSnippet, setActiveSnippet] = useState(0);
   const [mcpTestStatus, setMcpTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [integrationCategory, setIntegrationCategory] = useState<'all' | IntegrationCategory>('all');
+  const [selectedIntegrationAppId, setSelectedIntegrationAppId] = useState<IntegrationAppId | null>(null);
+  const [showIntegrationModal, setShowIntegrationModal] = useState(false);
+  const [integrationScopeType, setIntegrationScopeType] = useState<'workspace' | 'project'>('workspace');
   const { rateLimit } = useAuthStore();
+  const currentUser = useAuthStore((s) => s.user);
+  const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
+
+  const { data: integrationCatalog = [] } = useIntegrationCatalog();
+  const { data: integrationConnections = [] } = useIntegrationConnections();
+  const { data: integrationActivity = [] } = useIntegrationDeliveryHistory();
+  const connectIntegration = useConnectIntegration();
+  const disconnectIntegration = useDisconnectIntegration();
+  const testIntegration = useTestIntegrationConnection();
+
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'owner';
+
+  useEffect(() => {
+    if (!requestedDevSubTab) return;
+    setDevSubTab(resolveDevSubTab(requestedDevSubTab));
+  }, [requestedDevSubTab]);
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -379,6 +433,73 @@ function DeveloperSettings(): React.JSX.Element {
       toast.success('MCP endpoint is reachable');
       setTimeout(() => setMcpTestStatus('idle'), 3000);
     }, 1500);
+  };
+
+  const getConnectionForApp = (appId: IntegrationAppId): IntegrationConnection | undefined =>
+    integrationConnections.find((conn) => conn.app_id === appId);
+
+  const openIntegrationModal = (appId: IntegrationAppId) => {
+    setSelectedIntegrationAppId(appId);
+    setShowIntegrationModal(true);
+    const existing = getConnectionForApp(appId);
+    setIntegrationScopeType(existing?.scope_type ?? 'workspace');
+  };
+
+  const closeIntegrationModal = () => {
+    setShowIntegrationModal(false);
+    setSelectedIntegrationAppId(null);
+    setIntegrationScopeType('workspace');
+  };
+
+  const selectedIntegrationApp = selectedIntegrationAppId
+    ? integrationCatalog.find((item) => item.app_id === selectedIntegrationAppId)
+    : null;
+  const selectedIntegrationConnection = selectedIntegrationAppId
+    ? getConnectionForApp(selectedIntegrationAppId)
+    : undefined;
+
+  const filteredCatalog = integrationCatalog.filter(
+    (item) => integrationCategory === 'all' || item.category === integrationCategory
+  );
+
+  const aiCatalog = integrationCatalog.filter((item) => item.category === 'ai_assistant');
+
+  const handleConnectIntegration = () => {
+    if (!selectedIntegrationAppId || !currentUser?.name) return;
+    if (integrationScopeType === 'project' && !activeProjectId) {
+      toast.error('Select an active project first for project-scoped connection');
+      return;
+    }
+    connectIntegration.mutate(
+      {
+        app_id: selectedIntegrationAppId,
+        scope_type: integrationScopeType,
+        workspace_id: currentUser.organization_id ?? 'org_gwi_demo',
+        project_id: integrationScopeType === 'project' ? activeProjectId ?? undefined : undefined,
+        connected_by: currentUser.name,
+      },
+      {
+        onSuccess: () => closeIntegrationModal(),
+      }
+    );
+  };
+
+  const handleDisconnectIntegration = () => {
+    if (!selectedIntegrationConnection || !currentUser?.name) return;
+    disconnectIntegration.mutate(
+      {
+        connection_id: selectedIntegrationConnection.id,
+        actor: currentUser.name,
+      },
+      {
+        onSuccess: () => closeIntegrationModal(),
+      }
+    );
+  };
+
+  const handleTestIntegration = () => {
+    if (!selectedIntegrationConnection) return;
+    testIntegration.mutate(selectedIntegrationConnection.id);
   };
 
   const apiKeyColumns: Column<ApiKeyEntry>[] = [
@@ -528,6 +649,47 @@ function DeveloperSettings(): React.JSX.Element {
     },
   ];
 
+  const integrationActivityColumns: Column<IntegrationActivity>[] = [
+    {
+      key: 'type',
+      header: 'Action',
+      render: (entry) => (
+        <Badge variant="default">{entry.type.replace(/_/g, ' ')}</Badge>
+      ),
+    },
+    {
+      key: 'app_id',
+      header: 'Integration',
+      render: (entry) => {
+        const app = integrationCatalog.find((item) => item.app_id === entry.app_id);
+        return <span>{app?.name ?? entry.app_id}</span>;
+      },
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (entry) => (
+        <Badge variant={entry.status === 'success' ? 'success' : entry.status === 'failed' ? 'danger' : 'warning'}>
+          {entry.status}
+        </Badge>
+      ),
+    },
+    {
+      key: 'retries',
+      header: 'Retries',
+      render: (entry) => <span>{entry.retries}</span>,
+    },
+    {
+      key: 'actor',
+      header: 'Actor',
+    },
+    {
+      key: 'created_at',
+      header: 'When',
+      render: (entry) => <span className="dev-key-date">{formatRelativeDate(entry.created_at)}</span>,
+    },
+  ];
+
   // Totals for the usage overview
   const totalCalls = mockApiUsageEndpoints.reduce((sum, ep) => sum + ep.calls, 0);
   const monthlyQuota = 50000;
@@ -541,6 +703,7 @@ function DeveloperSettings(): React.JSX.Element {
           { id: 'api-keys' as const, label: 'API Keys', icon: <Key size={15} /> },
           { id: 'api-usage' as const, label: 'API Usage', icon: <Activity size={15} /> },
           { id: 'mcp' as const, label: 'MCP Configuration', icon: <Server size={15} /> },
+          { id: 'integrations' as const, label: 'Integrations', icon: <Plug size={15} /> },
           { id: 'webhooks' as const, label: 'Webhooks', icon: <Webhook size={15} /> },
         ]).map((t) => (
           <button
@@ -891,26 +1054,218 @@ function DeveloperSettings(): React.JSX.Element {
               <pre className="dev-code-block">{mcpIntegrationSnippets[activeSnippet].config}</pre>
             </div>
 
-            {/* Supported Platforms */}
+            {/* AI Assistant Connections */}
             <div className="dev-mcp-platforms">
-              <h4>Supported AI Platforms</h4>
+              <h4>AI Assistant Connections</h4>
               <div className="dev-mcp-platform-grid">
-                {[
-                  { name: 'Claude Desktop', method: 'Desktop Extension / MCP Remote' },
-                  { name: 'ChatGPT', method: 'Custom Connector' },
-                  { name: 'Copilot Studio', method: 'OAuth 2.0 Workspace Agent' },
-                  { name: 'Google Gemini CLI', method: 'Direct Integration' },
-                  { name: 'Salesforce Agentforce', method: 'AgentExchange MCP Server' },
-                  { name: 'Custom Applications', method: 'JSON-RPC 2.0 API' },
-                ].map((platform) => (
-                  <div key={platform.name} className="dev-mcp-platform-item">
-                    <strong>{platform.name}</strong>
-                    <span>{platform.method}</span>
+                {aiCatalog.map((platform) => {
+                  const conn = getConnectionForApp(platform.app_id);
+                  return (
+                    <div key={platform.app_id} className="dev-mcp-platform-item">
+                      <strong>{platform.name}</strong>
+                      <span>{conn?.status === 'connected' ? 'Connected via Marketplace' : 'Not connected'}</span>
+                      <div className="dev-mcp-platform-actions">
+                        {platform.setup_guide_url && (
+                          <button
+                            className="dev-inline-link"
+                            onClick={() => window.open(platform.setup_guide_url, '_blank', 'noopener,noreferrer')}
+                          >
+                            Open setup guide
+                          </button>
+                        )}
+                        <button
+                          className="dev-inline-link"
+                          onClick={() => {
+                            setDevSubTab('integrations');
+                            openIntegrationModal(platform.app_id);
+                          }}
+                        >
+                          Manage in Marketplace
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {aiCatalog.length === 0 && (
+                  <div className="dev-mcp-platform-item">
+                    <strong>No AI assistant integrations configured</strong>
+                    <span>Open Marketplace to add assistant connectors.</span>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ---- Integrations Section ---- */}
+      {devSubTab === 'integrations' && (
+        <div className="settings-section">
+          <div className="dev-section-header">
+            <div>
+              <h2>Integration Marketplace</h2>
+              <p className="section-description">
+                Connect workspace tools and route Spark outputs, audience syncs, and scheduled reports.
+              </p>
+            </div>
+          </div>
+
+          {!isAdmin && (
+            <div className="dev-api-info-banner">
+              <AlertTriangle size={16} />
+              <div>
+                You have view-only access. Only admins can connect or disconnect integrations.
+              </div>
+            </div>
+          )}
+
+          <div className="dev-integration-filter-tabs">
+            {integrationCategoryTabs.map((tab) => (
+              <button
+                key={tab.id}
+                className={`dev-sub-tab ${integrationCategory === tab.id ? 'active' : ''}`}
+                onClick={() => setIntegrationCategory(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="dev-integration-grid">
+            {filteredCatalog.map((item) => {
+              const connection = getConnectionForApp(item.app_id);
+              const status = connection?.status ?? 'not_connected';
+              return (
+                <div key={item.app_id} className="dev-integration-card">
+                  <div className="dev-integration-card-header">
+                    <div className="dev-integration-card-title">
+                      <span className="dev-integration-logo">{item.logo_text}</span>
+                      <div>
+                        <strong>{item.name}</strong>
+                        <span>{item.category.replace('_', ' ')}</span>
+                      </div>
+                    </div>
+                    <Badge variant={status === 'connected' ? 'success' : status === 'error' ? 'danger' : 'default'}>
+                      {status === 'not_connected' ? 'Not connected' : status}
+                    </Badge>
+                  </div>
+                  <p className="dev-integration-desc">{item.description}</p>
+                  <div className="dev-integration-capabilities">
+                    {item.capabilities.slice(0, 4).map((cap) => (
+                      <Badge key={cap} variant="default">{cap.replace(/_/g, ' ')}</Badge>
+                    ))}
+                  </div>
+                  <div className="dev-integration-actions">
+                    <Button
+                      variant="secondary"
+                      onClick={() => openIntegrationModal(item.app_id)}
+                    >
+                      {connection ? 'Manage Connection' : 'Connect'}
+                    </Button>
+                    {item.setup_guide_url && (
+                      <button
+                        className="dev-inline-link"
+                        onClick={() => window.open(item.setup_guide_url, '_blank', 'noopener,noreferrer')}
+                      >
+                        Setup Guide
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ marginTop: 'var(--spacing-xl)' }}>
+            <h3 className="settings-subsection-title">Integration Activity</h3>
+            <DataTable
+              columns={integrationActivityColumns}
+              data={integrationActivity}
+              keyField="id"
+              emptyMessage="No integration activity yet"
+            />
+          </div>
+
+          {showIntegrationModal && selectedIntegrationApp && (
+            <div className="dev-modal-overlay" onClick={closeIntegrationModal}>
+              <div className="dev-modal" onClick={(e) => e.stopPropagation()}>
+                <h3>{selectedIntegrationApp.name}</h3>
+                <p className="section-description" style={{ marginTop: 0 }}>{selectedIntegrationApp.description}</p>
+
+                <div className="dev-modal-field">
+                  <label className="input-field__label">Connection Scope</label>
+                  <div className="settings-toggle-group settings-toggle-group--3">
+                    {(['workspace', 'project'] as const).map((scope) => (
+                      <button
+                        key={scope}
+                        type="button"
+                        className={`settings-toggle-btn ${integrationScopeType === scope ? 'active' : ''}`}
+                        onClick={() => setIntegrationScopeType(scope)}
+                        disabled={!isAdmin}
+                      >
+                        {scope === 'workspace' ? 'Workspace' : 'Project'}
+                      </button>
+                    ))}
+                  </div>
+                  {integrationScopeType === 'project' && !activeProjectId && (
+                    <p className="settings-help-text">No active project selected. Pick one from the sidebar project switcher.</p>
+                  )}
+                </div>
+
+                <div className="dev-modal-field">
+                  <label className="input-field__label">Connection Status</label>
+                  <div className="dev-integration-status-row">
+                    <Badge variant={selectedIntegrationConnection?.status === 'connected' ? 'success' : selectedIntegrationConnection?.status === 'error' ? 'danger' : 'default'}>
+                      {selectedIntegrationConnection?.status ?? 'not connected'}
+                    </Badge>
+                    {selectedIntegrationConnection?.last_tested_at && (
+                      <span className="dev-key-date">Last tested {formatRelativeDate(selectedIntegrationConnection.last_tested_at)}</span>
+                    )}
+                  </div>
+                  {selectedIntegrationConnection?.last_error && (
+                    <div className="dev-created-key-warning">
+                      <AlertTriangle size={16} />
+                      <span>{selectedIntegrationConnection.last_error}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="dev-modal-actions">
+                  <Button variant="secondary" onClick={closeIntegrationModal}>
+                    Close
+                  </Button>
+                  {selectedIntegrationConnection && (
+                    <Button
+                      variant="secondary"
+                      icon={<RefreshCw size={16} />}
+                      onClick={handleTestIntegration}
+                      disabled={testIntegration.isPending}
+                    >
+                      {testIntegration.isPending ? 'Testing...' : 'Test Connection'}
+                    </Button>
+                  )}
+                  {selectedIntegrationConnection ? (
+                    <Button
+                      variant="danger"
+                      onClick={handleDisconnectIntegration}
+                      disabled={!isAdmin || disconnectIntegration.isPending}
+                    >
+                      Disconnect
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      icon={<Plug size={16} />}
+                      onClick={handleConnectIntegration}
+                      disabled={!isAdmin || connectIntegration.isPending || (integrationScopeType === 'project' && !activeProjectId)}
+                    >
+                      {connectIntegration.isPending ? 'Connecting...' : 'Connect'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

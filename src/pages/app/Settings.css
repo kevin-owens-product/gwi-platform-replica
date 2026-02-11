@@ -1241,6 +1241,126 @@
   color: var(--color-text-secondary);
 }
 
+.dev-mcp-platform-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: var(--spacing-xs);
+}
+
+.dev-inline-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-primary);
+  font-size: var(--font-size-body-sm);
+  cursor: pointer;
+  text-align: left;
+}
+
+.dev-inline-link:hover {
+  text-decoration: underline;
+}
+
+/* Integration Marketplace */
+.dev-integration-filter-tabs {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-lg);
+}
+
+.dev-integration-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+}
+
+.dev-integration-card {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  background: var(--color-white);
+}
+
+.dev-integration-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.dev-integration-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.dev-integration-card-title div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dev-integration-card-title strong {
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+}
+
+.dev-integration-card-title span {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-transform: capitalize;
+}
+
+.dev-integration-logo {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-secondary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dev-integration-desc {
+  margin: 0;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+}
+
+.dev-integration-capabilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dev-integration-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.dev-integration-status-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.settings-help-text {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-muted);
+}
+
 /* Webhooks */
 .dev-webhook-url {
   font-family: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
@@ -1294,6 +1414,10 @@
 
   .dev-mcp-platform-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .dev-integration-grid {
+    grid-template-columns: 1fr;
   }
 
   .dev-webhook-event-list {

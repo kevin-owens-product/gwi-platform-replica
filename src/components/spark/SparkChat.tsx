@@ -67,6 +67,7 @@ const ACTION_ICONS: Record<string, React.ReactNode> = {
   create_crosstab: <Grid3X3 size={14} />,
   create_dashboard: <LayoutDashboard size={14} />,
   export_report: <Download size={14} />,
+  deliver_output: <Send size={14} />,
   compare_audiences: <Users size={14} />,
   analyze_overlap: <TrendingUp size={14} />,
 }

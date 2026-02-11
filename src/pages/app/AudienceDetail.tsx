@@ -18,12 +18,14 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAudience, useCreateAudience, useUpdateAudience, useAudiences, useAudienceEstimate } from '@/hooks/useAudiences';
+import { useSyncAudienceIntegration } from '@/hooks/useIntegrations';
 import AudienceBuilder from '@/components/audience/AudienceBuilder';
 import SparkPanel from '@/components/spark/SparkPanel';
+import IntegrationDestinationPicker from '@/components/integrations/IntegrationDestinationPicker';
 import { Button, Modal, SearchInput } from '@/components/shared';
 import { formatCompactNumber } from '@/utils/format';
 import { useWorkspaceStore } from '@/stores/workspace';
-import type { AudienceExpression, Audience, ActivationDestinationType, SharingVisibility } from '@/api/types';
+import type { AudienceExpression, SharingVisibility } from '@/api/types';
 import './AudienceDetail.css';
 
 interface AudienceDetailProps {
@@ -33,18 +35,6 @@ interface AudienceDetailProps {
 const audienceTypeOptions: { label: string; value: string }[] = [
   { label: 'Dynamic', value: 'dynamic' },
   { label: 'Static', value: 'static' },
-];
-
-const activationDestinations: { label: string; value: ActivationDestinationType }[] = [
-  { label: 'Meta Ads (Facebook)', value: 'meta_ads' },
-  { label: 'Google Ads', value: 'google_ads' },
-  { label: 'TikTok Ads', value: 'tiktok_ads' },
-  { label: 'Amazon DSP', value: 'amazon_dsp' },
-  { label: 'The Trade Desk', value: 'the_trade_desk' },
-  { label: 'DV360', value: 'dv360' },
-  { label: 'LiveRamp', value: 'liveramp' },
-  { label: 'Salesforce', value: 'salesforce' },
-  { label: 'CSV Export', value: 'csv_export' },
 ];
 
 function getHealthScoreColor(score: number): string {
@@ -95,8 +85,9 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
 
   // Activation modal
   const [activationModalOpen, setActivationModalOpen] = useState(false);
-  const [selectedDestination, setSelectedDestination] = useState<ActivationDestinationType | null>(null);
+  const [selectedActivationConnectionIds, setSelectedActivationConnectionIds] = useState<string[]>([]);
   const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
+  const syncAudienceIntegration = useSyncAudienceIntegration();
 
   // Populate form when existing audience data loads
   useEffect(() => {
@@ -192,13 +183,26 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
   };
 
   const handleActivate = () => {
-    if (!selectedDestination) {
-      toast.error('Please select a destination');
+    if (isNew || !id) {
+      toast.error('Save the audience before activation');
       return;
     }
-    toast.success(`Activation started for ${selectedDestination.replace(/_/g, ' ')}`);
-    setActivationModalOpen(false);
-    setSelectedDestination(null);
+    if (selectedActivationConnectionIds.length === 0) {
+      toast.error('Please select a destination connection');
+      return;
+    }
+    syncAudienceIntegration.mutate(
+      {
+        audience_id: id,
+        connection_id: selectedActivationConnectionIds[0],
+      },
+      {
+        onSuccess: () => {
+          setActivationModalOpen(false);
+          setSelectedActivationConnectionIds([]);
+        },
+      }
+    );
   };
 
   const filteredCompareAudiences = useMemo(() => {
@@ -502,6 +506,7 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
               variant="secondary"
               icon={<Send size={16} />}
               onClick={() => setActivationModalOpen(true)}
+              disabled={isNew}
             >
               Activate
             </Button>
@@ -683,40 +688,28 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
         footer={
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
             <Button variant="secondary" onClick={() => setActivationModalOpen(false)}>Cancel</Button>
-            <Button variant="primary" icon={<Send size={16} />} onClick={handleActivate} disabled={!selectedDestination}>
+            <Button
+              variant="primary"
+              icon={<Send size={16} />}
+              onClick={handleActivate}
+              loading={syncAudienceIntegration.isPending}
+              disabled={selectedActivationConnectionIds.length === 0}
+            >
               Activate
             </Button>
           </div>
         }
       >
         <p style={{ marginBottom: 'var(--spacing-md)', fontSize: 'var(--font-size-body-sm)', color: 'var(--color-text-secondary)' }}>
-          Select a destination to push this audience for targeting.
+          Select a connected CRM or automation destination for audience sync.
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
-          {activationDestinations.map((dest) => (
-            <button
-              key={dest.value}
-              onClick={() => setSelectedDestination(dest.value)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--spacing-sm)',
-                padding: 'var(--spacing-sm) var(--spacing-md)',
-                border: `1px solid ${selectedDestination === dest.value ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                borderRadius: 'var(--radius-md)',
-                fontSize: 'var(--font-size-body-sm)',
-                fontWeight: selectedDestination === dest.value ? 600 : 400,
-                color: selectedDestination === dest.value ? 'var(--color-primary)' : 'var(--color-text)',
-                background: selectedDestination === dest.value ? 'var(--color-primary-light, rgba(227,28,121,0.06))' : 'var(--color-white)',
-                cursor: 'pointer',
-                textAlign: 'left',
-              }}
-            >
-              <Send size={14} />
-              {dest.label}
-            </button>
-          ))}
-        </div>
+        <IntegrationDestinationPicker
+          capability="audience_sync"
+          value={selectedActivationConnectionIds}
+          onChange={setSelectedActivationConnectionIds}
+          title="Audience sync destinations"
+          emptyMessage="Connect Salesforce, HubSpot, or Zapier in Developer Integrations first."
+        />
       </Modal>
     </div>
   );

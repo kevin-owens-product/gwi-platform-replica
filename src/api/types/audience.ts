@@ -184,6 +184,7 @@ export type ActivationDestinationType =
   | 'liveramp'
   | 'salesforce'
   | 'hubspot'
+  | 'zapier'
   | 'csv_export'
   | 'json_export'
 
@@ -195,12 +196,14 @@ export interface ActivationDestination {
   match_rate?: number
   last_synced_at?: string
   error_message?: string
+  integration_connection_id?: string
 }
 
 export interface ActivateAudienceRequest {
   audience_id: string
   destination_type: ActivationDestinationType
   field_mapping?: Record<string, string>
+  integration_connection_id?: string
 }
 
 // Estimation

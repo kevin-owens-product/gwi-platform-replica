@@ -1,6 +1,7 @@
 // Report types for the GWI Platform API -- fully enhanced
 
 import type { PaginationParams, SharingConfig, ExportFormat } from './common'
+import type { IntegrationAppId } from './integration'
 import type { ChartType } from './chart'
 import type { SparkVisualization, SparkDataTable } from './spark'
 
@@ -111,6 +112,7 @@ export interface ReportSchedule {
   format: ExportFormat
   include_narrative: boolean
   auto_update_data: boolean
+  delivery_destinations?: ReportDeliveryDestination[]
   enabled: boolean
   last_sent_at?: string
   next_send_at?: string
@@ -120,6 +122,15 @@ export interface ReportSchedule {
     status: 'sent' | 'failed' | 'bounced'
     opened_by?: string[]
   }>
+}
+
+export interface ReportDeliveryDestination {
+  type: 'email' | IntegrationAppId
+  connection_id?: string
+  recipients?: string[]
+  include_summary?: boolean
+  include_attachments?: boolean
+  metadata?: Record<string, unknown>
 }
 
 // Data Stories

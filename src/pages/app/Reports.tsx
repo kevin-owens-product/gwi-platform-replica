@@ -10,7 +10,9 @@ import {
   Heart, Award, AlertCircle, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { SearchInput, Tabs, Pagination, EmptyState, Badge } from '@/components/shared';
+import IntegrationDestinationPicker from '@/components/integrations/IntegrationDestinationPicker';
 import { useReports } from '@/hooks/useReports';
+import { useIntegrationConnections } from '@/hooks/useIntegrations';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { formatDate, formatRelativeDate } from '@/utils/format';
 import type {
@@ -272,11 +274,17 @@ const mockSchedules: ReportSchedule[] = [
   {
     id: 'sch-1', name: 'Weekly Brand Health Digest', frequency: 'weekly', day_of_week: 1, time: '08:00', timezone: 'America/New_York',
     recipients: ['team-leads@company.com', 'marketing@company.com'], format: 'pdf', include_narrative: true, auto_update_data: true,
+    delivery_destinations: [
+      { type: 'slack', connection_id: 'conn_slack_1', include_summary: true, include_attachments: true },
+    ],
     enabled: true, last_sent_at: '2025-01-27T08:00:00Z', next_send_at: '2025-02-03T08:00:00Z', report_builder_id: 'rb-1',
   },
   {
     id: 'sch-2', name: 'Monthly Competitive Report', frequency: 'monthly', day_of_month: 1, time: '09:00', timezone: 'Europe/London',
     recipients: ['strategy@company.com', 'cmo@company.com', 'insights@company.com'], format: 'pptx', include_narrative: true, auto_update_data: true,
+    delivery_destinations: [
+      { type: 'power_bi', connection_id: 'conn_power_bi_1', include_summary: true, include_attachments: true },
+    ],
     enabled: true, last_sent_at: '2025-01-01T09:00:00Z', next_send_at: '2025-02-01T09:00:00Z', report_builder_id: 'rb-3',
   },
   {
@@ -1397,6 +1405,8 @@ function TemplatesTab(): React.JSX.Element {
 function ScheduledTab(): React.JSX.Element {
   const [schedules, setSchedules] = useState<ReportSchedule[]>(mockSchedules);
   const [showForm, setShowForm] = useState(false);
+  const [selectedIntegrationConnectionIds, setSelectedIntegrationConnectionIds] = useState<string[]>([]);
+  const { data: reportDeliveryConnections = [] } = useIntegrationConnections('report_delivery');
   const [formData, setFormData] = useState({
     name: '',
     frequency: 'weekly' as ReportSchedule['frequency'],
@@ -1411,21 +1421,39 @@ function ScheduledTab(): React.JSX.Element {
   };
 
   const handleCreateSchedule = () => {
+    const emailRecipients = formData.recipients.split(',').map((r) => r.trim()).filter(Boolean);
+    if (emailRecipients.length === 0 && selectedIntegrationConnectionIds.length === 0) {
+      return;
+    }
+
     const newSchedule: ReportSchedule = {
       id: generateId('sch'),
       name: formData.name || 'Untitled Schedule',
       frequency: formData.frequency,
       time: '09:00',
       timezone: 'America/New_York',
-      recipients: formData.recipients.split(',').map((r) => r.trim()).filter(Boolean),
+      recipients: emailRecipients,
       format: formData.format,
       include_narrative: formData.includeNarrative,
       auto_update_data: true,
+      delivery_destinations: [
+        ...(emailRecipients.length > 0 ? [{ type: 'email' as const, recipients: emailRecipients }] : []),
+        ...selectedIntegrationConnectionIds.map((connectionId) => {
+          const conn = reportDeliveryConnections.find((item) => item.id === connectionId);
+          return {
+            type: conn?.app_id ?? 'zapier',
+            connection_id: connectionId,
+            include_summary: true,
+            include_attachments: true,
+          };
+        }),
+      ],
       enabled: true,
       next_send_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
     setSchedules((prev) => [newSchedule, ...prev]);
     setShowForm(false);
+    setSelectedIntegrationConnectionIds([]);
     setFormData({ name: '', frequency: 'weekly', recipients: '', format: 'pdf', includeNarrative: true, conditionalDelivery: false });
   };
 
@@ -1466,6 +1494,16 @@ function ScheduledTab(): React.JSX.Element {
               <label>Recipients <span className="field-hint">(comma-separated emails)</span></label>
               <input type="text" value={formData.recipients} onChange={(e) => setFormData({ ...formData, recipients: e.target.value })} placeholder="team@company.com, manager@company.com" />
             </div>
+            <div className="schedule-form__field schedule-form__field--wide">
+              <IntegrationDestinationPicker
+                capability="report_delivery"
+                multiSelect
+                value={selectedIntegrationConnectionIds}
+                onChange={setSelectedIntegrationConnectionIds}
+                title="Integration destinations"
+                emptyMessage="Connect report destinations in Developer Integrations first."
+              />
+            </div>
             <div className="schedule-form__field">
               <label>Format</label>
               <select value={formData.format} onChange={(e) => setFormData({ ...formData, format: e.target.value as ExportFormat })}>
@@ -1489,7 +1527,11 @@ function ScheduledTab(): React.JSX.Element {
           </div>
           <div className="schedule-form__actions">
             <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-            <button className="btn-primary" onClick={handleCreateSchedule}>
+            <button
+              className="btn-primary"
+              onClick={handleCreateSchedule}
+              disabled={formData.recipients.trim().length === 0 && selectedIntegrationConnectionIds.length === 0}
+            >
               <Calendar size={16} /> Create Schedule
             </button>
           </div>
@@ -1538,6 +1580,14 @@ function ScheduledTab(): React.JSX.Element {
                       {schedule.recipients.length > 2 && (
                         <span className="schedule-recipient-more">+{schedule.recipients.length - 2} more</span>
                       )}
+                      {(schedule.delivery_destinations ?? [])
+                        .filter((dest) => dest.type !== 'email')
+                        .slice(0, 2)
+                        .map((dest, i) => (
+                          <span key={`${dest.type}-${i}`} className="schedule-recipient">
+                            {dest.type.replace('_', ' ')}
+                          </span>
+                        ))}
                     </div>
                   </td>
                   <td>

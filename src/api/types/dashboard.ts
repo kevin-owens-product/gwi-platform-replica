@@ -14,6 +14,7 @@ export interface Dashboard {
   updated_at: string
   user_id: string
   project_id?: string
+  team_id?: string
   is_shared: boolean
   thumbnail_url?: string
   base_audience?: AudienceExpression
@@ -313,4 +314,11 @@ export interface UpdateDashboardRequest {
   filter_state?: Record<string, unknown>
   refresh_config?: DashboardRefreshConfig
   presentation_config?: PresentationConfig
+}
+
+export interface DashboardListParams {
+  page?: number
+  per_page?: number
+  search?: string
+  project_id?: string
 }

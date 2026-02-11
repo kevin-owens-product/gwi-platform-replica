@@ -8,6 +8,7 @@ import { useAudiences } from '@/hooks/useAudiences';
 import { useStudies, useWaves, useQuestions } from '@/hooks/useTaxonomy';
 import { useCrosstabConfig } from '@/hooks/useCrosstabConfig';
 import { useCrosstabQuery } from '@/hooks/useQueries';
+import { useWorkspaceStore } from '@/stores/workspace';
 import CrosstabGrid from '@/components/crosstab/CrosstabGrid';
 import CrosstabConfigPanel from '@/components/crosstab/CrosstabConfigPanel';
 import QuestionBrowser from '@/components/taxonomy/QuestionBrowser';
@@ -26,6 +27,7 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isNew = isNewProp || id === 'new';
+  const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
 
   // Config state
   const crosstabConfig = useCrosstabConfig();
@@ -98,7 +100,7 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
   const { data: crosstab, isLoading: crosstabLoading } = useCrosstab(isNew ? '' : (id ?? ''));
   const updateCrosstab = useUpdateCrosstab();
   const createCrosstab = useCreateCrosstab();
-  const { data: audienceResponse } = useAudiences({ per_page: 50 });
+  const { data: audienceResponse } = useAudiences({ per_page: 50, project_id: activeProjectId || undefined });
   const { data: studies } = useStudies();
   const { data: allWaves } = useWaves();
   const { data: questionsResponse } = useQuestions({ per_page: 100 });
@@ -190,6 +192,7 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
         {
           name: crosstabName || 'Untitled Crosstab',
           config: configPayload,
+          project_id: activeProjectId || undefined,
         },
         {
           onSuccess: (newCrosstab) => {

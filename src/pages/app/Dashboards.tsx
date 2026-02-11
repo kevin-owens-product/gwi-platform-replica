@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Globe, LayoutDashboard, MoreVertical, Edit, Copy, Trash2, Loader2, Calendar, Bell, Eye } from 'lucide-react';
 import { useDashboards, useDeleteDashboard } from '@/hooks/useDashboards';
+import { useWorkspaceStore } from '@/stores/workspace';
 import { SearchInput, Tabs, Pagination, EmptyState, Badge, Dropdown } from '@/components/shared';
 import { formatRelativeDate } from '@/utils/format';
 import type { Dashboard, DashboardWidgetType } from '@/api/types';
@@ -114,7 +115,15 @@ export default function Dashboards(): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [page, setPage] = useState<number>(1);
 
-  const { data, isLoading, isError } = useDashboards({ page, per_page: 20, search: searchQuery || undefined });
+  const activeProject = useWorkspaceStore((s) => s.activeProject);
+  const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
+
+  const { data, isLoading, isError } = useDashboards({
+    page,
+    per_page: 20,
+    search: searchQuery || undefined,
+    project_id: activeProjectId || undefined,
+  });
   const deleteDashboard = useDeleteDashboard();
 
   const dashboards = data?.data ?? [];
@@ -147,6 +156,9 @@ export default function Dashboards(): React.JSX.Element {
     <div className="dashboards-page">
       <div className="dashboards-header">
         <h1 className="page-title">Dashboards</h1>
+        {activeProject && (
+          <Badge variant="info">Project: {activeProject.name}</Badge>
+        )}
         <div className="dashboards-tabs">
           <Tabs tabs={tabItems} activeTab={activeTab} onChange={setActiveTab} />
         </div>

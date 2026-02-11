@@ -4,7 +4,7 @@ import { daysAgo } from '../helpers'
 export const mockCharts: Chart[] = [
   {
     id: 'chart_social_usage', name: 'Social Media Platform Usage', description: 'Platform penetration across all markets',
-    chart_type: 'bar', created_at: daysAgo(20), updated_at: daysAgo(3), user_id: 'user_sarah', is_shared: true,
+    chart_type: 'bar', created_at: daysAgo(20), updated_at: daysAgo(3), user_id: 'user_sarah', project_id: 'proj_brand_q1', team_id: 'team_brand', is_shared: true,
     tags: ['social_media', 'quarterly'],
     folder_id: 'folder_social',
     sharing: { visibility: 'team', shared_with_teams: [{ team_id: 'team_research', permission: 'view' }] },
@@ -19,7 +19,7 @@ export const mockCharts: Chart[] = [
   },
   {
     id: 'chart_social_time_trend', name: 'Social Media Time - Quarterly Trend', description: 'Time spent on social media over quarters',
-    chart_type: 'line', created_at: daysAgo(18), updated_at: daysAgo(5), user_id: 'user_sarah', is_shared: true,
+    chart_type: 'line', created_at: daysAgo(18), updated_at: daysAgo(5), user_id: 'user_sarah', project_id: 'proj_brand_q1', team_id: 'team_brand', is_shared: true,
     tags: ['social_media', 'trend'],
     config: {
       rows: [{ type: 'question', question_id: 'q_social_time', datapoint_ids: ['dp_time_2h', 'dp_time_3h', 'dp_time_3plus'] }],
@@ -34,7 +34,7 @@ export const mockCharts: Chart[] = [
   },
   {
     id: 'chart_device_pie', name: 'Device Ownership Distribution', description: 'Share of device types owned',
-    chart_type: 'pie', created_at: daysAgo(15), updated_at: daysAgo(7), user_id: 'user_maria', is_shared: true,
+    chart_type: 'pie', created_at: daysAgo(15), updated_at: daysAgo(7), user_id: 'user_maria', project_id: 'proj_product_launch', team_id: 'team_product', is_shared: true,
     folder_id: 'folder_tech',
     config: {
       rows: [{ type: 'question', question_id: 'q_device_ownership', datapoint_ids: ['dp_smartphone', 'dp_laptop', 'dp_tablet', 'dp_smartwatch', 'dp_desktop', 'dp_smart_speaker'] }],

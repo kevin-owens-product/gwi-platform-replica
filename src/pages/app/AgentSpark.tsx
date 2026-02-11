@@ -81,6 +81,10 @@ export default function AgentSpark(): React.JSX.Element {
     if (waveIds) ctx.wave_ids = waveIds.split(',');
     const locationIds = searchParams.get('location_ids');
     if (locationIds) ctx.location_ids = locationIds.split(',');
+    const projectId = searchParams.get('project_id');
+    if (projectId) ctx.project_id = projectId;
+    const teamId = searchParams.get('team_id');
+    if (teamId) ctx.team_id = teamId;
     return ctx;
   });
 
@@ -121,6 +125,17 @@ export default function AgentSpark(): React.JSX.Element {
       setSelectedFlowId(agenticFlows[0].id);
     }
   }, [agenticFlows, selectedFlowId]);
+
+  useEffect(() => {
+    if (!agentParam || !agenticFlows?.length) return;
+    const byCategory = activeAgent?.category;
+    const flowId = byCategory === 'Orchestration'
+      ? 'brief-interpretation'
+      : byCategory === 'Proactivity & ROI'
+        ? 'campaign-lifecycle'
+        : 'brief-interpretation';
+    setSelectedFlowId(flowId);
+  }, [agentParam, activeAgent, agenticFlows]);
 
   // Sync activeConversationId when route param changes
   useEffect(() => {
@@ -561,9 +576,21 @@ export default function AgentSpark(): React.JSX.Element {
               initialMessages={activeConversation?.messages ?? []}
               initialInput={promptParam}
               autoSend={!!promptParam}
-              context={sparkContext ?? (activeContext?.type && activeContext?.id ? {
-                [`${activeContext.type}_id`]: activeContext.id,
-              } : undefined)}
+              context={(() => {
+                const baseContext = sparkContext ?? (activeContext?.type && activeContext?.id
+                  ? { [`${activeContext.type}_id`]: activeContext.id }
+                  : undefined)
+                return {
+                  ...baseContext,
+                  ...(activeAgent
+                    ? {
+                        agent_id: activeAgent.id,
+                        agent_name: activeAgent.name,
+                        agent_category: activeAgent.category,
+                      }
+                    : {}),
+                }
+              })()}
               onConversationCreated={handleConversationCreated}
               onAction={handleSparkAction}
               agentName={activeAgent?.name}

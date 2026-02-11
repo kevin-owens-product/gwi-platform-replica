@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Sparkles, ChevronDown, Maximize2 } from 'lucide-react'
 import SparkChat from './SparkChat'
 import type { SparkAction, SparkContext } from '@/api/types'
+import { useWorkspaceStore } from '@/stores/workspace'
 import './SparkPanel.css'
 
 interface SuggestedPrompt {
@@ -26,6 +27,14 @@ export default function SparkPanel({
   const [isOpen, setIsOpen] = useState(defaultOpen)
   const [selectedPrompt, setSelectedPrompt] = useState<string | undefined>(undefined)
   const [lastUserMessage, setLastUserMessage] = useState<string | undefined>(undefined)
+  const activeProjectId = useWorkspaceStore((s) => s.activeProjectId)
+  const activeTeamId = useWorkspaceStore((s) => s.activeTeamId)
+
+  const mergedContext: SparkContext = {
+    ...context,
+    project_id: activeProjectId ?? context.project_id,
+    team_id: activeTeamId ?? context.team_id,
+  }
 
   const handleExpandToSpark = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -33,23 +42,25 @@ export default function SparkPanel({
     if (lastUserMessage) params.set('prompt', lastUserMessage)
 
     // Serialize context into query params
-    const contextType = context.chart_id
+    const contextType = mergedContext.chart_id
       ? 'chart'
-      : context.crosstab_id
+      : mergedContext.crosstab_id
         ? 'crosstab'
-        : context.dashboard_id
+        : mergedContext.dashboard_id
           ? 'dashboard'
-          : context.audience_id
+          : mergedContext.audience_id
             ? 'audience'
             : undefined
-    const contextId = context.chart_id ?? context.crosstab_id ?? context.dashboard_id ?? context.audience_id
+    const contextId = mergedContext.chart_id ?? mergedContext.crosstab_id ?? mergedContext.dashboard_id ?? mergedContext.audience_id
 
     if (contextType && contextId) {
       params.set('context_type', contextType)
       params.set('context_id', contextId)
     }
-    if (context.wave_ids?.length) params.set('wave_ids', context.wave_ids.join(','))
-    if (context.location_ids?.length) params.set('location_ids', context.location_ids.join(','))
+    if (mergedContext.wave_ids?.length) params.set('wave_ids', mergedContext.wave_ids.join(','))
+    if (mergedContext.location_ids?.length) params.set('location_ids', mergedContext.location_ids.join(','))
+    if (mergedContext.project_id) params.set('project_id', mergedContext.project_id)
+    if (mergedContext.team_id) params.set('team_id', mergedContext.team_id)
 
     const qs = params.toString()
     navigate(qs ? `/app/agent-spark?${qs}` : '/app/agent-spark')
@@ -104,7 +115,7 @@ export default function SparkPanel({
           <div className="spark-panel__chat">
             <SparkChat
               compact
-              context={context}
+              context={mergedContext}
               initialInput={selectedPrompt}
               onAction={onAction}
               onMessageSent={setLastUserMessage}

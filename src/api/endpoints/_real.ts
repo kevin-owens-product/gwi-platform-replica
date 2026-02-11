@@ -15,4 +15,6 @@ export { mediaApi } from '../mock/endpoints/media'
 
 // Teams API (mock-only for now; no real endpoints yet)
 export { teamsApi } from '../mock/endpoints/teams'
+export { projectsApi } from '../mock/endpoints/projects'
+export { orgApi } from '../mock/endpoints/org'
 export { agenticApi } from '../mock/endpoints/agentic'

@@ -36,6 +36,7 @@ export interface Chart {
   updated_at: string
   user_id: string
   project_id?: string
+  team_id?: string
   is_shared: boolean
   thumbnail_url?: string
   // New fields

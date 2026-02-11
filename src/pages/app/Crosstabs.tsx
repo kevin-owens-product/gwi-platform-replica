@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Globe, Grid3X3, FlaskConical, LayoutGrid, List } from 'lucide-react';
 import { useCrosstabs } from '@/hooks/useCrosstabs';
+import { useWorkspaceStore } from '@/stores/workspace';
 import { SearchInput, Tabs, Pagination, EmptyState, Badge } from '@/components/shared';
 import { formatRelativeDate } from '@/utils/format';
 import type { Crosstab } from '@/api/types';
@@ -22,10 +23,14 @@ export default function Crosstabs(): React.JSX.Element {
   const [viewMode, setViewMode] = useState<'list' | 'card'>('list');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  const activeProject = useWorkspaceStore((s) => s.activeProject);
+  const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
+
   const { data: crosstabsResponse, isLoading, isError } = useCrosstabs({
     page,
     per_page: 20,
     search: searchQuery || undefined,
+    project_id: activeProjectId || undefined,
   });
 
   const crosstabs = crosstabsResponse?.data ?? [];
@@ -73,6 +78,9 @@ export default function Crosstabs(): React.JSX.Element {
     <div className="crosstabs-page">
       <div className="crosstabs-header">
         <h1 className="page-title">Crosstabs</h1>
+        {activeProject && (
+          <Badge variant="info">Project: {activeProject.name}</Badge>
+        )}
         <div className="crosstabs-tabs">
           <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
         </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Folder, Globe, Check, ChevronDown, Loader2, Users, Zap } from 'lucide-react';
 import { useAudiences } from '@/hooks/useAudiences';
 import { useAuthStore } from '@/stores/auth';
+import { useWorkspaceStore } from '@/stores/workspace';
 import { SearchInput, Tabs, Pagination, Badge, EmptyState } from '@/components/shared';
 import { formatDate } from '@/utils/format';
 import type { AudienceListParams, Audience } from '@/api/types';
@@ -66,6 +67,8 @@ export default function Audiences(): React.JSX.Element {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const currentUser = useAuthStore((s) => s.user);
+  const activeProject = useWorkspaceStore((s) => s.activeProject);
+  const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
   const datasetDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -89,6 +92,7 @@ export default function Audiences(): React.JSX.Element {
     page,
     per_page: 20,
     search: searchQuery || undefined,
+    project_id: activeProjectId || undefined,
     sort_by: sortBy,
     sort_order: 'desc',
   });
@@ -127,6 +131,9 @@ export default function Audiences(): React.JSX.Element {
     <div className="audiences-page">
       <div className="audiences-header">
         <h1 className="page-title">Audiences</h1>
+        {activeProject && (
+          <Badge variant="info">Project: {activeProject.name}</Badge>
+        )}
         <div className="audiences-tabs">
           <Tabs tabs={tabItems} activeTab={activeTab} onChange={setActiveTab} />
         </div>

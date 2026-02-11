@@ -4,7 +4,7 @@ import { daysAgo } from '../helpers'
 export const mockCrosstabs: Crosstab[] = [
   {
     id: 'xt_social_by_age', name: 'Social Media Usage by Age Group', description: 'Platform usage cross-tabulated with age demographics',
-    created_at: daysAgo(20), updated_at: daysAgo(3), user_id: 'user_sarah', is_shared: true,
+    created_at: daysAgo(20), updated_at: daysAgo(3), user_id: 'user_sarah', project_id: 'proj_brand_q1', team_id: 'team_brand', is_shared: true,
     tags: ['social_media', 'demographics'],
     folder_id: 'folder-1',
     config: {
@@ -22,7 +22,7 @@ export const mockCrosstabs: Crosstab[] = [
   },
   {
     id: 'xt_streaming_income', name: 'Streaming Services by Income', description: 'Streaming platform preference by household income',
-    created_at: daysAgo(15), updated_at: daysAgo(5), user_id: 'user_maria', is_shared: true,
+    created_at: daysAgo(15), updated_at: daysAgo(5), user_id: 'user_maria', project_id: 'proj_product_launch', team_id: 'team_product', is_shared: true,
     tags: ['streaming', 'income'],
     config: {
       rows: [{ type: 'question', question_id: 'q_tv_platforms', datapoint_ids: ['dp_netflix', 'dp_disney', 'dp_prime', 'dp_hbo', 'dp_hulu', 'dp_apple_tv'] }],

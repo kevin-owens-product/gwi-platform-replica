@@ -5,7 +5,7 @@ export const mockAudiences: Audience[] = [
   {
     id: 'aud_gen_z_social', name: 'Gen Z Social Media Enthusiasts', description: 'Ages 16-24 who spend 3+ hours on social media daily',
     expression: { and: [{ question: { question_id: 'q_age_group', datapoint_ids: ['dp_age_16_24'] } }, { question: { question_id: 'q_social_time', datapoint_ids: ['dp_time_3plus'] } }] },
-    created_at: daysAgo(30), updated_at: daysAgo(5), user_id: 'user_sarah', is_shared: true, sample_size: 3450, population_size: 18200000,
+    created_at: daysAgo(30), updated_at: daysAgo(5), user_id: 'user_sarah', project_id: 'proj_brand_q1', team_id: 'team_brand', is_shared: true, sample_size: 3450, population_size: 18200000,
     tags: ['brand_health', 'quarterly', 'social_media'],
     folder_id: 'folder-1',
     audience_type: 'dynamic',
@@ -34,7 +34,7 @@ export const mockAudiences: Audience[] = [
   {
     id: 'aud_tech_savvy', name: 'Tech-Savvy Millennials', description: 'Ages 25-34 who own 3+ devices and use AI tools',
     expression: { and: [{ question: { question_id: 'q_age_group', datapoint_ids: ['dp_age_25_34'] } }, { question: { question_id: 'q_device_ownership', datapoint_ids: ['dp_smartphone', 'dp_laptop', 'dp_smartwatch'] } }] },
-    created_at: daysAgo(25), updated_at: daysAgo(10), user_id: 'user_sarah', is_shared: true, sample_size: 2890, population_size: 15400000,
+    created_at: daysAgo(25), updated_at: daysAgo(10), user_id: 'user_sarah', project_id: 'proj_brand_q1', team_id: 'team_brand', is_shared: true, sample_size: 2890, population_size: 15400000,
     tags: ['quarterly', 'technology'],
     folder_id: 'folder-1',
     audience_type: 'dynamic',
@@ -56,7 +56,7 @@ export const mockAudiences: Audience[] = [
   {
     id: 'aud_eco_shoppers', name: 'Eco-Conscious Online Shoppers', description: 'Environmentally concerned consumers who shop online frequently',
     expression: { and: [{ question: { question_id: 'q_env_concern', datapoint_ids: ['dp_env_4', 'dp_env_5'] } }, { question: { question_id: 'q_purchase_online', datapoint_ids: ['dp_clothing', 'dp_beauty'] } }] },
-    created_at: daysAgo(20), updated_at: daysAgo(8), user_id: 'user_maria', is_shared: true, sample_size: 4120, population_size: 22800000,
+    created_at: daysAgo(20), updated_at: daysAgo(8), user_id: 'user_maria', project_id: 'proj_product_launch', team_id: 'team_product', is_shared: true, sample_size: 4120, population_size: 22800000,
     tags: ['sustainability', 'ecommerce'],
     audience_type: 'dynamic',
     market_ids: ['loc_us', 'loc_uk', 'loc_de'],

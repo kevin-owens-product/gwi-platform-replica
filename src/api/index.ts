@@ -22,5 +22,7 @@ export const {
   canvasApi,
   mediaApi,
   teamsApi,
+  projectsApi,
+  orgApi,
   agenticApi,
 } = source

@@ -17,6 +17,7 @@ interface ShareDialogProps {
 const visibilityOptions: Array<{ value: SharingVisibility; label: string; desc: string; icon: React.ReactNode }> = [
   { value: 'private', label: 'Private', desc: 'Only you can access', icon: <Lock size={16} /> },
   { value: 'team', label: 'Team', desc: 'Shared with your team', icon: <Users size={16} /> },
+  { value: 'project', label: 'Project', desc: 'Shared with your project', icon: <Shield size={16} /> },
   { value: 'organization', label: 'Organization', desc: 'Everyone in your org', icon: <Globe size={16} /> },
 ]
 

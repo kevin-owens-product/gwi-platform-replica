@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Globe, BarChart3, LayoutGrid, List, ChevronDown, FolderOpen, Tag } from 'lucide-react';
 import { useCharts } from '@/hooks/useCharts';
+import { useWorkspaceStore } from '@/stores/workspace';
 import { SearchInput, Tabs, Pagination, EmptyState, Badge } from '@/components/shared';
 import ChartRenderer from '@/components/chart/ChartRenderer';
 import { DATAPOINT_LABELS } from '@/api/mock/data/queries';
@@ -367,10 +368,14 @@ export default function Charts(): React.JSX.Element {
   const [chartTypeFilter, setChartTypeFilter] = useState<string>('all');
   const [showTypeDropdown, setShowTypeDropdown] = useState<boolean>(false);
 
+  const activeProject = useWorkspaceStore((s) => s.activeProject);
+  const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
+
   const { data: chartsResponse, isLoading, isError } = useCharts({
     page,
     per_page: 20,
     search: searchQuery || undefined,
+    project_id: activeProjectId || undefined,
     sort_by: 'updated_at',
     sort_order: 'desc',
   });
@@ -412,6 +417,9 @@ export default function Charts(): React.JSX.Element {
     <div className="charts-page">
       <div className="charts-header">
         <h1 className="page-title">Charts</h1>
+        {activeProject && (
+          <Badge variant="info">Project: {activeProject.name}</Badge>
+        )}
         <div className="charts-tabs">
           <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
         </div>

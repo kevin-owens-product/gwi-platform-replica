@@ -4,10 +4,11 @@ import type {
   CreateDashboardRequest,
   UpdateDashboardRequest,
   PaginatedResponse,
+  DashboardListParams,
 } from '../types'
 
 export const dashboardsApi = {
-  list: (params?: { page?: number; per_page?: number; search?: string }) =>
+  list: (params?: DashboardListParams) =>
     apiClient.get('v3/dashboards', { searchParams: params as Record<string, string> })
       .json<PaginatedResponse<Dashboard>>(),
 

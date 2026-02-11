@@ -21,13 +21,13 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { path: '/app', icon: Home, label: 'Home', exact: true },
   { path: '/app/agent-catalog', icon: Sparkles, label: 'Agents' },
   { path: '/app/audiences', icon: Users, label: 'Audiences' },
   { path: '/app/canvas', icon: Square, label: 'Canvas' },
   { path: '/app/chart-builder', icon: BarChart2, label: 'Charts' },
   { path: '/app/crosstabs', icon: Grid3X3, label: 'Crosstabs' },
   { path: '/app/dashboards', icon: LayoutDashboard, label: 'Dashboards' },
-  { path: '/app', icon: Home, label: 'Home', exact: true },
   { path: '/app/account-settings/developer?dev_sub_tab=integrations', icon: Plug, label: 'Integrations' },
   { path: '/app/printrf', icon: Newspaper, label: 'Print R&F' },
   { path: '/app/projects', icon: FolderKanban, label: 'Projects' },

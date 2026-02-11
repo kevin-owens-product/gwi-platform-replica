@@ -33,9 +33,12 @@ export interface SparkCitation {
 }
 
 export interface SparkAction {
-  type: 'create_chart' | 'create_audience' | 'show_data' | 'navigate' | 'create_crosstab' | 'create_dashboard' | 'export_report' | 'compare_audiences' | 'analyze_overlap'
+  type: 'create_chart' | 'create_audience' | 'show_data' | 'navigate' | 'create_crosstab' | 'create_dashboard' | 'export_report' | 'compare_audiences' | 'analyze_overlap' | 'deliver_output'
   label: string
-  payload: Record<string, unknown>
+  payload: Record<string, unknown> & {
+    destination_ids?: string[]
+    connection_ids?: string[]
+  }
 }
 
 // Inline visualization in chat

@@ -3,14 +3,16 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Sparkles, Plus, Trash2, MessageSquare, Loader2,
   Search, Pin, PinOff, Download, Tag, X,
-  BarChart3, Table2, Users, Globe, Grid3X3, Lightbulb,
+  BarChart3, Table2, Users, Globe, Grid3X3, Lightbulb, Send,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SparkChat from '@/components/spark/SparkChat';
 import Modal from '@/components/shared/Modal';
 import Button from '@/components/shared/Button';
+import IntegrationDestinationPicker from '@/components/integrations/IntegrationDestinationPicker';
 import { useSparkConversations, useSparkConversation, useDeleteSparkConversation } from '@/hooks/useSpark';
 import { useAgenticFlows, useAgenticRuns, useRunAgenticFlow } from '@/hooks/useAgentic';
+import { useDeliverIntegration } from '@/hooks/useIntegrations';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { formatRelativeDate } from '@/utils/format';
 import type { SparkConversation, SparkAction, SparkContext } from '@/api/types';
@@ -94,6 +96,8 @@ export default function AgentSpark(): React.JSX.Element {
   const justCreatedRef = useRef(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const [selectedDeliveryConnectionIds, setSelectedDeliveryConnectionIds] = useState<string[]>([]);
 
   const { data: conversations, isLoading: conversationsLoading } = useSparkConversations();
   const { data: activeConversation, isLoading: conversationLoading } = useSparkConversation(activeConversationId ?? '');
@@ -101,6 +105,7 @@ export default function AgentSpark(): React.JSX.Element {
   const { data: agenticFlows } = useAgenticFlows();
   const { data: agenticRuns, refetch: refetchAgenticRuns } = useAgenticRuns();
   const runAgenticFlow = useRunAgenticFlow();
+  const deliverIntegration = useDeliverIntegration();
 
   const activeContext = useWorkspaceStore((s) => s.activeContext);
 
@@ -219,6 +224,54 @@ export default function AgentSpark(): React.JSX.Element {
     toast.success('Conversation exported');
   };
 
+  const latestAssistantMessage = useMemo(
+    () =>
+      [...(activeConversation?.messages ?? [])]
+        .reverse()
+        .find((msg) => msg.role === 'assistant'),
+    [activeConversation]
+  );
+
+  const handleDeliverConversation = () => {
+    if (selectedDeliveryConnectionIds.length === 0) {
+      toast.error('Select at least one destination');
+      return;
+    }
+    const summary =
+      latestAssistantMessage?.narrative_summary ||
+      latestAssistantMessage?.content?.slice(0, 280) ||
+      activeConversation?.title ||
+      'Spark output';
+
+    deliverIntegration.mutate(
+      {
+        connection_ids: selectedDeliveryConnectionIds,
+        source_type: 'spark',
+        source_id: activeConversation?.id,
+        summary,
+        artifacts: activeConversation?.id
+          ? [{ label: 'Conversation Link', type: 'link', url: `/app/agent-spark/${activeConversation.id}` }]
+          : undefined,
+        source_context: {
+          agent_id: activeAgent?.id,
+          conversation_id: activeConversation?.id,
+          context_type: activeContext?.type,
+          context_id: activeContext?.id,
+        },
+        run_metadata: {
+          mode: 'smart_summary_with_attachments',
+          delivered_at: new Date().toISOString(),
+        },
+      },
+      {
+        onSuccess: () => {
+          setShowDeliveryModal(false);
+          setSelectedDeliveryConnectionIds([]);
+        },
+      }
+    );
+  };
+
   // Filter and sort conversations
   const filteredConversations = useMemo(() => {
     let list = [...(conversations ?? [])];
@@ -268,6 +321,12 @@ export default function AgentSpark(): React.JSX.Element {
         break;
       case 'navigate':
         navigate(p.path as string);
+        break;
+      case 'deliver_output':
+        setSelectedDeliveryConnectionIds(
+          ((p.connection_ids ?? p.destination_ids) as string[] | undefined) ?? []
+        );
+        setShowDeliveryModal(true);
         break;
     }
     toast.success(action.label);
@@ -338,6 +397,16 @@ export default function AgentSpark(): React.JSX.Element {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
           {/* Export button */}
+          {activeConversationId && activeConversation && (
+            <button
+              className="spark-new-chat-btn"
+              onClick={() => setShowDeliveryModal(true)}
+              title="Deliver output"
+            >
+              <Send size={14} />
+              <span>Deliver</span>
+            </button>
+          )}
           {activeConversationId && activeConversation && (
             <button
               className="spark-new-chat-btn"
@@ -689,6 +758,40 @@ export default function AgentSpark(): React.JSX.Element {
           </div>
         </div>
       </div>
+
+      <Modal
+        open={showDeliveryModal}
+        onClose={() => setShowDeliveryModal(false)}
+        title="Deliver Output"
+        size="md"
+        footer={
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <Button variant="secondary" onClick={() => setShowDeliveryModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleDeliverConversation}
+              loading={deliverIntegration.isPending}
+              disabled={selectedDeliveryConnectionIds.length === 0}
+            >
+              Deliver
+            </Button>
+          </div>
+        }
+      >
+        <p style={{ marginBottom: 'var(--spacing-md)' }}>
+          Send a smart summary and attachments to connected destinations.
+        </p>
+        <IntegrationDestinationPicker
+          capability="message_delivery"
+          multiSelect
+          value={selectedDeliveryConnectionIds}
+          onChange={setSelectedDeliveryConnectionIds}
+          title="Message delivery destinations"
+          emptyMessage="Connect Slack, Teams, or Zapier in Developer Integrations first."
+        />
+      </Modal>
 
       <Modal
         open={showDeleteModal}

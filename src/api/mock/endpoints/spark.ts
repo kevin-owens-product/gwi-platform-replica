@@ -179,6 +179,18 @@ function buildSuggestedActions(context?: SparkChatRequest['context']) {
       { type: 'show_data' as const, label: 'Review Insights', payload: { crosstab_id: '' } },
     ]
   }
+  if (context?.agent_id === 'connector-agent') {
+    return [
+      {
+        type: 'deliver_output' as const,
+        label: 'Deliver Output',
+        payload: {
+          destination_ids: ['conn_slack_1', 'conn_zapier_1'],
+        },
+      },
+      { type: 'export_report' as const, label: 'Export Bundle', payload: {} },
+    ]
+  }
   if (context?.chart_id) {
     return [
       { type: 'create_chart' as const, label: 'Open This Chart', payload: { chart_id: context.chart_id } },

@@ -25,4 +25,5 @@ export const {
   projectsApi,
   orgApi,
   agenticApi,
+  integrationsApi,
 } = source

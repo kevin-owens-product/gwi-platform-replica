@@ -7,7 +7,15 @@ const charts = [...mockCharts]
 export const chartsApi = {
   async list(params?: ChartListParams): Promise<PaginatedResponse<Chart>> {
     await delay()
-    return paginate(charts, params)
+    let items = [...charts]
+    if (params?.search) {
+      const q = params.search.toLowerCase()
+      items = items.filter((c) => c.name.toLowerCase().includes(q))
+    }
+    if (params?.project_id) {
+      items = items.filter((c) => c.project_id === params.project_id)
+    }
+    return paginate(items, params)
   },
 
   async get(id: string): Promise<Chart> {

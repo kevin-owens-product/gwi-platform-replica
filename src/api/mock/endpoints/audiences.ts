@@ -7,7 +7,15 @@ const audiences = [...mockAudiences]
 export const audiencesApi = {
   async list(params?: AudienceListParams): Promise<PaginatedResponse<Audience>> {
     await delay()
-    return paginate(audiences, params)
+    let items = [...audiences]
+    if (params?.search) {
+      const q = params.search.toLowerCase()
+      items = items.filter((a) => a.name.toLowerCase().includes(q))
+    }
+    if (params?.project_id) {
+      items = items.filter((a) => a.project_id === params.project_id)
+    }
+    return paginate(items, params)
   },
 
   async get(id: string): Promise<Audience> {

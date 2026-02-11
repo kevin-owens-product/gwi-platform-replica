@@ -1,13 +1,15 @@
 import { NavLink } from 'react-router-dom'
 import {
   Search, Home, Sparkles, Users, UsersRound, BarChart2, Grid3X3,
-  LayoutDashboard, Square, FileText, HelpCircle,
+  LayoutDashboard, Square, FileText, HelpCircle, FolderKanban,
   Settings, LogOut, ChevronDown, ChevronUp, MessageCircle,
   Tv, Newspaper, type LucideIcon,
 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
+import { useProjects } from '@/hooks/useProjects'
+import { useWorkspaceStore } from '@/stores/workspace'
 import GlobalSearch from '../search/GlobalSearch'
 import './Sidebar.css'
 
@@ -20,6 +22,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { path: '/app', icon: Home, label: 'Home', exact: true },
+  { path: '/app/projects', icon: FolderKanban, label: 'Projects' },
   { path: '/app/teams', icon: UsersRound, label: 'Teams' },
   { path: '/app/agent-catalog', icon: Sparkles, label: 'Agents' },
   { path: '/app/audiences', icon: Users, label: 'Audiences' },
@@ -38,6 +41,9 @@ export default function Sidebar() {
   const [helpOpen, setHelpOpen] = useState(false)
   const [userOpen, setUserOpen] = useState(false)
   const { searchOpen, setSearchOpen } = useUIStore()
+  const { data: projectsData } = useProjects({ status: 'active' })
+  const activeProject = useWorkspaceStore((s) => s.activeProject)
+  const setActiveProject = useWorkspaceStore((s) => s.setActiveProject)
 
   const helpRef = useRef<HTMLDivElement>(null)
   const userRef = useRef<HTMLDivElement>(null)
@@ -57,6 +63,7 @@ export default function Sidebar() {
 
   const userName = user?.name || 'User'
   const userOrg = user?.organization_name || 'Organization'
+  const projects = projectsData?.data ?? []
 
   return (
     <aside className="sidebar">
@@ -68,6 +75,29 @@ export default function Sidebar() {
         <button className="sidebar-search-btn" onClick={() => setSearchOpen(true)}>
           <Search size={18} />
         </button>
+      </div>
+
+      <div className="sidebar-project-switcher">
+        <label>Project</label>
+        <select
+          value={activeProject?.id ?? ''}
+          onChange={(e) => {
+            const nextId = e.target.value
+            if (!nextId) {
+              setActiveProject(null)
+              return
+            }
+            const proj = projects.find((p) => p.id === nextId)
+            if (proj) {
+              setActiveProject({ id: proj.id, name: proj.name, scope: proj.scope, team_id: proj.team_id })
+            }
+          }}
+        >
+          <option value="">All projects</option>
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>{project.name}</option>
+          ))}
+        </select>
       </div>
 
       <nav className="sidebar-nav">

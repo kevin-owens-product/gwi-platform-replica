@@ -11,6 +11,7 @@ export interface Audience {
   updated_at: string
   user_id: string
   project_id?: string
+  team_id?: string
   is_shared: boolean
   sample_size?: number
   population_size?: number

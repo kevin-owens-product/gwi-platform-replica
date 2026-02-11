@@ -22,6 +22,7 @@ import AudienceBuilder from '@/components/audience/AudienceBuilder';
 import SparkPanel from '@/components/spark/SparkPanel';
 import { Button, Modal, SearchInput } from '@/components/shared';
 import { formatCompactNumber } from '@/utils/format';
+import { useWorkspaceStore } from '@/stores/workspace';
 import type { AudienceExpression, Audience, ActivationDestinationType, SharingVisibility } from '@/api/types';
 import './AudienceDetail.css';
 
@@ -95,6 +96,7 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
   // Activation modal
   const [activationModalOpen, setActivationModalOpen] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState<ActivationDestinationType | null>(null);
+  const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
 
   // Populate form when existing audience data loads
   useEffect(() => {
@@ -129,6 +131,7 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
           expression: expression ?? { and: [] },
           tags,
           audience_type: (audienceType as 'dynamic' | 'static'),
+          project_id: activeProjectId || undefined,
         },
         {
           onSuccess: () => {
@@ -461,7 +464,7 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
             </h3>
             <div style={{ display: 'flex', gap: 'var(--spacing-sm)', alignItems: 'center', marginTop: 'var(--spacing-sm)' }}>
               <span style={{ fontSize: 'var(--font-size-body-sm)', color: 'var(--color-text-secondary)' }}>Visibility:</span>
-              {(['private', 'team', 'organization'] as SharingVisibility[]).map((v) => (
+              {(['private', 'team', 'project', 'organization'] as SharingVisibility[]).map((v) => (
                 <button
                   key={v}
                   onClick={() => setVisibility(v)}

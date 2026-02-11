@@ -97,6 +97,176 @@
 }
 
 /* ============================================
+   Agentic Panel (Right Rail)
+   ============================================ */
+.agentic-panel {
+  width: 320px;
+  min-width: 320px;
+  border-left: 1px solid var(--color-border-light);
+  background: var(--color-surface-secondary);
+  padding: var(--spacing-md);
+  overflow-y: auto;
+}
+
+.agentic-section {
+  background: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.agentic-section-title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.agentic-section-subtitle {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+}
+
+.agentic-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.agentic-select,
+.agentic-textarea {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text);
+  background: var(--color-white);
+}
+
+.agentic-textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.agentic-primary {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-white);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-body-sm);
+  cursor: pointer;
+}
+
+.agentic-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.agentic-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.agentic-card {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-sm);
+  background: var(--color-surface-secondary);
+}
+
+.agentic-card-title {
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.agentic-card-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-xs);
+}
+
+.agentic-output-list {
+  display: grid;
+  gap: 6px;
+}
+
+.agentic-output {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.agentic-output-type {
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-primary);
+}
+
+.agentic-empty {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.agentic-linkages {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.agentic-linkage {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-sm);
+  background: var(--color-surface-secondary);
+}
+
+.agentic-linkage-title {
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.agentic-linkage-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.agentic-linkage-endpoints {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.agentic-validation {
+  display: grid;
+  gap: 6px;
+}
+
+.agentic-validation-item {
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* ============================================
    Conversation Sidebar (280px)
    ============================================ */
 .chat-sidebar {
@@ -709,4 +879,3 @@
   background-color: var(--color-border);
   cursor: not-allowed;
 }
-

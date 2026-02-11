@@ -5,9 +5,17 @@ import { delay, paginate, findById, newId, now } from '../helpers'
 const dashboards = [...mockDashboards]
 
 export const dashboardsApi = {
-  async list(params?: { page?: number; per_page?: number; search?: string }): Promise<PaginatedResponse<Dashboard>> {
+  async list(params?: { page?: number; per_page?: number; search?: string; project_id?: string }): Promise<PaginatedResponse<Dashboard>> {
     await delay()
-    return paginate(dashboards, params)
+    let items = [...dashboards]
+    if (params?.search) {
+      const q = params.search.toLowerCase()
+      items = items.filter((d) => d.name.toLowerCase().includes(q))
+    }
+    if (params?.project_id) {
+      items = items.filter((d) => d.project_id === params.project_id)
+    }
+    return paginate(items, params)
   },
 
   async get(id: string): Promise<Dashboard> {

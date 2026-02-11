@@ -92,6 +92,9 @@ export interface SparkContext {
   chart_id?: string
   dashboard_id?: string
   crosstab_id?: string
+  agent_id?: string
+  agent_name?: string
+  agent_category?: string
   wave_ids?: string[]
   location_ids?: string[]
   question_ids?: string[]
@@ -99,6 +102,8 @@ export interface SparkContext {
   canvas_id?: string
   tv_study_id?: string
   print_rf_id?: string
+  project_id?: string
+  team_id?: string
   active_filters?: Record<string, unknown>
 }
 

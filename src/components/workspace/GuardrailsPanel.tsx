@@ -1,7 +1,7 @@
 import { Shield, AlertTriangle, Palette, FileText, Download } from 'lucide-react'
 import { useTeamWorkspace } from '@/hooks/useTeams'
+import { useProjectWorkspace, useOrgWorkspace } from '@/hooks/useProjects'
 import { useWorkspaceStore } from '@/stores/workspace'
-import { Badge } from '@/components/shared'
 import './GuardrailsPanel.css'
 
 interface GuardrailsPanelProps {
@@ -10,17 +10,25 @@ interface GuardrailsPanelProps {
 
 export default function GuardrailsPanel({ compact }: GuardrailsPanelProps) {
   const activeTeamId = useWorkspaceStore((s) => s.activeTeamId)
-  const { data: workspace } = useTeamWorkspace(activeTeamId || '')
+  const activeProject = useWorkspaceStore((s) => s.activeProject)
+  const { data: teamWorkspace } = useTeamWorkspace(activeProject?.team_id || activeTeamId || '')
+  const { data: projectWorkspace } = useProjectWorkspace(activeProject?.id || '')
+  const { data: orgWorkspace } = useOrgWorkspace()
 
-  if (!activeTeamId || !workspace) return null
+  const baseWorkspace = activeProject?.scope === 'org' ? orgWorkspace : teamWorkspace
+  const mergedGuardrails = baseWorkspace?.guardrails
+    ? { ...baseWorkspace.guardrails, ...(projectWorkspace?.guardrails ?? {}) }
+    : projectWorkspace?.guardrails
 
-  const g = workspace.guardrails
+  if ((!activeProject && !activeTeamId) || !mergedGuardrails) return null
+
+  const g = mergedGuardrails
 
   return (
     <div className={`guardrails-panel ${compact ? 'guardrails-panel--compact' : ''}`}>
       <div className="guardrails-panel__header">
         <Shield size={14} />
-        <span>Team Guardrails</span>
+        <span>{activeProject ? 'Project Guardrails' : 'Team Guardrails'}</span>
       </div>
 
       {g.required_tags.length > 0 && (

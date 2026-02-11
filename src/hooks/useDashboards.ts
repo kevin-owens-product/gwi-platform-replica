@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { dashboardsApi } from '@/api'
-import type { CreateDashboardRequest, UpdateDashboardRequest, ExportFormat } from '@/api/types'
+import type { CreateDashboardRequest, UpdateDashboardRequest, ExportFormat, DashboardListParams } from '@/api/types'
 
-export function useDashboards(params?: { page?: number; per_page?: number; search?: string }) {
+export function useDashboards(params?: DashboardListParams) {
   return useQuery({
     queryKey: ['dashboards', params],
     queryFn: () => dashboardsApi.list(params),

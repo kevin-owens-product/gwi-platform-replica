@@ -7,7 +7,7 @@ import type {
 } from '../types'
 
 export const crosstabsApi = {
-  list: (params?: { page?: number; per_page?: number; search?: string }) =>
+  list: (params?: { page?: number; per_page?: number; search?: string; project_id?: string }) =>
     apiClient.get('v3/crosstabs', { searchParams: params as Record<string, string> })
       .json<PaginatedResponse<Crosstab>>(),
 

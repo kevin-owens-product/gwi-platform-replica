@@ -21,7 +21,7 @@ export function useCreateReport() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: { name: string; description?: string; template_id?: string }) =>
+    mutationFn: (data: { name: string; description?: string; template_id?: string; project_id?: string }) =>
       reportsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reports'] })

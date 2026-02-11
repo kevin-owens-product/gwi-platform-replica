@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { SearchInput, Tabs, Pagination, EmptyState, Badge } from '@/components/shared';
 import { useReports } from '@/hooks/useReports';
+import { useWorkspaceStore } from '@/stores/workspace';
 import { formatDate, formatRelativeDate } from '@/utils/format';
 import type {
   Report, ReportBuilder, ReportSection, ReportSectionType, BrandConfig,
@@ -309,11 +310,15 @@ function generateId(prefix: string): string {
 
 export default function Reports(): React.JSX.Element {
   const [mainTab, setMainTab] = useState<string>('all-reports');
+  const activeProject = useWorkspaceStore((s) => s.activeProject);
 
   return (
     <div className="reports-page">
       <div className="reports-header">
         <h1 className="page-title">Reports</h1>
+        {activeProject && (
+          <Badge variant="info">Project: {activeProject.name}</Badge>
+        )}
         <div className="reports-main-tabs">
           <Tabs tabs={mainTabItems} activeTab={mainTab} onChange={setMainTab} />
         </div>
@@ -343,10 +348,13 @@ function AllReportsTab(): React.JSX.Element {
   const [sortBy, setSortBy] = useState<string>('created_at');
   const [showFilters, setShowFilters] = useState(false);
 
+  const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
+
   const { data: apiResponse, isLoading, isError } = useReports({
     page,
     per_page: REPORTS_PER_PAGE,
     search: searchQuery || undefined,
+    project_id: activeProjectId || undefined,
     category: categoryTab !== 'all' ? categoryTab : undefined,
   });
 

@@ -5,9 +5,17 @@ import { delay, paginate, findById, newId, now } from '../helpers'
 const crosstabs = [...mockCrosstabs]
 
 export const crosstabsApi = {
-  async list(params?: { page?: number; per_page?: number; search?: string }): Promise<PaginatedResponse<Crosstab>> {
+  async list(params?: { page?: number; per_page?: number; search?: string; project_id?: string }): Promise<PaginatedResponse<Crosstab>> {
     await delay()
-    return paginate(crosstabs, params)
+    let items = [...crosstabs]
+    if (params?.search) {
+      const q = params.search.toLowerCase()
+      items = items.filter((c) => c.name.toLowerCase().includes(q))
+    }
+    if (params?.project_id) {
+      items = items.filter((c) => c.project_id === params.project_id)
+    }
+    return paginate(items, params)
   },
 
   async get(id: string): Promise<Crosstab> {

@@ -1,6 +1,7 @@
 // Canvas (Guided Research) types for the GWI Platform API
 
 import type { WaveId, SharingConfig } from './common'
+import type { ProjectScope } from './project'
 import type { ChartType } from './chart'
 import type { AudienceExpression } from './audience'
 
@@ -37,6 +38,9 @@ export interface CanvasProject {
   created_at: string
   updated_at: string
   user_id: string
+  scope?: ProjectScope
+  team_id?: string
+  organization_id?: string
   sharing?: SharingConfig
   status: 'draft' | 'in_progress' | 'review' | 'completed'
   current_step: CanvasStepType

@@ -84,7 +84,7 @@ export interface Namespace {
 }
 
 // Sharing permissions model
-export type SharingVisibility = 'private' | 'team' | 'organization' | 'public'
+export type SharingVisibility = 'private' | 'team' | 'project' | 'organization' | 'public'
 export type SharingPermission = 'view' | 'edit' | 'admin'
 
 export interface SharingConfig {

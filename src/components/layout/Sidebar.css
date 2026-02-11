@@ -28,6 +28,30 @@
   flex-shrink: 0;
 }
 
+.sidebar-project-switcher {
+  padding: 0 var(--spacing-md) var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-project-switcher label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.sidebar-project-switcher select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-sidebar-bg);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
 .sidebar-logo {
   display: flex;
   align-items: baseline;

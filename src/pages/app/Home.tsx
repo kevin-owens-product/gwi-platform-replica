@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth';
 import { useSparkChat, useSparkConversations } from '@/hooks/useSpark';
+import { useAgenticRuns } from '@/hooks/useAgentic';
 import { formatRelativeDate } from '@/utils/format';
 import { Badge } from '@/components/shared';
 import { getFeaturedAgents } from '@/data/agents';
@@ -56,6 +57,7 @@ interface KpiWidget {
 // ---------------------------------------------------------------------------
 
 const featuredAgents = getFeaturedAgents(4);
+const MAX_AGENTIC_RUNS = 3;
 
 const suggestedPrompts = [
   'What are the top social media trends?',
@@ -205,6 +207,7 @@ export default function Home(): React.JSX.Element {
   const user = useAuthStore((state) => state.user);
   const sparkChat = useSparkChat();
   const { data: conversations, isLoading: conversationsLoading } = useSparkConversations();
+  const { data: agenticRuns } = useAgenticRuns();
 
   const firstName = user?.name?.split(' ')[0] ?? 'there';
 
@@ -213,6 +216,7 @@ export default function Home(): React.JSX.Element {
     ? visibleInsights
     : visibleInsights.slice(0, INITIAL_INSIGHTS_COUNT);
   const hiddenInsightsCount = visibleInsights.length - INITIAL_INSIGHTS_COUNT;
+  const recentAgenticRuns = (agenticRuns ?? []).slice(0, MAX_AGENTIC_RUNS);
 
   const handleDismissInsight = (id: string) => {
     setDismissedInsights((prev) => new Set(prev).add(id));
@@ -381,6 +385,40 @@ export default function Home(): React.JSX.Element {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* ---- AGENTIC WORKSPACE ---- */}
+        <section className="agentic-workspace">
+          <div className="home-section-header">
+            <div className="home-section-header-left">
+              <Sparkles size={16} />
+              <h2 className="home-section-title">Agentic Workspace</h2>
+            </div>
+            <Link to="/app/agent-catalog" className="home-section-link">
+              View flows
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="agentic-workspace-grid">
+            {recentAgenticRuns.map((run) => (
+              <div key={run.id} className="agentic-workspace-card">
+                <div className="agentic-workspace-card-title">{run.brief}</div>
+                <div className="agentic-workspace-card-meta">
+                  Flow: {run.flow_id} • Status: {run.status}
+                </div>
+                <div className="agentic-workspace-card-outputs">
+                  {run.outputs.map((output) => (
+                    <span key={output.id} className="agentic-workspace-pill">
+                      {output.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {recentAgenticRuns.length === 0 && (
+              <div className="agentic-workspace-empty">No agentic runs yet</div>
+            )}
           </div>
         </section>
 

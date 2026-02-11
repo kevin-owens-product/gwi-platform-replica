@@ -34,6 +34,8 @@ const PrintRF = lazy(() => import('./pages/app/PrintRF'))
 const Settings = lazy(() => import('./pages/app/Settings'))
 const Teams = lazy(() => import('./pages/app/Teams'))
 const TeamDetail = lazy(() => import('./pages/app/TeamDetail'))
+const Projects = lazy(() => import('./pages/app/Projects'))
+const ProjectDetail = lazy(() => import('./pages/app/ProjectDetail'))
 
 function PageLoader() {
   return (
@@ -78,6 +80,8 @@ function App() {
           <Route path="printrf" element={<Suspense fallback={<PageLoader />}><PrintRF /></Suspense>} />
           <Route path="teams" element={<Suspense fallback={<PageLoader />}><Teams /></Suspense>} />
           <Route path="teams/:id" element={<Suspense fallback={<PageLoader />}><TeamDetail /></Suspense>} />
+          <Route path="projects" element={<Suspense fallback={<PageLoader />}><Projects /></Suspense>} />
+          <Route path="projects/:id" element={<Suspense fallback={<PageLoader />}><ProjectDetail /></Suspense>} />
           <Route path="account-settings" element={<Suspense fallback={<PageLoader />}><Settings /></Suspense>} />
           <Route path="account-settings/:tab" element={<Suspense fallback={<PageLoader />}><Settings /></Suspense>} />
         </Route>

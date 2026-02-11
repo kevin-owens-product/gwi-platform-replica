@@ -53,6 +53,30 @@ export interface TeamWorkspace {
   updated_at: string
 }
 
+// Project-level workspace context and guardrails
+export interface ProjectWorkspace {
+  id: string
+  project_id: string
+  name: string
+  description?: string
+  context: WorkspaceContext
+  guardrails: WorkspaceGuardrails
+  created_at: string
+  updated_at: string
+}
+
+// Organization-level defaults for org-owned projects
+export interface OrganizationWorkspace {
+  id: string
+  organization_id: string
+  name: string
+  description?: string
+  context: WorkspaceContext
+  guardrails: WorkspaceGuardrails
+  created_at: string
+  updated_at: string
+}
+
 export interface GuardrailViolation {
   id: string
   rule: string

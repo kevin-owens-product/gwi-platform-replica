@@ -264,3 +264,92 @@
   cursor: not-allowed;
   opacity: 0.7;
 }
+
+/* ============================================
+   Agentic Sections (Flows + Linkages)
+   ============================================ */
+.catalog-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.catalog-section-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.catalog-section-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+.catalog-section-subtitle {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+  max-width: 720px;
+}
+
+.catalog-flow-grid,
+.catalog-linkage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.catalog-flow-card,
+.catalog-linkage-card {
+  border: 1px solid var(--color-border-light);
+  background: var(--color-white);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.catalog-flow-title,
+.catalog-linkage-title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.catalog-flow-description,
+.catalog-linkage-description {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.catalog-flow-steps {
+  margin-top: var(--spacing-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.catalog-flow-step {
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-secondary);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.catalog-linkage-meta {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-muted);
+}
+
+.catalog-linkage-endpoints {
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  display: grid;
+  gap: 6px;
+}

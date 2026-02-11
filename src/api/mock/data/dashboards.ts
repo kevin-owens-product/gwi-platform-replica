@@ -46,7 +46,7 @@ export const mockDashboardSchedules: DashboardSchedule[] = [
 export const mockDashboards: Dashboard[] = [
   {
     id: 'dash_social_overview', name: 'Social Media Overview', description: 'Key social media metrics and trends across platforms',
-    created_at: daysAgo(30), updated_at: daysAgo(2), user_id: 'user_sarah', is_shared: true,
+    created_at: daysAgo(30), updated_at: daysAgo(2), user_id: 'user_sarah', project_id: 'proj_brand_q1', team_id: 'team_brand', is_shared: true,
     tags: ['social_media', 'quarterly'],
     folder_id: 'folder-1',
     layout: { columns: 12, row_height: 80 },
@@ -64,7 +64,7 @@ export const mockDashboards: Dashboard[] = [
   },
   {
     id: 'dash_consumer_tech', name: 'Consumer Technology', description: 'Device ownership, tech adoption, and AI usage trends',
-    created_at: daysAgo(25), updated_at: daysAgo(5), user_id: 'user_sarah', is_shared: true,
+    created_at: daysAgo(25), updated_at: daysAgo(5), user_id: 'user_sarah', project_id: 'proj_brand_q1', team_id: 'team_brand', is_shared: true,
     tags: ['technology', 'devices'],
     layout: { columns: 12, row_height: 80 },
     widgets: [

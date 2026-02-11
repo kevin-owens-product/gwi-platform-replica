@@ -23,11 +23,19 @@ interface FavoriteItem {
   name: string
 }
 
+interface ActiveProject {
+  id: string
+  name: string
+  scope: 'team' | 'org'
+  team_id?: string
+}
+
 interface WorkspaceState {
   selectedWaveIds: WaveId[]
   selectedLocationIds: string[]
   selectedLocations: Location[]
-  projectId: string | null
+  activeProjectId: string | null
+  activeProject: ActiveProject | null
   canvasGoals: string[]
 
   // Active team context
@@ -64,7 +72,8 @@ interface WorkspaceState {
   setWaveIds: (waveIds: WaveId[]) => void
   setLocationIds: (locationIds: string[]) => void
   setSelectedLocations: (locations: Location[]) => void
-  setProjectId: (projectId: string | null) => void
+  setActiveProjectId: (projectId: string | null) => void
+  setActiveProject: (project: ActiveProject | null) => void
   setCanvasGoals: (goals: string[]) => void
   setCanvasStep: (step: number) => void
   completeCanvasStep: (step: number) => void
@@ -99,7 +108,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       selectedWaveIds: [],
       selectedLocationIds: [],
       selectedLocations: [],
-      projectId: null,
+      activeProjectId: null,
+      activeProject: null,
       canvasGoals: [],
       activeTeamId: null,
       canvasWorkflow: { ...defaultCanvasWorkflow },
@@ -114,7 +124,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setWaveIds: (selectedWaveIds) => set({ selectedWaveIds }),
       setLocationIds: (selectedLocationIds) => set({ selectedLocationIds }),
       setSelectedLocations: (selectedLocations) => set({ selectedLocations }),
-      setProjectId: (projectId) => set({ projectId }),
+      setActiveProjectId: (activeProjectId) => set({ activeProjectId }),
+      setActiveProject: (activeProject) =>
+        set((state) => ({
+          activeProjectId: activeProject?.id ?? null,
+          activeProject,
+          activeTeamId: activeProject?.scope === 'team' ? activeProject.team_id ?? state.activeTeamId : state.activeTeamId,
+        })),
       setCanvasGoals: (canvasGoals) => set({ canvasGoals }),
 
       setCanvasStep: (step) =>
@@ -186,7 +202,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       partialize: (state) => ({
         selectedWaveIds: state.selectedWaveIds,
         selectedLocationIds: state.selectedLocationIds,
-        projectId: state.projectId,
+        activeProjectId: state.activeProjectId,
+        activeProject: state.activeProject,
         canvasGoals: state.canvasGoals,
         activeTeamId: state.activeTeamId,
         recentItems: state.recentItems,

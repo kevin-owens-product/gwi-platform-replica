@@ -8,6 +8,7 @@ import { useChart, useUpdateChart, useCreateChart, useDeleteChart } from '@/hook
 import { useAudiences } from '@/hooks/useAudiences';
 import { useStudies, useWaves, useQuestions } from '@/hooks/useTaxonomy';
 import { useStatsQuery } from '@/hooks/useQueries';
+import { useWorkspaceStore } from '@/stores/workspace';
 import ChartRenderer from '@/components/chart/ChartRenderer';
 import QuestionBrowser from '@/components/taxonomy/QuestionBrowser';
 import { Button, Dropdown, Modal, BaseAudiencePicker, getBaseAudienceLabel } from '@/components/shared';
@@ -83,9 +84,10 @@ export default function ChartDetail(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isNew = id === 'new';
+  const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
 
   // Fetch audience, study, and question data from API
-  const { data: audienceResponse } = useAudiences({ per_page: 50 });
+  const { data: audienceResponse } = useAudiences({ per_page: 50, project_id: activeProjectId || undefined });
   const { data: studies } = useStudies();
   const { data: waves } = useWaves();
   const { data: questionsResponse } = useQuestions({ per_page: 100 });
@@ -429,6 +431,7 @@ export default function ChartDetail(): React.JSX.Element {
             statistical_overlays: statisticalOverlays,
             accessibility: accessibilityOptions,
           },
+          project_id: activeProjectId || undefined,
         },
         {
           onSuccess: (newChart) => {

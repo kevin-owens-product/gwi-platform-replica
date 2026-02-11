@@ -4,7 +4,7 @@ import { daysAgo } from '../helpers'
 export const mockReports: Report[] = [
   {
     id: 'rpt_social_trends', name: 'Social Media Trends 2024', type: 'pdf', size: '4.2 MB', category: 'research',
-    tags: ['social media', 'trends', '2024'], download_url: '#', created_at: daysAgo(5), updated_at: daysAgo(5),
+    tags: ['social media', 'trends', '2024'], download_url: '#', created_at: daysAgo(5), updated_at: daysAgo(5), project_id: 'proj_brand_q1', team_id: 'team_brand',
     author: 'Sarah Johnson',
     description: 'Comprehensive analysis of social media platform usage, engagement, and emerging trends for 2024.',
     sharing: { visibility: 'organization' },
@@ -13,7 +13,7 @@ export const mockReports: Report[] = [
   },
   {
     id: 'rpt_gen_z', name: 'Gen Z Consumer Behavior', type: 'pdf', size: '8.1 MB', category: 'research',
-    tags: ['gen z', 'consumer', 'demographics'], download_url: '#', created_at: daysAgo(12), updated_at: daysAgo(10),
+    tags: ['gen z', 'consumer', 'demographics'], download_url: '#', created_at: daysAgo(12), updated_at: daysAgo(10), project_id: 'proj_product_launch', team_id: 'team_product',
     author: 'Maria Santos',
     description: 'Deep dive into Gen Z purchasing habits, brand preferences, and media consumption patterns.',
     sharing: { visibility: 'team' },

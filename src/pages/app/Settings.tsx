@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  User, Shield, Building2, Save, Users, UsersRound, BarChart2, Settings2, Loader2,
+  User, Shield, Building2, Save, Users, BarChart2, Settings2, Loader2,
   ScrollText, Keyboard, Mail, Bell, BellOff, Palette, Globe, Clock,
   Search, Plus, FileText, BarChart3, Table2, LayoutDashboard, Trash2,
   Eye, Edit3, Download, LogIn, UserPlus, Command, Code2, Key, Webhook,
@@ -17,7 +17,6 @@ import { Tabs, Button, Input, Badge, DataTable } from '@/components/shared';
 import type { Column } from '@/components/shared';
 import UserManagement from '@/components/admin/UserManagement';
 import UsageStats from '@/components/admin/UsageStats';
-import { useTeams } from '@/hooks/useTeams';
 import ChartRenderer from '@/components/chart/ChartRenderer';
 import type { User as UserType } from '@/api/types';
 import { formatDate, formatRelativeDate } from '@/utils/format';
@@ -102,8 +101,7 @@ interface McpTool {
 
 const settingsTabs = [
   { id: 'profile', label: 'Profile', icon: <User size={16} /> },
-  { id: 'team', label: 'Team', icon: <Users size={16} /> },
-  { id: 'teams', label: 'Teams', icon: <UsersRound size={16} /> },
+  { id: 'organization', label: 'Organization', icon: <Building2 size={16} /> },
   { id: 'usage', label: 'Usage', icon: <BarChart2 size={16} /> },
   { id: 'preferences', label: 'Preferences', icon: <Settings2 size={16} /> },
   { id: 'audit-log', label: 'Audit Log', icon: <ScrollText size={16} /> },
@@ -972,7 +970,8 @@ function DeveloperSettings(): React.JSX.Element {
 export default function Settings(): React.JSX.Element {
   const { tab } = useParams<{ tab?: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<string>(tab || 'profile');
+  const initialTab = tab && settingsTabs.some((t) => t.id === tab) ? tab : 'profile';
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
 
   const { data: profile, isLoading: profileLoading, error: profileError } = useProfile();
   const { user: storeUser } = useAuthStore();
@@ -1289,33 +1288,11 @@ export default function Settings(): React.JSX.Element {
           )}
 
           {/* ================================================================
-              Team Tab
+              Organization Tab
               ================================================================ */}
-          {activeTab === 'team' && (
+          {activeTab === 'organization' && (
             <div className="settings-section">
               <UserManagement />
-            </div>
-          )}
-
-          {/* ================================================================
-              Teams Tab
-              ================================================================ */}
-          {activeTab === 'teams' && (
-            <div className="settings-section">
-              <h2>Teams</h2>
-              <p className="section-description">Create and manage teams to organise collaboration across your organisation</p>
-              <div style={{ marginTop: 16 }}>
-                <Button
-                  variant="primary"
-                  icon={<UsersRound size={16} />}
-                  onClick={() => navigate('/app/teams')}
-                >
-                  Go to Teams
-                </Button>
-                <p style={{ marginTop: 12, fontSize: 14, color: '#64748b' }}>
-                  Teams let you organise people, set workspace context, and configure guardrails for how your team creates and shares content.
-                </p>
-              </div>
             </div>
           )}
 

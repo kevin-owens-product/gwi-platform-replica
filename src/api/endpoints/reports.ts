@@ -16,7 +16,7 @@ export const reportsApi = {
   download: (id: string) =>
     apiClient.get(`v3/reports/${id}/download`).blob(),
 
-  create: (data: { name: string; description?: string; template_id?: string }) =>
+  create: (data: { name: string; description?: string; template_id?: string; project_id?: string }) =>
     apiClient.post('v3/reports', { json: data }).json<any>(),
 
   update: (id: string, data: Record<string, unknown>) =>

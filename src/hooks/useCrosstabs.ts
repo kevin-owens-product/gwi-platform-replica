@@ -3,7 +3,7 @@ import toast from 'react-hot-toast'
 import { crosstabsApi } from '@/api'
 import type { CreateCrosstabRequest, UpdateCrosstabRequest } from '@/api/types'
 
-export function useCrosstabs(params?: { page?: number; per_page?: number; search?: string }) {
+export function useCrosstabs(params?: { page?: number; per_page?: number; search?: string; project_id?: string }) {
   return useQuery({
     queryKey: ['crosstabs', params],
     queryFn: () => crosstabsApi.list(params),

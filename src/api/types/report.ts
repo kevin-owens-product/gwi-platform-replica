@@ -14,6 +14,8 @@ export interface Report {
   download_url: string
   created_at: string
   updated_at: string
+  project_id?: string
+  team_id?: string
   // New fields
   author?: string
   description?: string
@@ -185,6 +187,7 @@ export interface InteractiveReport {
 
 export interface ReportListParams extends PaginationParams {
   search?: string
+  project_id?: string
   category?: string
   tags?: string[]
   format?: ExportFormat

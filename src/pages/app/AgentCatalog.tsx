@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sparkles, ArrowRight, Plus } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import { agents, AGENT_CATEGORIES, type AgentCategory, type Agent } from '@/data/agents';
+import { agenticFlows, platformLinkages } from '@/agentic/registry';
 import './AgentCatalog.css';
 
 type FilterTab = 'All' | AgentCategory;
@@ -114,6 +115,51 @@ export default function AgentCatalog(): React.JSX.Element {
             </button>
           </div>
         </div>
+
+        <section className="catalog-section">
+          <div className="catalog-section-header">
+            <h2 className="catalog-section-title">Agentic Flows</h2>
+            <p className="catalog-section-subtitle">
+              Orchestrated workflows that convert briefs into validated, client-ready outputs.
+            </p>
+          </div>
+          <div className="catalog-flow-grid">
+            {agenticFlows.map((flow) => (
+              <div key={flow.id} className="catalog-flow-card">
+                <div className="catalog-flow-title">{flow.name}</div>
+                <p className="catalog-flow-description">{flow.description}</p>
+                <div className="catalog-flow-steps">
+                  {flow.steps.map((step) => (
+                    <span key={step.id} className="catalog-flow-step">{step.name}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="catalog-section">
+          <div className="catalog-section-header">
+            <h2 className="catalog-section-title">Platform Linkages</h2>
+            <p className="catalog-section-subtitle">
+              API and MCP surfaces used to connect agents with data, chat, and delivery systems.
+            </p>
+          </div>
+          <div className="catalog-linkage-grid">
+            {platformLinkages.map((link) => (
+              <div key={link.id} className="catalog-linkage-card">
+                <div className="catalog-linkage-title">{link.name}</div>
+                <p className="catalog-linkage-description">{link.description}</p>
+                <div className="catalog-linkage-meta">Auth: {link.auth}</div>
+                <ul className="catalog-linkage-endpoints">
+                  {link.endpoints.map((endpoint) => (
+                    <li key={endpoint}>{endpoint}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );

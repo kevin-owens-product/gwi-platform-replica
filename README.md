@@ -12,17 +12,22 @@ The app runs fully in mock mode by default, so no backend setup is required.
 
 ## 5-Minute Quick Start
 
-1. Install Node.js 18+.
-2. Install dependencies:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/kevin-owens-product/gwi-platform-replica.git
+   cd gwi-platform-replica
+   ```
+2. Install Node.js 18+.
+3. Install dependencies:
    ```bash
    npm install
    ```
-3. Start the app:
+4. Start the app:
    ```bash
    npm run dev
    ```
-4. Open [http://localhost:3003](http://localhost:3003).
-5. You will be redirected straight to the app in default mock mode (no login required).
+5. Open [http://localhost:3003](http://localhost:3003).
+6. You will be redirected straight to the app in default mock mode (no login required).
 
 ## Documentation
 

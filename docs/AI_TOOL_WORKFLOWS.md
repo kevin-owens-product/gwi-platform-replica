@@ -4,8 +4,12 @@ Use this guide when you want to run or edit the repo with AI-native coding tools
 
 ## Shared Prerequisites
 
-1. Install Node.js 18+ and npm.
-2. Clone this repository locally.
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/kevin-owens-product/gwi-platform-replica.git
+   cd gwi-platform-replica
+   ```
+2. Install Node.js 18+ and npm.
 3. From the repo root, run:
    ```bash
    npm install

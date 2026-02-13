@@ -2,6 +2,15 @@
 
 This guide is written for both non-technical testers and engineers.
 
+## Step 1: Get the Code (Required)
+
+If you do not have the project on your machine yet, run:
+
+```bash
+git clone https://github.com/kevin-owens-product/gwi-platform-replica.git
+cd gwi-platform-replica
+```
+
 ## Choose Your Path
 
 - Non-technical user: follow **Path A**.
@@ -12,16 +21,15 @@ This guide is written for both non-technical testers and engineers.
 
 ## Path A: Non-Technical User (Run + Explore)
 
-### 1. One-time setup
+### 2. One-time setup
 
 1. Install Node.js 18 or newer from [https://nodejs.org](https://nodejs.org).
-2. Open Terminal in this repository folder.
-3. Run:
+2. In Terminal, from the `gwi-platform-replica` folder, run:
    ```bash
    npm install
    ```
 
-### 2. Start the app
+### 3. Start the app
 
 Run:
 
@@ -33,14 +41,14 @@ Open [http://localhost:3003](http://localhost:3003).
 
 You should land directly in the app in default mock mode (no login needed).
 
-### 3. Try these flows
+### 4. Try these flows
 
 - Open `Agent Spark` and test prompt-based interactions.
 - Create or edit an audience.
 - Build a chart and switch chart types.
 - Open dashboards and reports.
 
-### 4. End your session
+### 5. End your session
 
 Press `Ctrl + C` in Terminal to stop the app.
 
@@ -48,14 +56,14 @@ Press `Ctrl + C` in Terminal to stop the app.
 
 ## Path B: Technical User (Develop + Extend)
 
-### 1. Install and run
+### 2. Install and run
 
 ```bash
 npm install
 npm run dev
 ```
 
-### 2. Quality checks
+### 3. Quality checks
 
 ```bash
 npm run lint

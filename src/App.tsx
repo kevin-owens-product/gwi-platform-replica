@@ -36,6 +36,7 @@ const Teams = lazy(() => import('./pages/app/Teams'))
 const TeamDetail = lazy(() => import('./pages/app/TeamDetail'))
 const Projects = lazy(() => import('./pages/app/Projects'))
 const ProjectDetail = lazy(() => import('./pages/app/ProjectDetail'))
+const useMock = import.meta.env.VITE_USE_MOCK !== 'false'
 
 function PageLoader() {
   return (
@@ -50,7 +51,7 @@ function App() {
     <Router>
       <Routes>
         {/* Auth Routes */}
-        <Route path="/" element={<SignIn />} />
+        <Route path="/" element={useMock ? <Navigate to="/app" replace /> : <SignIn />} />
         <Route path="/sign-up" element={<SignUp />} />
         <Route path="/cant-login" element={<CantLogin />} />
         <Route path="/password-recovery" element={<ForgotPassword />} />

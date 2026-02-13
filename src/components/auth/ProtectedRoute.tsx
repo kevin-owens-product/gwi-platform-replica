@@ -6,28 +6,37 @@ interface ProtectedRouteProps {
   children: ReactNode
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, token } = useAuthStore()
+const useMock = import.meta.env.VITE_USE_MOCK !== 'false'
 
-  // In development, allow access and auto-initialize token from env if needed
-  if (import.meta.env.DEV) {
-    if (!token) {
-      const envToken = import.meta.env.VITE_GWI_API_TOKEN || ''
-      if (envToken) {
-        useAuthStore.getState().setTokens(envToken, 'dev-refresh-token')
-        useAuthStore.getState().setUser({
-          id: 'dev-user',
-          email: 'dev@globalwebindex.com',
-          name: 'Dev User',
-          role: 'admin',
-          organization_id: 'dev-org',
-          organization_name: 'GWI Internal',
-          created_at: new Date().toISOString(),
-          last_login_at: new Date().toISOString(),
-          preferences: {},
-        })
-      }
-    }
+function ensureDemoSession() {
+  const store = useAuthStore.getState()
+  const token = store.token || import.meta.env.VITE_GWI_API_TOKEN || 'mock-token'
+
+  if (!store.isAuthenticated || !store.token) {
+    store.setTokens(token, 'mock-refresh-token')
+  }
+
+  if (!store.user) {
+    store.setUser({
+      id: 'demo-user',
+      email: 'demo@globalwebindex.com',
+      name: 'Demo User',
+      role: 'admin',
+      organization_id: 'demo-org',
+      organization_name: 'GWI Demo Workspace',
+      created_at: new Date().toISOString(),
+      last_login_at: new Date().toISOString(),
+      preferences: {},
+    })
+  }
+}
+
+export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const { isAuthenticated } = useAuthStore()
+
+  // In dev or mock mode, allow direct access for faster testing.
+  if (import.meta.env.DEV || useMock) {
+    ensureDemoSession()
     return <>{children}</>
   }
 

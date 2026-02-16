@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Save,
@@ -19,6 +19,7 @@ import {
 import toast from 'react-hot-toast';
 import { useAudience, useCreateAudience, useUpdateAudience, useAudiences, useAudienceEstimate } from '@/hooks/useAudiences';
 import { useSyncAudienceIntegration } from '@/hooks/useIntegrations';
+import { useQuestions } from '@/hooks/useTaxonomy';
 import AudienceBuilder from '@/components/audience/AudienceBuilder';
 import SparkPanel from '@/components/spark/SparkPanel';
 import IntegrationDestinationPicker from '@/components/integrations/IntegrationDestinationPicker';
@@ -54,12 +55,29 @@ function getHealthScoreLabel(score: number): string {
 export default function AudienceDetail({ isNew = false }: AudienceDetailProps): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const { data: audience, isLoading: audienceLoading } = useAudience(isNew ? '' : (id ?? ''));
   const createAudience = useCreateAudience();
   const updateAudience = useUpdateAudience();
   const { data: audiencesResponse } = useAudiences({ per_page: 50 });
   const allAudiences = useMemo(() => audiencesResponse?.data ?? [], [audiencesResponse]);
+  const explorerQuestionIds = useMemo(() => {
+    const multi = searchParams.get('questions');
+    const single = searchParams.get('explorer_question') ?? searchParams.get('question');
+    const raw = multi ?? single ?? '';
+    if (!raw) return [] as string[];
+    return raw.split(',').map((value) => value.trim()).filter(Boolean);
+  }, [searchParams]);
+  const { data: questionsResponse } = useQuestions(
+    explorerQuestionIds.length > 0 ? { per_page: 300 } : undefined,
+  );
+  const explorerQuestions = useMemo(() => {
+    const items = questionsResponse?.data ?? [];
+    if (explorerQuestionIds.length === 0) return [] as string[];
+    return explorerQuestionIds
+      .map((questionId) => items.find((question) => question.id === questionId)?.name ?? questionId);
+  }, [questionsResponse, explorerQuestionIds]);
 
   const [audienceName, setAudienceName] = useState<string>('');
   const [expression, setExpression] = useState<AudienceExpression | undefined>(undefined);
@@ -99,6 +117,18 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
       setVisibility(audience.sharing?.visibility ?? 'private');
     }
   }, [audience, isNew]);
+
+  useEffect(() => {
+    if (!isNew) return;
+    if (explorerQuestions.length === 0) return;
+    if (audienceName.trim()) return;
+    if (expression) return;
+
+    const fallbackName = explorerQuestions.length === 1
+      ? `${explorerQuestions[0]} audience`
+      : `Explorer audience (${explorerQuestions.length} variables)`;
+    setAudienceName(fallbackName);
+  }, [isNew, explorerQuestions, audienceName, expression]);
 
   const isSaving = createAudience.isPending || updateAudience.isPending;
 
@@ -256,6 +286,21 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
       </div>
 
       <div className="audience-detail-content">
+        {isNew && explorerQuestions.length > 0 && (
+          <div className="audience-explorer-banner">
+            <div className="audience-explorer-banner__text">
+              <strong>Imported from Data Explorer</strong>
+              <span>Selected variables: {explorerQuestions.join(', ')}</span>
+            </div>
+            <button
+              className="audience-explorer-banner__btn"
+              onClick={() => navigate('/app/chart-builder/questions')}
+            >
+              Open Question Browser
+            </button>
+          </div>
+        )}
+
         <div className="audience-name-section">
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)', flexWrap: 'wrap' }}>
             <input

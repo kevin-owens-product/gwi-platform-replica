@@ -29,6 +29,7 @@ const Canvas = lazy(() => import('./pages/app/Canvas'))
 const CanvasAudiences = lazy(() => import('./pages/app/CanvasAudiences'))
 const Reports = lazy(() => import('./pages/app/Reports'))
 const Questions = lazy(() => import('./pages/app/Questions'))
+const DataExplorer = lazy(() => import('./pages/app/DataExplorer'))
 const TvStudy = lazy(() => import('./pages/app/TvStudy'))
 const PrintRF = lazy(() => import('./pages/app/PrintRF'))
 const Settings = lazy(() => import('./pages/app/Settings'))
@@ -63,6 +64,7 @@ function App() {
           <Route path="agent-catalog" element={<Suspense fallback={<PageLoader />}><AgentCatalog /></Suspense>} />
           <Route path="agent-spark/:id?" element={<Suspense fallback={<PageLoader />}><AgentSpark /></Suspense>} />
           <Route path="audiences" element={<Suspense fallback={<PageLoader />}><Audiences /></Suspense>} />
+          <Route path="data-explorer" element={<Suspense fallback={<PageLoader />}><DataExplorer /></Suspense>} />
           <Route path="audiences/new" element={<Suspense fallback={<PageLoader />}><AudienceDetail isNew /></Suspense>} />
           <Route path="audiences/:id" element={<Suspense fallback={<PageLoader />}><AudienceDetail /></Suspense>} />
           <Route path="chart-builder" element={<Suspense fallback={<PageLoader />}><Charts /></Suspense>} />

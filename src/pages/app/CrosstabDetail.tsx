@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import SparkPanel from '@/components/spark/SparkPanel';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Download, Share2, Save, ChevronLeft, FileSpreadsheet, Presentation, Layers, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCrosstab, useUpdateCrosstab, useCreateCrosstab } from '@/hooks/useCrosstabs';
@@ -26,6 +26,7 @@ interface CrosstabDetailProps {
 export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDetailProps): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isNew = isNewProp || id === 'new';
   const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
 
@@ -108,6 +109,13 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
   const audiences = useMemo(() => audienceResponse?.data ?? [], [audienceResponse]);
   const questions = useMemo(() => questionsResponse?.data ?? [], [questionsResponse]);
   const waves = useMemo(() => allWaves ?? [], [allWaves]);
+  const preselectedRowQuestionIds = useMemo(() => {
+    const multi = searchParams.get('row_questions');
+    const fallback = searchParams.get('questions') ?? searchParams.get('question');
+    const raw = multi ?? fallback ?? '';
+    if (!raw) return [] as string[];
+    return raw.split(',').map((value) => value.trim()).filter(Boolean);
+  }, [searchParams]);
 
   // Already-selected question IDs for picker highlighting
   const selectedRowQuestionIds = useMemo(
@@ -118,6 +126,34 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
     () => crosstabConfig.config.columns.filter((c) => c.type === 'question' && c.question_id).map((c) => c.question_id!),
     [crosstabConfig.config.columns]
   );
+
+  // Pre-populate row questions when launched from Data Explorer/Questions deep-links
+  useEffect(() => {
+    if (!isNew) return;
+    if (preselectedRowQuestionIds.length === 0) return;
+    if (questions.length === 0) return;
+    if (crosstabConfig.config.rows.length > 0) return;
+
+    const selectedQuestions = preselectedRowQuestionIds
+      .map((questionId) => questions.find((question) => question.id === questionId))
+      .filter((question): question is Question => Boolean(question));
+
+    if (selectedQuestions.length === 0) return;
+
+    selectedQuestions.forEach((question) => {
+      crosstabConfig.addRowQuestion(
+        question.id,
+        question.datapoints.map((datapoint) => datapoint.id),
+      );
+    });
+
+    if (!crosstabName.trim()) {
+      const fallbackName = selectedQuestions.length === 1
+        ? selectedQuestions[0].name
+        : `Explorer crosstab (${selectedQuestions.length})`;
+      setCrosstabName(fallbackName);
+    }
+  }, [isNew, preselectedRowQuestionIds, questions, crosstabConfig, crosstabName]);
 
   // Seed config from fetched crosstab once
   useEffect(() => {

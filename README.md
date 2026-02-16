@@ -34,6 +34,7 @@ The app runs fully in mock mode by default, so no backend setup is required.
 - Setup and onboarding for all users: `docs/GETTING_STARTED.md`
 - AI tool workflows (Cursor, Codex, Claude Code, Lovable): `docs/AI_TOOL_WORKFLOWS.md`
 - Product enhancement reference plan: `docs/reference/PRODUCT_ENHANCEMENT_PLAN.md`
+- Data Explorer product/implementation plan: `docs/reference/DATA_EXPLORER_IMPLEMENTATION_PLAN.md`
 
 ## Common Commands
 

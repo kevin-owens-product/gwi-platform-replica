@@ -4,6 +4,7 @@ import { integrationsApi } from '@/api'
 import type {
   IntegrationAppId,
   IntegrationAudienceSyncRequest,
+  IntegrationCapability,
   IntegrationDeliveryRequest,
 } from '@/api/types'
 
@@ -14,7 +15,7 @@ export function useIntegrationCatalog() {
   })
 }
 
-export function useIntegrationConnections(capability?: string) {
+export function useIntegrationConnections(capability?: IntegrationCapability) {
   return useQuery({
     queryKey: ['integrations', 'connections', capability],
     queryFn: () => integrationsApi.listConnections(capability ? { capability } : undefined),

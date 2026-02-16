@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Save, Target, Building2, Users, BarChart2, FileText } from 'lucide-react'
 import { useProjectWorkspace, useUpdateProjectWorkspace } from '@/hooks/useProjects'
-import { Button, Input, Badge } from '@/components/shared'
+import { Button, Badge } from '@/components/shared'
 import type { WorkspaceContext } from '@/api/types'
 import './WorkspaceSettings.css'
 
@@ -175,12 +175,18 @@ export default function ProjectWorkspaceSettings({ projectId }: ProjectWorkspace
       <div className="ws-settings__section">
         <h4><FileText size={16} /> Notes</h4>
         {isEditing ? (
-          <Input
-            type="textarea"
+          <textarea
             value={ctx.notes}
             onChange={(e) => updateField('notes', e.target.value)}
             rows={4}
-            fullWidth
+            style={{
+              width: '100%',
+              padding: '8px 10px',
+              border: '1px solid #e2e8f0',
+              borderRadius: 6,
+              fontSize: 14,
+              fontFamily: 'inherit',
+            }}
           />
         ) : (
           <p style={{ color: '#64748b', fontSize: 14 }}>{ctx.notes || 'No notes'}</p>

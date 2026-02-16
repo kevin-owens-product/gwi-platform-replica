@@ -1,4 +1,4 @@
-import type { SparkChatRequest, SparkChatResponse, SparkConversation } from '../../types'
+import type { SparkChatRequest, SparkChatResponse, SparkConversation, SparkMessage } from '../../types'
 import { mockConversations } from '../data/spark'
 import { delay, findById, newId, now } from '../helpers'
 
@@ -21,7 +21,7 @@ export const sparkApi = {
       conversations.unshift(conversation)
     }
 
-    const userMsg = {
+    const userMsg: SparkMessage = {
       id: newId('msg'),
       role: 'user' as const,
       content: data.message,
@@ -29,7 +29,7 @@ export const sparkApi = {
     }
     conversation.messages.push(userMsg)
 
-    const assistantMsg = {
+    const assistantMsg: SparkMessage = {
       id: newId('msg'),
       role: 'assistant' as const,
       content: generateResponse(data.message, data.context),

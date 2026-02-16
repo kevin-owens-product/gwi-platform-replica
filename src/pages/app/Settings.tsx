@@ -393,7 +393,7 @@ function DeveloperSettings(): React.JSX.Element {
   const disconnectIntegration = useDisconnectIntegration();
   const testIntegration = useTestIntegrationConnection();
 
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'owner';
+  const isAdmin = currentUser?.role === 'admin';
 
   useEffect(() => {
     if (!requestedDevSubTab) return;

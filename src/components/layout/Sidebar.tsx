@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   Search, Home, Sparkles, Users, UsersRound, BarChart2, Grid3X3,
   LayoutDashboard, Square, FileText, HelpCircle, FolderKanban,
-  Settings, LogOut, ChevronDown, ChevronUp, MessageCircle,
+  Settings, LogOut, ChevronDown, ChevronUp, MessageCircle, Compass,
   Tv, Newspaper, Plug, type LucideIcon,
 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
@@ -24,6 +24,7 @@ const navItems: NavItem[] = [
   { path: '/app', icon: Home, label: 'Home', exact: true },
   { path: '/app/agent-catalog', icon: Sparkles, label: 'Agents' },
   { path: '/app/audiences', icon: Users, label: 'Audiences' },
+  { path: '/app/data-explorer', icon: Compass, label: 'Data Explorer' },
   { path: '/app/canvas', icon: Square, label: 'Canvas' },
   { path: '/app/chart-builder', icon: BarChart2, label: 'Charts' },
   { path: '/app/crosstabs', icon: Grid3X3, label: 'Crosstabs' },

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import SparkPanel from '@/components/spark/SparkPanel';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Download, Share2, MoreHorizontal, Save, Users, Plus, X, MessageSquare, TrendingUp, Eye, Accessibility } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { chartsApi } from '@/api';
@@ -83,6 +83,7 @@ const fallbackDataSources: string[] = ['GWI Core', 'GWI Zeitgeist', 'GWI USA', '
 export default function ChartDetail(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isNew = id === 'new';
   const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
 
@@ -94,6 +95,13 @@ export default function ChartDetail(): React.JSX.Element {
 
   const audiences = useMemo(() => audienceResponse?.data ?? [], [audienceResponse]);
   const questions = useMemo(() => questionsResponse?.data ?? [], [questionsResponse]);
+  const preselectedQuestionIds = useMemo(() => {
+    const multi = searchParams.get('questions');
+    const single = searchParams.get('question');
+    const raw = multi ?? single ?? '';
+    if (!raw) return [] as string[];
+    return raw.split(',').map((value) => value.trim()).filter(Boolean);
+  }, [searchParams]);
 
   const dataSources = useMemo(() => {
     if (studies && studies.length > 0) {
@@ -232,6 +240,42 @@ export default function ChartDetail(): React.JSX.Element {
     () => getBaseAudienceLabel(baseAudience, audiences, questions),
     [baseAudience, audiences, questions],
   );
+
+  // Pre-populate chart rows when launched from Data Explorer/Questions deep-links
+  useEffect(() => {
+    if (!isNew) return;
+    if (preselectedQuestionIds.length === 0) return;
+    if (questions.length === 0) return;
+    if (rows.length > 0) return;
+
+    const selectedQuestions = preselectedQuestionIds
+      .map((questionId) => questions.find((question) => question.id === questionId))
+      .filter((question): question is Question => Boolean(question));
+
+    if (selectedQuestions.length === 0) return;
+
+    setRows(
+      selectedQuestions.map((question) => ({
+        type: 'question',
+        question_id: question.id,
+        datapoint_ids: question.datapoints.map((datapoint) => datapoint.id),
+      })),
+    );
+
+    if (!chartName.trim()) {
+      const fallbackName = selectedQuestions.length === 1
+        ? selectedQuestions[0].name
+        : `Explorer selection (${selectedQuestions.length})`;
+      setChartName(fallbackName);
+    }
+
+    if (!selectedWave) {
+      const firstAvailableWave = selectedQuestions
+        .flatMap((question) => question.wave_ids)
+        .find((waveId) => waveOptions.some((wave) => wave.value === waveId));
+      if (firstAvailableWave) setSelectedWave(firstAvailableWave);
+    }
+  }, [isNew, preselectedQuestionIds, questions, rows.length, chartName, selectedWave, waveOptions]);
 
   // Selected question IDs for picker highlighting
   const selectedQuestionIds = useMemo(

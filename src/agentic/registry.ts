@@ -117,7 +117,7 @@ export const capabilityInventory: AgenticCapability[] = [
   },
 ]
 
-export const agenticFlows: AgenticFlow[] = [
+const baseFlows: AgenticFlow[] = [
   {
     id: 'brief-interpretation',
     name: 'Brief Interpretation Flow',
@@ -213,3 +213,58 @@ export const agenticFlows: AgenticFlow[] = [
     ],
   },
 ]
+
+const specialistFlowDefs = [
+  { agentId: 'brief-interpreter', name: 'Brief Interpreter Specialist Flow', capabilityId: 'brief-interpreter' },
+  { agentId: 'workflow-orchestrator', name: 'Workflow Orchestrator Specialist Flow', capabilityId: 'workflow-orchestrator' },
+  { agentId: 'data-harmonizer', name: 'Data Harmonizer Specialist Flow', capabilityId: 'data-harmonizer' },
+  { agentId: 'audience-profiler', name: 'Audience Profiler Specialist Flow', capabilityId: 'audience-profiler' },
+  { agentId: 'crosstab-analyst', name: 'Crosstab Analyst Specialist Flow', capabilityId: 'crosstab-analyst' },
+  { agentId: 'narrative-agent', name: 'Narrative Agent Specialist Flow', capabilityId: 'narrative-agent' },
+  { agentId: 'visualization-agent', name: 'Visualization Agent Specialist Flow', capabilityId: 'visualization-agent' },
+  { agentId: 'governance-agent', name: 'Governance Agent Specialist Flow', capabilityId: 'governance-agent' },
+  { agentId: 'connector-agent', name: 'Connector Agent Specialist Flow', capabilityId: 'connector-agent' },
+  { agentId: 'advisor-agent', name: 'Advisor Agent Specialist Flow', capabilityId: 'advisor-agent' },
+] as const
+
+const specialistFlows: AgenticFlow[] = specialistFlowDefs.map((def) => ({
+  id: `flow-${def.agentId}`,
+  name: def.name,
+  description: `Specialist workflow for ${def.name.replace(' Specialist Flow', '')}.`,
+  triggers: [`agent_${def.agentId.replace(/-/g, '_')}`, 'agent_spark_prompt'],
+  steps: [
+    {
+      id: `step-${def.agentId}-intake`,
+      name: 'Context Intake',
+      capability_id: 'brief-interpreter',
+      description: 'Capture objective, constraints, and required outputs.',
+      output_artifacts: ['context_packet'],
+    },
+    {
+      id: `step-${def.agentId}-execute`,
+      name: 'Specialist Execution',
+      capability_id: def.capabilityId,
+      description: `Run specialist tasks for ${def.name.replace(' Specialist Flow', '')}.`,
+      depends_on: [`step-${def.agentId}-intake`],
+      output_artifacts: ['specialist_output'],
+    },
+    {
+      id: `step-${def.agentId}-validate`,
+      name: 'Validation Gate',
+      capability_id: 'governance-agent',
+      description: 'Attach citations, confidence, and policy checks.',
+      depends_on: [`step-${def.agentId}-execute`],
+      output_artifacts: ['validation_report'],
+    },
+    {
+      id: `step-${def.agentId}-handoff`,
+      name: 'Delivery Handoff',
+      capability_id: 'connector-agent',
+      description: 'Package and route outputs to destination systems.',
+      depends_on: [`step-${def.agentId}-validate`],
+      output_artifacts: ['handoff_note'],
+    },
+  ],
+}))
+
+export const agenticFlows: AgenticFlow[] = [...baseFlows, ...specialistFlows]

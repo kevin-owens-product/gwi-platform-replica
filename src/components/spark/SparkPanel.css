@@ -108,6 +108,21 @@
   transform: scale(0.97);
 }
 
+.spark-panel__prompt-more {
+  padding: 4px 10px;
+  background: var(--color-white);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border: 1px dashed var(--color-primary);
+  white-space: nowrap;
+}
+
+.spark-panel__prompt-more:hover {
+  background: var(--color-primary-light);
+}
+
 /* ---------- Sidebar variant (right-side drawer) ---------- */
 .spark-panel-sidebar {
   width: 300px;

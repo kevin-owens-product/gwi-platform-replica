@@ -3,10 +3,11 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Sparkles, Plus, Trash2, MessageSquare, Loader2,
   Search, Pin, PinOff, Download, Tag, X,
-  BarChart3, Table2, Users, Globe, Grid3X3, Lightbulb, Send,
+  BarChart3, Table2, Users, Grid3X3, Send,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SparkChat from '@/components/spark/SparkChat';
+import StarterTemplateDrawer from '@/components/spark/StarterTemplateDrawer';
 import Modal from '@/components/shared/Modal';
 import Button from '@/components/shared/Button';
 import IntegrationDestinationPicker from '@/components/integrations/IntegrationDestinationPicker';
@@ -18,35 +19,10 @@ import { formatRelativeDate } from '@/utils/format';
 import type { SparkConversation, SparkAction, SparkContext } from '@/api/types';
 import SparkContextBadge from '@/components/workspace/SparkContextBadge';
 import { getAgentById } from '@/data/agents';
+import { getStarterTemplateById } from '@/data/agent-templates';
+import { buildTemplatePrompt, getSparkContextType, trackStarterEvent } from '@/utils/template-resolver';
 import { platformLinkages } from '@/agentic/registry';
 import './AgentSpark.css';
-
-const SUGGESTED_PROMPTS = [
-  {
-    icon: <BarChart3 size={16} />,
-    text: 'Show me social media usage trends among Gen Z in the US over the past 3 years',
-  },
-  {
-    icon: <Users size={16} />,
-    text: 'Build an audience of health-conscious millennials who use TikTok daily',
-  },
-  {
-    icon: <Grid3X3 size={16} />,
-    text: 'Create a crosstab comparing brand awareness across age groups for Nike vs Adidas',
-  },
-  {
-    icon: <Globe size={16} />,
-    text: 'Compare online shopping behaviour in the UK, Germany and France',
-  },
-  {
-    icon: <Lightbulb size={16} />,
-    text: 'What are the top 5 media consumption trends this quarter?',
-  },
-  {
-    icon: <Table2 size={16} />,
-    text: 'Visualise the relationship between income levels and streaming platform usage',
-  },
-];
 
 const CONTEXT_TYPE_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   chart: { label: 'Chart', icon: <BarChart3 size={12} />, color: 'var(--color-primary)' },
@@ -58,13 +34,16 @@ const CONTEXT_TYPE_META: Record<string, { label: string; icon: React.ReactNode; 
 };
 
 const CATEGORY_OPTIONS = ['General', 'Research', 'Audience', 'Data Analysis', 'Reporting'];
+const TEMPLATE_DRAWER_STORAGE_KEY = 'gwi_template_drawer_dismissed_agent_spark';
 
 export default function AgentSpark(): React.JSX.Element {
   const { id: routeId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const promptParam = searchParams.get('prompt') ?? undefined;
   const agentParam = searchParams.get('agent') ?? undefined;
+  const templateParam = searchParams.get('template_id') ?? undefined;
+  const openTemplatesParam = searchParams.get('open_templates') === '1';
   const activeAgent = agentParam ? getAgentById(agentParam) : undefined;
 
   // Parse SparkContext from URL query params once on mount.
@@ -124,6 +103,16 @@ export default function AgentSpark(): React.JSX.Element {
   const [brief, setBrief] = useState(
     'Summarize streaming bundle adoption for Gen Z creators in US/UK with a client-ready narrative.'
   );
+  const [manualPrompt, setManualPrompt] = useState<string | undefined>(undefined);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(templateParam);
+  const [templatePrefilled, setTemplatePrefilled] = useState(false);
+  const [trackedTemplateFirstMessage, setTrackedTemplateFirstMessage] = useState(false);
+  const [isTemplateDrawerOpen, setIsTemplateDrawerOpen] = useState<boolean>(() => {
+    if (openTemplatesParam) return true;
+    if (typeof window === 'undefined') return !routeId;
+    const dismissed = window.localStorage.getItem(TEMPLATE_DRAWER_STORAGE_KEY) === '1';
+    return !dismissed && !routeId;
+  });
 
   useEffect(() => {
     if (!selectedFlowId && agenticFlows?.length) {
@@ -132,15 +121,79 @@ export default function AgentSpark(): React.JSX.Element {
   }, [agenticFlows, selectedFlowId]);
 
   useEffect(() => {
-    if (!agentParam || !agenticFlows?.length) return;
-    const byCategory = activeAgent?.category;
-    const flowId = byCategory === 'Orchestration'
-      ? 'brief-interpretation'
-      : byCategory === 'Proactivity & ROI'
-        ? 'campaign-lifecycle'
-        : 'brief-interpretation';
-    setSelectedFlowId(flowId);
-  }, [agentParam, activeAgent, agenticFlows]);
+    if (!activeAgent || !agenticFlows?.length) return;
+    const specialistFlowId = `flow-${activeAgent.id}`;
+    const specialistExists = agenticFlows.some((flow) => flow.id === specialistFlowId);
+    if (specialistExists) {
+      setSelectedFlowId(specialistFlowId);
+      return;
+    }
+
+    const fallbackFlowId = activeAgent.category === 'Proactivity & ROI'
+      ? 'flow-campaign-lifecycle'
+      : 'flow-brief-interpretation';
+    if (agenticFlows.some((flow) => flow.id === fallbackFlowId)) {
+      setSelectedFlowId(fallbackFlowId);
+    }
+  }, [activeAgent, agenticFlows]);
+
+  useEffect(() => {
+    if (activeAgent?.examplePrompt) {
+      setBrief(activeAgent.examplePrompt);
+    }
+  }, [activeAgent]);
+
+  useEffect(() => {
+    if (!templateParam) {
+      setManualPrompt(undefined);
+      setSelectedTemplateId(undefined);
+      setTemplatePrefilled(false);
+      setTrackedTemplateFirstMessage(false);
+    }
+  }, [activeAgent?.id, templateParam]);
+
+  useEffect(() => {
+    if (!templateParam || routeId) return;
+    const template = getStarterTemplateById(templateParam);
+    if (!template) return;
+    setSelectedTemplateId(template.id);
+    setManualPrompt(buildTemplatePrompt(template));
+    setTemplatePrefilled(true);
+    setTrackedTemplateFirstMessage(false);
+    setIsTemplateDrawerOpen(true);
+  }, [templateParam, routeId]);
+
+  useEffect(() => {
+    if (openTemplatesParam) {
+      setIsTemplateDrawerOpen(true);
+    }
+  }, [openTemplatesParam]);
+
+  const selectedFlow = useMemo(
+    () => (agenticFlows ?? []).find((flow) => flow.id === selectedFlowId),
+    [agenticFlows, selectedFlowId]
+  );
+
+  const flowNameById = useMemo(() => {
+    return Object.fromEntries((agenticFlows ?? []).map((flow) => [flow.id, flow.name]));
+  }, [agenticFlows]);
+
+  const templateContextType = useMemo(() => {
+    const fromQuery = getSparkContextType(sparkContext);
+    if (fromQuery) return fromQuery;
+    if (!activeContext) return 'general';
+    if (
+      activeContext.type === 'chart' ||
+      activeContext.type === 'crosstab' ||
+      activeContext.type === 'audience' ||
+      activeContext.type === 'dashboard' ||
+      activeContext.type === 'report' ||
+      activeContext.type === 'canvas'
+    ) {
+      return activeContext.type;
+    }
+    return 'general';
+  }, [sparkContext, activeContext]);
 
   // Sync activeConversationId when route param changes
   useEffect(() => {
@@ -149,6 +202,11 @@ export default function AgentSpark(): React.JSX.Element {
 
   const handleNewChat = () => {
     justCreatedRef.current = false;
+    setManualPrompt(undefined);
+    setSelectedTemplateId(undefined);
+    setTemplatePrefilled(false);
+    setTrackedTemplateFirstMessage(false);
+    setIsTemplateDrawerOpen(true);
     setActiveConversationId(undefined);
     navigate('/app/agent-spark');
   };
@@ -351,6 +409,61 @@ export default function AgentSpark(): React.JSX.Element {
     );
   };
 
+  const formatArtifactLabel = (artifact: string) =>
+    artifact
+      .split(/[_-]/g)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+
+  const handleLoadDemoPrompt = (prompt: string) => {
+    setManualPrompt(prompt);
+    toast.success('Prompt loaded into chat');
+  };
+
+  const handleStarterTemplateSelect = (
+    template: { id: string; agentId?: string },
+    prompt: string
+  ) => {
+    if (template.agentId && template.agentId !== activeAgent?.id) {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set('agent', template.agentId);
+      nextParams.set('template_id', template.id);
+      nextParams.set('open_templates', '1');
+      navigate(`/app/agent-spark?${nextParams.toString()}`, { replace: true });
+    }
+    setSelectedTemplateId(template.id);
+    setManualPrompt(prompt);
+    setTemplatePrefilled(true);
+    setTrackedTemplateFirstMessage(false);
+    setIsTemplateDrawerOpen(true);
+    toast.success('Template loaded. Edit before sending.');
+  };
+
+  const handleTemplateDrawerOpenChange = (nextOpen: boolean) => {
+    setIsTemplateDrawerOpen(nextOpen);
+    if (!nextOpen && typeof window !== 'undefined') {
+      window.localStorage.setItem(TEMPLATE_DRAWER_STORAGE_KEY, '1');
+    }
+    if (nextOpen && typeof window !== 'undefined') {
+      window.localStorage.removeItem(TEMPLATE_DRAWER_STORAGE_KEY);
+    }
+  };
+
+  const handleMessageSent = (_message: string) => {
+    if (isTemplateDrawerOpen) {
+      setIsTemplateDrawerOpen(false);
+    }
+    if (templatePrefilled && !trackedTemplateFirstMessage) {
+      trackStarterEvent('first_message_sent_from_template', {
+        entry_point: 'agent_spark',
+        template_id: selectedTemplateId,
+        agent_id: activeAgent?.id,
+      });
+      setTrackedTemplateFirstMessage(true);
+    }
+  };
+
   return (
     <div className="agent-spark-page">
       <div className="spark-top-bar">
@@ -396,6 +509,14 @@ export default function AgentSpark(): React.JSX.Element {
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+          <button
+            className="spark-new-chat-btn"
+            onClick={() => handleTemplateDrawerOpenChange(!isTemplateDrawerOpen)}
+            title="Starter templates"
+          >
+            <Sparkles size={14} />
+            <span>Templates</span>
+          </button>
           {/* Export button */}
           {activeConversationId && activeConversation && (
             <button
@@ -633,7 +754,19 @@ export default function AgentSpark(): React.JSX.Element {
         </div>
 
         {/* Main chat area */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="agent-spark-main">
+          {(isTemplateDrawerOpen || !activeConversationId) && (
+            <StarterTemplateDrawer
+              selectedAgentId={activeAgent?.id}
+              contextType={templateContextType}
+              selectedTemplateId={selectedTemplateId}
+              open={isTemplateDrawerOpen}
+              onOpenChange={handleTemplateDrawerOpenChange}
+              onSelectTemplate={handleStarterTemplateSelect}
+              entryPoint="agent_spark"
+              limit={activeAgent ? 8 : 6}
+            />
+          )}
           <SparkContextBadge />
           {conversationLoading && activeConversationId && !justCreatedRef.current ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -643,8 +776,8 @@ export default function AgentSpark(): React.JSX.Element {
             <SparkChat
               conversationId={activeConversationId}
               initialMessages={activeConversation?.messages ?? []}
-              initialInput={promptParam}
-              autoSend={!!promptParam}
+              initialInput={manualPrompt ?? promptParam}
+              autoSend={!manualPrompt && !!promptParam}
               context={(() => {
                 const baseContext = sparkContext ?? (activeContext?.type && activeContext?.id
                   ? { [`${activeContext.type}_id`]: activeContext.id }
@@ -664,6 +797,7 @@ export default function AgentSpark(): React.JSX.Element {
               onAction={handleSparkAction}
               agentName={activeAgent?.name}
               agentDescription={activeAgent?.description}
+              onMessageSent={handleMessageSent}
             />
           )}
         </div>
@@ -707,18 +841,97 @@ export default function AgentSpark(): React.JSX.Element {
           </div>
 
           <div className="agentic-section">
+            <div className="agentic-section-title">Selected Flow Blueprint</div>
+            <div className="agentic-section-subtitle">
+              Step-by-step execution plan and artifacts for this run.
+            </div>
+            {selectedFlow ? (
+              <div className="agentic-flow-steps">
+                {selectedFlow.steps.map((step, index) => (
+                  <div key={step.id} className="agentic-flow-step-card">
+                    <div className="agentic-flow-step-header">
+                      <span className="agentic-flow-step-index">{index + 1}</span>
+                      <div className="agentic-flow-step-name">{step.name}</div>
+                    </div>
+                    <div className="agentic-flow-step-desc">{step.description}</div>
+                    {step.output_artifacts && step.output_artifacts.length > 0 && (
+                      <div className="agentic-flow-artifacts">
+                        {step.output_artifacts.map((artifact) => (
+                          <span key={artifact} className="agentic-flow-artifact">
+                            {formatArtifactLabel(artifact)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="agentic-empty">Select a flow to preview its steps.</div>
+            )}
+          </div>
+
+          {activeAgent && (
+            <div className="agentic-section">
+              <div className="agentic-section-title">Agent Demo Kit</div>
+              <div className="agentic-section-subtitle">{activeAgent.demo.workflowName}</div>
+              <div className="agentic-demo-summary">{activeAgent.demo.workflowSummary}</div>
+
+              <div className="agentic-demo-group-title">Workflow Steps</div>
+              <div className="agentic-demo-steps">
+                {activeAgent.demo.steps.map((step) => (
+                  <div key={step.id} className="agentic-demo-step">
+                    <div className="agentic-demo-step-name">{step.name}</div>
+                    <div className="agentic-demo-step-desc">{step.description}</div>
+                    <div className="agentic-demo-step-deliverable">Deliverable: {step.deliverable}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="agentic-demo-group-title">Deliverables</div>
+              <div className="agentic-demo-deliverables">
+                {activeAgent.demo.deliverables.map((deliverable) => (
+                  <div key={deliverable.id} className="agentic-demo-deliverable">
+                    <div className="agentic-demo-deliverable-name">{deliverable.name}</div>
+                    <div className="agentic-demo-deliverable-type">{deliverable.type}</div>
+                    <div className="agentic-demo-deliverable-desc">{deliverable.description}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="agentic-demo-group-title">Chat Walkthrough</div>
+              <div className="agentic-demo-chat-prompts">
+                {activeAgent.demo.chatPrompts.map((item) => (
+                  <button
+                    key={item.id}
+                    className="agentic-chat-script-btn"
+                    onClick={() => handleLoadDemoPrompt(item.prompt)}
+                    title={item.prompt}
+                  >
+                    <span className="agentic-chat-script-title">{item.title}</span>
+                    <span className="agentic-chat-script-outcome">{item.expectedOutcome}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="agentic-section">
             <div className="agentic-section-title">Recent Runs</div>
             <div className="agentic-list">
-              {(agenticRuns ?? []).map((run) => (
+              {(agenticRuns ?? []).slice(0, 6).map((run) => (
                 <div key={run.id} className="agentic-card">
                   <div className="agentic-card-title">{run.brief}</div>
                   <div className="agentic-card-meta">
-                    Flow: {run.flow_id} • Status: {run.status}
+                    Flow: {flowNameById[run.flow_id] ?? run.flow_id} • Status: {run.status}
                   </div>
                   <div className="agentic-output-list">
-                    {run.outputs.map((output) => (
+                    {run.outputs.slice(0, 5).map((output) => (
                       <div key={output.id} className="agentic-output">
-                        <span>{output.label}</span>
+                        <div className="agentic-output-main">
+                          <span>{output.label}</span>
+                          <span className="agentic-output-summary">{output.summary}</span>
+                        </div>
                         <span className="agentic-output-type">{output.type}</span>
                       </div>
                     ))}

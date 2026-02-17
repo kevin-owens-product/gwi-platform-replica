@@ -11,7 +11,9 @@ import { useSparkChat, useSparkConversations } from '@/hooks/useSpark';
 import { useAgenticRuns } from '@/hooks/useAgentic';
 import { formatRelativeDate } from '@/utils/format';
 import { Badge } from '@/components/shared';
-import { getFeaturedAgents } from '@/data/agents';
+import { agents, getFeaturedAgents } from '@/data/agents';
+import type { AgentStarterTemplate } from '@/data/agent-templates';
+import { resolveStarterTemplates, trackStarterEvent } from '@/utils/template-resolver';
 import './Home.css';
 
 // ---------------------------------------------------------------------------
@@ -58,12 +60,6 @@ interface KpiWidget {
 
 const featuredAgents = getFeaturedAgents(4);
 const MAX_AGENTIC_RUNS = 3;
-
-const suggestedPrompts = [
-  'What are the top social media trends?',
-  'Compare Gen Z vs Millennials',
-  'Analyze brand health metrics',
-];
 
 const mockInsights: ProactiveInsight[] = [
   {
@@ -202,6 +198,7 @@ export default function Home(): React.JSX.Element {
   const [dataset, setDataset] = useState<string>('GWI Core');
   const [dismissedInsights, setDismissedInsights] = useState<Set<string>>(new Set());
   const [insightsExpanded, setInsightsExpanded] = useState(false);
+  const [selectedStarterAgentId, setSelectedStarterAgentId] = useState<string>(featuredAgents[0]?.id ?? agents[0]?.id ?? '');
   const navigate = useNavigate();
 
   const user = useAuthStore((state) => state.user);
@@ -217,6 +214,11 @@ export default function Home(): React.JSX.Element {
     : visibleInsights.slice(0, INITIAL_INSIGHTS_COUNT);
   const hiddenInsightsCount = visibleInsights.length - INITIAL_INSIGHTS_COUNT;
   const recentAgenticRuns = (agenticRuns ?? []).slice(0, MAX_AGENTIC_RUNS);
+  const homeStarterTemplates = resolveStarterTemplates({
+    agentId: selectedStarterAgentId || undefined,
+    contextType: 'general',
+    limit: 4,
+  });
 
   const handleDismissInsight = (id: string) => {
     setDismissedInsights((prev) => new Set(prev).add(id));
@@ -241,8 +243,26 @@ export default function Home(): React.JSX.Element {
     }
   };
 
-  const handlePromptClick = (prompt: string) => {
-    setQuestion(prompt);
+  const handleStarterTemplateLaunch = (template: AgentStarterTemplate) => {
+    const params = new URLSearchParams();
+    if (template.agentId) params.set('agent', template.agentId);
+    params.set('template_id', template.id);
+    params.set('open_templates', '1');
+    trackStarterEvent('starter_template_selected', {
+      entry_point: 'home',
+      template_id: template.id,
+      agent_id: template.agentId,
+    });
+    navigate(`/app/agent-spark?${params.toString()}`);
+  };
+
+  const handleFeaturedAgentLaunch = (agentId: string) => {
+    const starterTemplate = resolveStarterTemplates({ agentId, contextType: 'general', limit: 1 })[0];
+    const params = new URLSearchParams();
+    params.set('agent', agentId);
+    params.set('open_templates', '1');
+    if (starterTemplate) params.set('template_id', starterTemplate.id);
+    navigate(`/app/agent-spark?${params.toString()}`);
   };
 
   return (
@@ -298,18 +318,37 @@ export default function Home(): React.JSX.Element {
               </div>
             </div>
 
-            {/* Suggested prompt pills */}
-            <div className="suggested-prompts">
-              {suggestedPrompts.map((prompt) => (
-                <button
-                  key={prompt}
-                  className="suggested-prompt-pill"
-                  onClick={() => handlePromptClick(prompt)}
-                >
-                  <Sparkles size={12} />
-                  {prompt}
-                </button>
-              ))}
+            <div className="starter-launcher">
+              <div className="starter-launcher__agents">
+                {featuredAgents.map((agent) => (
+                  <button
+                    key={agent.id}
+                    className={`starter-launcher__agent-chip ${selectedStarterAgentId === agent.id ? 'is-active' : ''}`}
+                    onClick={() => setSelectedStarterAgentId(agent.id)}
+                  >
+                    {agent.name}
+                  </button>
+                ))}
+              </div>
+
+              <div className="starter-launcher__templates">
+                {homeStarterTemplates.map((template) => (
+                  <button
+                    key={template.id}
+                    className="starter-launcher__template-card"
+                    onClick={() => handleStarterTemplateLaunch(template)}
+                  >
+                    <div className="starter-launcher__template-title">{template.title}</div>
+                    <div className="starter-launcher__template-outcome">
+                      What you&apos;ll get: {template.expectedOutcome}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="starter-launcher__hint">
+                Prefer typing? Start with a template and edit before sending.
+              </div>
             </div>
           </div>
         </section>
@@ -343,7 +382,7 @@ export default function Home(): React.JSX.Element {
                 <button
                   key={agent.id}
                   className="featured-agent-strip-card"
-                  onClick={() => navigate(`/app/agent-spark?agent=${agent.id}`)}
+                  onClick={() => handleFeaturedAgentLaunch(agent.id)}
                 >
                   <div
                     className="featured-agent-strip-icon"

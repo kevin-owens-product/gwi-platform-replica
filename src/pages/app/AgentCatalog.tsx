@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sparkles, ArrowRight, Plus } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import { agents, AGENT_CATEGORIES, type AgentCategory, type Agent } from '@/data/agents';
+import { resolveStarterTemplates, trackStarterEvent } from '@/utils/template-resolver';
 import { agenticFlows, platformLinkages } from '@/agentic/registry';
 import './AgentCatalog.css';
 
@@ -18,6 +19,20 @@ export default function AgentCatalog(): React.JSX.Element {
 
   const handleStartChat = (agent: Agent) => {
     navigate(`/app/agent-spark?agent=${agent.id}`);
+  };
+
+  const handleStartWithTemplate = (agent: Agent) => {
+    const starterTemplate = resolveStarterTemplates({ agentId: agent.id, contextType: 'general', limit: 1 })[0];
+    const params = new URLSearchParams();
+    params.set('agent', agent.id);
+    params.set('open_templates', '1');
+    if (starterTemplate) params.set('template_id', starterTemplate.id);
+    trackStarterEvent('starter_template_selected', {
+      entry_point: 'catalog',
+      template_id: starterTemplate?.id,
+      agent_id: agent.id,
+    });
+    navigate(`/app/agent-spark?${params.toString()}`);
   };
 
   return (
@@ -82,14 +97,30 @@ export default function AgentCatalog(): React.JSX.Element {
                     <span key={cap} className="agent-card-cap-tag">{cap}</span>
                   ))}
                 </div>
+                <div className="agent-card-workflow-meta">
+                  <span>{agent.demo.steps.length} workflow steps</span>
+                  <span>{agent.demo.deliverables.length} deliverables</span>
+                  <span>{agent.demo.chatPrompts.length} chat prompts</span>
+                </div>
+                <div className="agent-card-demo-line">
+                  Step 1: {agent.demo.steps[0]?.name}
+                </div>
                 <p className="agent-card-example">"{agent.examplePrompt}"</p>
-                <button
-                  className="agent-card-cta"
-                  onClick={() => handleStartChat(agent)}
-                >
-                  Start Chat
-                  <ArrowRight size={14} />
-                </button>
+                <div className="agent-card-cta-row">
+                  <button
+                    className="agent-card-cta agent-card-cta--outlined"
+                    onClick={() => handleStartWithTemplate(agent)}
+                  >
+                    Start With Template
+                  </button>
+                  <button
+                    className="agent-card-cta"
+                    onClick={() => handleStartChat(agent)}
+                  >
+                    Start Chat
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
               </div>
             );
           })}

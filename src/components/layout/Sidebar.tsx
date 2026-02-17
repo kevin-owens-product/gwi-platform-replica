@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
   Search, Home, Sparkles, Users, UsersRound, BarChart2, Grid3X3,
   LayoutDashboard, Square, FileText, HelpCircle, FolderKanban,
@@ -20,28 +20,74 @@ interface NavItem {
   exact?: boolean
 }
 
-const navItems: NavItem[] = [
-  { path: '/app', icon: Home, label: 'Home', exact: true },
-  { path: '/app/agent-catalog', icon: Sparkles, label: 'Agents' },
-  { path: '/app/audiences', icon: Users, label: 'Audiences' },
-  { path: '/app/data-explorer', icon: Compass, label: 'Data Explorer' },
-  { path: '/app/canvas', icon: Square, label: 'Canvas' },
-  { path: '/app/chart-builder', icon: BarChart2, label: 'Charts' },
-  { path: '/app/crosstabs', icon: Grid3X3, label: 'Crosstabs' },
-  { path: '/app/dashboards', icon: LayoutDashboard, label: 'Dashboards' },
-  { path: '/app/account-settings/developer?dev_sub_tab=integrations', icon: Plug, label: 'Integrations' },
-  { path: '/app/printrf', icon: Newspaper, label: 'Print R&F' },
-  { path: '/app/projects', icon: FolderKanban, label: 'Projects' },
-  { path: '/app/reports', icon: FileText, label: 'Reports' },
-  { path: '/app/teams', icon: UsersRound, label: 'Teams' },
-  { path: '/app/tv-study', icon: Tv, label: 'TV Study' },
+interface NavSection {
+  id: string
+  label: string
+  items: NavItem[]
+}
+
+const navSections: NavSection[] = [
+  {
+    id: 'discover',
+    label: 'Discover',
+    items: [
+      { path: '/app', icon: Home, label: 'Home', exact: true },
+      { path: '/app/data-explorer', icon: Compass, label: 'Data Explorer' },
+      { path: '/app/audiences', icon: Users, label: 'Audiences' },
+      { path: '/app/agent-catalog', icon: Sparkles, label: 'Agents' },
+    ],
+  },
+  {
+    id: 'analyze',
+    label: 'Analyze',
+    items: [
+      { path: '/app/chart-builder', icon: BarChart2, label: 'Charts' },
+      { path: '/app/crosstabs', icon: Grid3X3, label: 'Crosstabs' },
+      { path: '/app/dashboards', icon: LayoutDashboard, label: 'Dashboards' },
+      { path: '/app/tv-study', icon: Tv, label: 'TV Study' },
+    ],
+  },
+  {
+    id: 'deliver',
+    label: 'Deliver',
+    items: [
+      { path: '/app/reports', icon: FileText, label: 'Reports' },
+      { path: '/app/printrf', icon: Newspaper, label: 'Print R&F' },
+      { path: '/app/canvas', icon: Square, label: 'Canvas' },
+    ],
+  },
+  {
+    id: 'workspace',
+    label: 'Workspace',
+    items: [
+      { path: '/app/projects', icon: FolderKanban, label: 'Projects' },
+      { path: '/app/teams', icon: UsersRound, label: 'Teams' },
+      { path: '/app/account-settings/developer?dev_sub_tab=integrations', icon: Plug, label: 'Integrations' },
+    ],
+  },
 ]
 
+function isNavItemActive(item: NavItem, pathname: string, search: string): boolean {
+  if (item.path.includes('?')) {
+    const [targetPathname, targetSearch = ''] = item.path.split('?')
+    if (pathname !== targetPathname) return false
+
+    const currentParams = new URLSearchParams(search)
+    const targetParams = new URLSearchParams(targetSearch)
+    return Array.from(targetParams.entries()).every(([key, value]) => currentParams.get(key) === value)
+  }
+
+  if (item.exact) return pathname === item.path
+  return pathname === item.path || pathname.startsWith(`${item.path}/`)
+}
+
 export default function Sidebar() {
+  const { pathname, search } = useLocation()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const [helpOpen, setHelpOpen] = useState(false)
   const [userOpen, setUserOpen] = useState(false)
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
   const { searchOpen, setSearchOpen } = useUIStore()
   const { data: projectsData } = useProjects({ status: 'active' })
   const activeProject = useWorkspaceStore((s) => s.activeProject)
@@ -62,6 +108,17 @@ export default function Sidebar() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    setCollapsedSections((prev) => {
+      const activeSection = navSections.find((section) =>
+        section.items.some((item) => isNavItemActive(item, pathname, search))
+      )
+
+      if (!activeSection || !prev[activeSection.id]) return prev
+      return { ...prev, [activeSection.id]: false }
+    })
+  }, [pathname, search])
 
   const userName = user?.name || 'User'
   const userOrg = user?.organization_name || 'Organization'
@@ -102,20 +159,49 @@ export default function Sidebar() {
         </select>
       </div>
 
-      <nav className="sidebar-nav">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.exact}
-            className={({ isActive }) =>
-              `sidebar-nav-item ${isActive ? 'active' : ''}`
-            }
-          >
-            <item.icon size={18} />
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
+      <nav className="sidebar-nav" aria-label="Primary navigation">
+        {navSections.map((section) => {
+          const isCollapsed = collapsedSections[section.id] ?? false
+
+          return (
+            <div key={section.id} className="sidebar-nav-group">
+              <button
+                type="button"
+                className="sidebar-nav-group-toggle"
+                onClick={() =>
+                  setCollapsedSections((prev) => ({ ...prev, [section.id]: !isCollapsed }))
+                }
+                aria-expanded={!isCollapsed}
+                aria-controls={`sidebar-nav-group-${section.id}`}
+              >
+                <span>{section.label}</span>
+                <ChevronDown
+                  size={14}
+                  className={`sidebar-nav-group-chevron ${isCollapsed ? 'collapsed' : ''}`}
+                />
+              </button>
+
+              <div
+                id={`sidebar-nav-group-${section.id}`}
+                className={`sidebar-nav-group-items ${isCollapsed ? 'collapsed' : ''}`}
+              >
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    end={item.exact}
+                    className={({ isActive }) =>
+                      `sidebar-nav-item ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <item.icon size={18} />
+                    <span>{item.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </nav>
 
       <div className="sidebar-footer">

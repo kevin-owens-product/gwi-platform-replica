@@ -105,6 +105,57 @@
   overflow-x: hidden;
 }
 
+.sidebar-nav-group + .sidebar-nav-group {
+  margin-top: var(--spacing-xs);
+}
+
+.sidebar-nav-group-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--transition-fast),
+              color var(--transition-fast);
+}
+
+.sidebar-nav-group-toggle:hover {
+  background-color: var(--color-sidebar-hover);
+  color: var(--color-text-secondary);
+}
+
+.sidebar-nav-group-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.sidebar-nav-group-chevron {
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.sidebar-nav-group-chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.sidebar-nav-group-items {
+  margin-top: 2px;
+}
+
+.sidebar-nav-group-items.collapsed {
+  display: none;
+}
+
 /* Thin scrollbar inside the nav area */
 .sidebar-nav::-webkit-scrollbar {
   width: 4px;

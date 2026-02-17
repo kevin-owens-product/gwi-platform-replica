@@ -4,6 +4,7 @@ import { Sparkles, ChevronDown, Maximize2 } from 'lucide-react'
 import SparkChat from './SparkChat'
 import type { SparkAction, SparkContext } from '@/api/types'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { buildTemplatePrompt, getSparkContextType, resolveStarterTemplates, trackStarterEvent } from '@/utils/template-resolver'
 import './SparkPanel.css'
 
 interface SuggestedPrompt {
@@ -15,6 +16,7 @@ interface SparkPanelProps {
   suggestedPrompts?: SuggestedPrompt[]
   defaultOpen?: boolean
   onAction?: (action: SparkAction) => void
+  agentId?: string
 }
 
 export default function SparkPanel({
@@ -22,10 +24,12 @@ export default function SparkPanel({
   suggestedPrompts = [],
   defaultOpen = false,
   onAction,
+  agentId,
 }: SparkPanelProps) {
   const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(defaultOpen)
   const [selectedPrompt, setSelectedPrompt] = useState<string | undefined>(undefined)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined)
   const [lastUserMessage, setLastUserMessage] = useState<string | undefined>(undefined)
   const activeProjectId = useWorkspaceStore((s) => s.activeProjectId)
   const activeTeamId = useWorkspaceStore((s) => s.activeTeamId)
@@ -36,10 +40,32 @@ export default function SparkPanel({
     team_id: activeTeamId ?? context.team_id,
   }
 
+  const contextType = getSparkContextType(mergedContext) ?? 'general'
+  const resolvedTemplates = resolveStarterTemplates({
+    agentId,
+    contextType,
+    limit: 4,
+  })
+  const promptPills = [
+    ...resolvedTemplates.map((template) => ({
+      id: template.id,
+      label: template.title,
+      prompt: buildTemplatePrompt(template),
+      templateId: template.id,
+    })),
+    ...suggestedPrompts.map((prompt, i) => ({
+      id: `suggested-${i}`,
+      label: prompt.label,
+      prompt: prompt.label,
+      templateId: undefined as string | undefined,
+    })),
+  ].slice(0, 6)
+
   const handleExpandToSpark = (e: React.MouseEvent) => {
     e.stopPropagation()
     const params = new URLSearchParams()
     if (lastUserMessage) params.set('prompt', lastUserMessage)
+    if (agentId) params.set('agent', agentId)
 
     // Serialize context into query params
     const contextType = mergedContext.chart_id
@@ -66,9 +92,50 @@ export default function SparkPanel({
     navigate(qs ? `/app/agent-spark?${qs}` : '/app/agent-spark')
   }
 
-  const handlePromptClick = (prompt: string) => {
+  const handlePromptClick = (prompt: string, templateId?: string) => {
     setSelectedPrompt(prompt)
+    setSelectedTemplateId(templateId)
+    if (templateId) {
+      trackStarterEvent('starter_template_selected', {
+        entry_point: 'spark_panel',
+        template_id: templateId,
+        agent_id: agentId,
+        context_type: contextType,
+      })
+    }
     if (!isOpen) setIsOpen(true)
+  }
+
+  const handleMoreTemplates = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const params = new URLSearchParams()
+    if (agentId) params.set('agent', agentId)
+    params.set('open_templates', '1')
+    if (resolvedTemplates[0]) {
+      params.set('template_id', resolvedTemplates[0].id)
+    }
+
+    const contextType = mergedContext.chart_id
+      ? 'chart'
+      : mergedContext.crosstab_id
+        ? 'crosstab'
+        : mergedContext.dashboard_id
+          ? 'dashboard'
+          : mergedContext.audience_id
+            ? 'audience'
+            : undefined
+    const contextId = mergedContext.chart_id ?? mergedContext.crosstab_id ?? mergedContext.dashboard_id ?? mergedContext.audience_id
+
+    if (contextType && contextId) {
+      params.set('context_type', contextType)
+      params.set('context_id', contextId)
+    }
+    if (mergedContext.wave_ids?.length) params.set('wave_ids', mergedContext.wave_ids.join(','))
+    if (mergedContext.location_ids?.length) params.set('location_ids', mergedContext.location_ids.join(','))
+    if (mergedContext.project_id) params.set('project_id', mergedContext.project_id)
+    if (mergedContext.team_id) params.set('team_id', mergedContext.team_id)
+
+    navigate(`/app/agent-spark?${params.toString()}`)
   }
 
   return (
@@ -98,17 +165,20 @@ export default function SparkPanel({
 
       {isOpen && (
         <div className="spark-panel__body">
-          {suggestedPrompts.length > 0 && (
+          {promptPills.length > 0 && (
             <div className="spark-panel__prompts">
-              {suggestedPrompts.map((prompt, i) => (
+              {promptPills.map((prompt) => (
                 <button
-                  key={i}
+                  key={prompt.id}
                   className="spark-panel__prompt-pill"
-                  onClick={() => handlePromptClick(prompt.label)}
+                  onClick={() => handlePromptClick(prompt.prompt, prompt.templateId)}
                 >
                   {prompt.label}
                 </button>
               ))}
+              <button className="spark-panel__prompt-more" onClick={handleMoreTemplates}>
+                More templates
+              </button>
             </div>
           )}
 
@@ -118,7 +188,18 @@ export default function SparkPanel({
               context={mergedContext}
               initialInput={selectedPrompt}
               onAction={onAction}
-              onMessageSent={setLastUserMessage}
+              onMessageSent={(message) => {
+                setLastUserMessage(message)
+                if (selectedTemplateId) {
+                  trackStarterEvent('first_message_sent_from_template', {
+                    entry_point: 'spark_panel',
+                    template_id: selectedTemplateId,
+                    agent_id: agentId,
+                    context_type: contextType,
+                  })
+                  setSelectedTemplateId(undefined)
+                }
+              }}
             />
           </div>
         </div>

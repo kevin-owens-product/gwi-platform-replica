@@ -1,6 +1,7 @@
 // Agent Spark (AI) types for the GWI Platform API -- fully enhanced
 
 import type { ChartType } from './chart'
+import type { AgentAnalysisConfig } from './agentic'
 
 export interface SparkMessage {
   id: string
@@ -108,6 +109,7 @@ export interface SparkContext {
   project_id?: string
   team_id?: string
   active_filters?: Record<string, unknown>
+  analysis_config?: AgentAnalysisConfig
 }
 
 export interface SparkChatResponse {

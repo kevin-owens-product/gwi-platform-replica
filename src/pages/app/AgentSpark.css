@@ -211,6 +211,34 @@
   margin-bottom: var(--spacing-xs);
 }
 
+.agentic-card-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: var(--spacing-xs);
+}
+
+.agentic-card-filter-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: var(--radius-full, 99px);
+  background: var(--color-surface-secondary, #f3f4f6);
+  color: var(--color-text-secondary, #6b7280);
+  text-transform: capitalize;
+}
+
+.agentic-card-filter-tag--wave {
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+}
+
+.agentic-card-filter-tag--compare {
+  background: rgba(139, 92, 246, 0.08);
+  color: #7c3aed;
+}
+
 .agentic-output-list {
   display: grid;
   gap: 6px;

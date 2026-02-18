@@ -158,7 +158,7 @@ const seedRuns = [
     id: 'run-001', flow_id: 'flow-brief-interpretation', status: 'completed',
     started_at: '2026-02-10T18:10:00Z', completed_at: '2026-02-10T18:12:30Z',
     brief: 'Summarize streaming bundle adoption for Gen Z creators in US/UK with a client-ready narrative.',
-    analysis_config: null,
+    analysis_config: { timeframe: 'quarterly', granularity: 'question', rebase_mode: 'column', wave_ids: ['wave_2024q4', 'wave_2024q3'], compare_waves: true },
     outputs: [
       { id: 'out-001', label: 'Structured Brief', type: 'insight', summary: 'Objective, audience, markets, KPIs, and output spec confirmed.' },
       { id: 'out-002', label: 'Audience + Crosstab Snapshot', type: 'crosstab', summary: 'Gen Z creators index 1.58x for bundle adoption with significance tags.' },
@@ -169,7 +169,7 @@ const seedRuns = [
     id: 'run-002', flow_id: 'flow-campaign-lifecycle', status: 'running',
     started_at: '2026-02-10T18:20:00Z', completed_at: null,
     brief: 'Plan and measure a Q2 streaming campaign targeting hybrid workers globally.',
-    analysis_config: null,
+    analysis_config: { timeframe: 'monthly', granularity: 'datapoint', wave_ids: ['wave_2024q4'] },
     outputs: [
       { id: 'out-004', label: 'Audience Definition', type: 'dataset', summary: 'Hybrid workers segment assembled across five key markets.' },
       { id: 'out-005', label: 'Early Lift Snapshot', type: 'crosstab', summary: '1.32x lift in ad-supported streaming intent among target segment.' },
@@ -179,7 +179,7 @@ const seedRuns = [
     id: 'run-003', flow_id: 'flow-governance-agent', status: 'completed',
     started_at: '2026-02-11T09:05:00Z', completed_at: '2026-02-11T09:07:45Z',
     brief: 'Validate claims in the Q1 category report before client distribution.',
-    analysis_config: null,
+    analysis_config: { granularity: 'dataset', rebase_mode: 'total', wave_ids: ['wave_2024q4', 'wave_usa_2024', 'wave_biz_2024q4'], compare_waves: true },
     outputs: [
       { id: 'out-006', label: 'Citation Bundle', type: 'report', summary: 'Attached source references and wave metadata for all claims.' },
       { id: 'out-007', label: 'Validation Report', type: 'insight', summary: 'Flagged two medium-confidence claims requiring caveat language.' },

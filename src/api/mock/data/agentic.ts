@@ -397,6 +397,13 @@ export const agenticRuns: AgenticRun[] = [
     started_at: '2026-02-10T18:10:00Z',
     completed_at: '2026-02-10T18:12:30Z',
     brief: 'Summarize streaming bundle adoption for Gen Z creators in US/UK with a client-ready narrative.',
+    analysis_config: {
+      timeframe: 'quarterly',
+      granularity: 'question',
+      rebase_mode: 'column',
+      wave_ids: ['wave_2024q4', 'wave_2024q3'],
+      compare_waves: true,
+    },
     outputs: [
       {
         id: 'out-001',
@@ -424,6 +431,11 @@ export const agenticRuns: AgenticRun[] = [
     status: 'running',
     started_at: '2026-02-10T18:20:00Z',
     brief: 'Plan and measure a Q2 streaming campaign targeting hybrid workers globally.',
+    analysis_config: {
+      timeframe: 'monthly',
+      granularity: 'datapoint',
+      wave_ids: ['wave_2024q4'],
+    },
     outputs: [
       {
         id: 'out-004',
@@ -446,6 +458,12 @@ export const agenticRuns: AgenticRun[] = [
     started_at: '2026-02-11T09:05:00Z',
     completed_at: '2026-02-11T09:07:45Z',
     brief: 'Validate claims in the Q1 category report before client distribution.',
+    analysis_config: {
+      granularity: 'dataset',
+      rebase_mode: 'total',
+      wave_ids: ['wave_2024q4', 'wave_usa_2024', 'wave_biz_2024q4'],
+      compare_waves: true,
+    },
     outputs: [
       {
         id: 'out-006',

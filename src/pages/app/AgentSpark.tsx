@@ -945,6 +945,35 @@ export default function AgentSpark(): React.JSX.Element {
                   <div className="agentic-card-meta">
                     Flow: {flowNameById[run.flow_id] ?? run.flow_id} • Status: {run.status}
                   </div>
+                  {run.analysis_config && (
+                    <div className="agentic-card-filters">
+                      {run.analysis_config.timeframe && (
+                        <span className="agentic-card-filter-tag">
+                          {run.analysis_config.timeframe}
+                        </span>
+                      )}
+                      {run.analysis_config.granularity && (
+                        <span className="agentic-card-filter-tag">
+                          {run.analysis_config.granularity}
+                        </span>
+                      )}
+                      {run.analysis_config.rebase_mode && (
+                        <span className="agentic-card-filter-tag">
+                          {run.analysis_config.rebase_mode.replace('_', ' ')}
+                        </span>
+                      )}
+                      {run.analysis_config.wave_ids?.map((waveId) => (
+                        <span key={waveId} className="agentic-card-filter-tag agentic-card-filter-tag--wave">
+                          {waveId.replace('wave_', '').replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                      {run.analysis_config.compare_waves && (
+                        <span className="agentic-card-filter-tag agentic-card-filter-tag--compare">
+                          compare
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <div className="agentic-output-list">
                     {run.outputs.slice(0, 5).map((output) => (
                       <div key={output.id} className="agentic-output">

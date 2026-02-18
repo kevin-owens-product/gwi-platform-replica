@@ -1,5 +1,5 @@
 import { apiClient } from '../client'
-import type { AgenticCapabilityInventory, AgenticFlow, AgenticRun } from '../types/agentic'
+import type { AgenticCapabilityInventory, AgenticFlow, AgenticRun, AgentAnalysisConfig } from '../types/agentic'
 
 export const agenticApi = {
   getInventory: async (): Promise<AgenticCapabilityInventory> =>
@@ -14,6 +14,6 @@ export const agenticApi = {
   listRuns: async (): Promise<AgenticRun[]> =>
     apiClient.get('agentic/runs').json(),
 
-  runFlow: async (flowId: string, brief: string): Promise<AgenticRun> =>
-    apiClient.post('agentic/runs', { json: { flow_id: flowId, brief } }).json(),
+  runFlow: async (flowId: string, brief: string, analysisConfig?: AgentAnalysisConfig): Promise<AgenticRun> =>
+    apiClient.post('agentic/runs', { json: { flow_id: flowId, brief, analysis_config: analysisConfig } }).json(),
 }

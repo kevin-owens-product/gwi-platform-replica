@@ -1,5 +1,21 @@
 import type { SparkAction, SparkCitation } from './spark'
 
+// ── Agent Analysis Config ───────────────────────────────────────────
+export type AgentTimeframe = 'quarterly' | 'monthly' | 'weekly'
+
+export type AgentGranularity = 'dataset' | 'question' | 'datapoint'
+
+export type AgentRebaseMode = 'column' | 'row' | 'total' | 'respondent_base'
+
+export interface AgentAnalysisConfig {
+  timeframe?: AgentTimeframe
+  granularity?: AgentGranularity
+  rebase_mode?: AgentRebaseMode
+  wave_ids?: string[]
+  compare_waves?: boolean
+}
+
+// ── Capabilities ────────────────────────────────────────────────────
 export type AgenticCapabilityType = 'agent' | 'tool' | 'system'
 
 export type AgenticCapabilityCategory =
@@ -67,6 +83,7 @@ export interface AgenticRun {
   started_at: string
   completed_at?: string
   brief: string
+  analysis_config?: AgentAnalysisConfig
   outputs: AgenticRunOutput[]
 }
 

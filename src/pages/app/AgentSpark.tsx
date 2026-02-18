@@ -13,6 +13,7 @@ import Button from '@/components/shared/Button';
 import IntegrationDestinationPicker from '@/components/integrations/IntegrationDestinationPicker';
 import { useSparkConversations, useSparkConversation, useDeleteSparkConversation } from '@/hooks/useSpark';
 import { useAgenticFlows, useAgenticRuns, useRunAgenticFlow } from '@/hooks/useAgentic';
+import { useAgentAnalysisConfig } from '@/hooks/useAgentAnalysisConfig';
 import { useDeliverIntegration } from '@/hooks/useIntegrations';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { formatRelativeDate } from '@/utils/format';
@@ -22,6 +23,7 @@ import { getAgentById } from '@/data/agents';
 import { getStarterTemplateById } from '@/data/agent-templates';
 import { buildTemplatePrompt, getSparkContextType, trackStarterEvent } from '@/utils/template-resolver';
 import { platformLinkages } from '@/agentic/registry';
+import AgentAnalysisFilters from '@/components/agentic/AgentAnalysisFilters';
 import './AgentSpark.css';
 
 const CONTEXT_TYPE_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
@@ -85,6 +87,7 @@ export default function AgentSpark(): React.JSX.Element {
   const { data: agenticRuns, refetch: refetchAgenticRuns } = useAgenticRuns();
   const runAgenticFlow = useRunAgenticFlow();
   const deliverIntegration = useDeliverIntegration();
+  const analysisConfig = useAgentAnalysisConfig();
 
   const activeContext = useWorkspaceStore((s) => s.activeContext);
 
@@ -208,6 +211,7 @@ export default function AgentSpark(): React.JSX.Element {
     setTrackedTemplateFirstMessage(false);
     setIsTemplateDrawerOpen(true);
     setActiveConversationId(undefined);
+    analysisConfig.resetConfig();
     navigate('/app/agent-spark');
   };
 
@@ -395,8 +399,9 @@ export default function AgentSpark(): React.JSX.Element {
       toast.error('Select a flow to run');
       return;
     }
+    const configPayload = analysisConfig.hasActiveFilters ? analysisConfig.config : undefined;
     runAgenticFlow.mutate(
-      { flowId: selectedFlowId, brief },
+      { flowId: selectedFlowId, brief, analysisConfig: configPayload },
       {
         onSuccess: () => {
           toast.success('Flow completed');
@@ -791,6 +796,9 @@ export default function AgentSpark(): React.JSX.Element {
                         agent_category: activeAgent.category,
                       }
                     : {}),
+                  ...(analysisConfig.hasActiveFilters
+                    ? { analysis_config: analysisConfig.config }
+                    : {}),
                 }
               })()}
               onConversationCreated={handleConversationCreated}
@@ -839,6 +847,18 @@ export default function AgentSpark(): React.JSX.Element {
               {runAgenticFlow.isPending ? 'Running...' : 'Run flow'}
             </button>
           </div>
+
+          <AgentAnalysisFilters
+            config={analysisConfig.config}
+            onTimeframeChange={analysisConfig.setTimeframe}
+            onGranularityChange={analysisConfig.setGranularity}
+            onRebaseModeChange={analysisConfig.setRebaseMode}
+            onAddWave={analysisConfig.addWaveId}
+            onRemoveWave={analysisConfig.removeWaveId}
+            onCompareWavesChange={analysisConfig.setCompareWaves}
+            onReset={analysisConfig.resetConfig}
+            hasActiveFilters={analysisConfig.hasActiveFilters}
+          />
 
           <div className="agentic-section">
             <div className="agentic-section-title">Selected Flow Blueprint</div>

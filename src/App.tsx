@@ -12,6 +12,7 @@ import ResendConfirmation from './pages/auth/ResendConfirmation'
 // Layout + ProtectedRoute (needed immediately)
 import AppLayout from './components/layout/AppLayout'
 import ProtectedRoute from './components/auth/ProtectedRoute'
+import { insightsStudioV2Enabled } from './features/insights/config'
 
 // Lazy-loaded App Pages
 const Home = lazy(() => import('./pages/app/Home'))
@@ -80,7 +81,14 @@ function App() {
           <Route path="canvas/goals" element={<Suspense fallback={<PageLoader />}><Canvas /></Suspense>} />
           <Route path="canvas/audiences" element={<Suspense fallback={<PageLoader />}><CanvasAudiences /></Suspense>} />
           <Route path="insights" element={<Suspense fallback={<PageLoader />}><InsightsStudio /></Suspense>} />
-          <Route path="insights/:assetId" element={<Suspense fallback={<PageLoader />}><InsightsStudio /></Suspense>} />
+          {insightsStudioV2Enabled ? (
+            <>
+              <Route path="insights/:step" element={<Suspense fallback={<PageLoader />}><InsightsStudio /></Suspense>} />
+              <Route path="insights/:step/:draftId" element={<Suspense fallback={<PageLoader />}><InsightsStudio /></Suspense>} />
+            </>
+          ) : (
+            <Route path="insights/:assetId" element={<Suspense fallback={<PageLoader />}><InsightsStudio /></Suspense>} />
+          )}
           <Route path="reports" element={<Suspense fallback={<PageLoader />}><Reports /></Suspense>} />
           <Route path="tv-study" element={<Suspense fallback={<PageLoader />}><TvStudy /></Suspense>} />
           <Route path="printrf" element={<Suspense fallback={<PageLoader />}><PrintRF /></Suspense>} />

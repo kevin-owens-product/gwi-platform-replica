@@ -6,6 +6,8 @@ import type { StatsQueryResponse } from './query'
 
 export type InsightAssetType = 'segment' | 'view' | 'board' | 'story'
 export type InsightViewMode = 'chart' | 'crosstab'
+export type InsightStudioStep = 'define' | 'query' | 'compare' | 'publish'
+export type InsightDraftStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 export interface InsightFilterSet {
   id: string
@@ -182,4 +184,43 @@ export interface ConvertInsightAssetRequest {
 export interface ConvertInsightAssetResponse {
   source_asset_id: string
   converted_asset: InsightAsset
+}
+
+export interface InsightPublishPlan {
+  publish_segment: boolean
+  publish_view: boolean
+  publish_board: boolean
+  publish_story: boolean
+}
+
+export interface InsightPublishResultItem {
+  asset_id: string
+  type: InsightAssetType
+  insights_path: string
+  legacy_links: InsightLegacyLink[]
+}
+
+export interface InsightPublishResult {
+  segment?: InsightPublishResultItem
+  view?: InsightPublishResultItem
+  board?: InsightPublishResultItem
+  story?: InsightPublishResultItem
+}
+
+export interface InsightStudioDraft {
+  id: string
+  asset_id?: string
+  name: string
+  objective: string
+  step: InsightStudioStep
+  query_spec: InsightQuerySpec
+  view_config: InsightViewConfig
+  board_config: InsightBoardConfig
+  story_config: InsightStoryConfig
+  selected_question_ids: string[]
+  base_audience_id?: string
+  last_run_at?: string
+  last_saved_at?: string
+  publish_plan: InsightPublishPlan
+  legacy_links?: InsightLegacyLink[]
 }

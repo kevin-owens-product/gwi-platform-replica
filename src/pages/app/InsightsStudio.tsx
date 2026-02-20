@@ -1,76 +1,51 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Save } from 'lucide-react'
 import toast from 'react-hot-toast'
 import {
-  InsightsBoardStoryPane,
-  InsightsDataPane,
-  InsightsQueryPane,
-  InsightsSegmentPane,
-  InsightsViewPane,
-} from '@/components/insights'
+  CompareStep,
+  DefineStep,
+  InsightsContextRail,
+  InsightsLanding,
+  InsightsStepper,
+  PublishStep,
+  QueryStep,
+} from '@/components/insights/workflow'
 import { Button } from '@/components/shared'
 import {
-  useConvertInsightAsset,
-  useCreateInsightAsset,
-  useInsightAsset,
+  useAutosaveInsightDraft,
   useInsightAssets,
-  useInsightLineage,
+  useInsightDraft,
+  useInsightStepValidation,
+  usePublishInsightDraft,
   useRunInsightQuery,
-  useUpdateInsightAsset,
 } from '@/hooks/useInsights'
 import { useAudiences } from '@/hooks/useAudiences'
 import { useQuestions, useStudies, useWaves } from '@/hooks/useTaxonomy'
+import { insightsStudioEnabled, insightsStudioV2Enabled } from '@/features/insights/config'
+import {
+  getNextStep,
+  getPreviousStep,
+  isInsightStudioStep,
+  resolveInsightRoute,
+} from '@/features/insights/defaults'
+import { createFlowDraftPatch, insightFlowTemplates, type InsightFlowTemplate } from '@/features/insights/flow-library'
+import { useInsightDraftStore } from '@/features/insights/draft-store'
+import { resolveInsightExecutionContext } from '@/features/insights/runtime'
+import { isStepReachable } from '@/features/insights/validation'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { trackInsightsTelemetry } from '@/utils/insights-telemetry'
 import type {
-  Audience,
-  ChartType,
-  InsightAsset,
-  InsightAssetType,
   InsightCompatibilityResult,
   InsightFilterSet,
   InsightLegacyLink,
+  InsightPublishResult,
   InsightQuerySpec,
-  InsightStoryStep,
+  InsightStudioStep,
   RunInsightQueryResponse,
-  WaveId,
 } from '@/api/types'
+import LegacyInsightsStudio from './InsightsStudioLegacy'
 import './InsightsStudio.css'
-
-const DEFAULT_METRICS: InsightQuerySpec['metrics'] = ['audience_percentage']
-
-function mergeFilters(...layers: InsightFilterSet[][]): InsightFilterSet[] {
-  return layers.flat()
-}
-
-function createInitialQuerySpec(defaultStudyId: string | null, defaultWaveId: string | null, defaultMetric: string): InsightQuerySpec {
-  const waveIds: WaveId[] = defaultWaveId
-    ? [{ study_id: defaultStudyId ?? 'study_core', wave_id: defaultWaveId }]
-    : [{ study_id: defaultStudyId ?? 'study_core', wave_id: 'wave_2024q4' }]
-
-  return {
-    question_ids: [],
-    row_question_ids: [],
-    column_question_ids: [],
-    column_audience_ids: [],
-    metrics: defaultMetric ? [defaultMetric as InsightQuerySpec['metrics'][number]] : DEFAULT_METRICS,
-    filters: [],
-    time: {
-      wave_ids: waveIds,
-      comparison_wave_ids: [],
-      range_preset: 'latest',
-      trend_mode: 'off',
-    },
-    rebase: {
-      mode: 'respondent_base',
-    },
-    dataset: {
-      primary_study_id: defaultStudyId ?? 'study_core',
-      allowed_study_ids: defaultStudyId ? [defaultStudyId] : ['study_core'],
-      enforce_compatibility: true,
-    },
-  }
-}
 
 function mergeQuerySpec(base: InsightQuerySpec, patch: Partial<InsightQuerySpec>): InsightQuerySpec {
   return {
@@ -105,312 +80,548 @@ function legacyPath(type: string, id: string): string {
   }
 }
 
+function getPrimaryActionLabel(step: InsightStudioStep): string {
+  switch (step) {
+    case 'define':
+      return 'Continue'
+    case 'query':
+      return 'Run Baseline'
+    case 'compare':
+      return 'Run Compare'
+    case 'publish':
+      return 'Publish'
+    default:
+      return 'Continue'
+  }
+}
+
 export default function InsightsStudio(): React.JSX.Element {
-  const { assetId = '' } = useParams<{ assetId: string }>()
+  const { step: routeStep, draftId: routeDraftId } = useParams<{ step?: string; draftId?: string }>()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
   const legacyType = searchParams.get('legacy_type') ?? undefined
   const legacyId = searchParams.get('legacy_id') ?? undefined
 
+  const resolvedRoute = resolveInsightRoute(routeStep, routeDraftId)
+  const legacyRouteDraftId = resolvedRoute.draftId
+  const currentStep = resolvedRoute.step
+
   const activeProjectId = useWorkspaceStore((state) => state.activeProjectId)
+  const favorites = useWorkspaceStore((state) => state.favorites)
   const insightDefaults = useWorkspaceStore((state) => state.insightWorkspaceDefaults)
-  const setActiveInsightId = useWorkspaceStore((state) => state.setActiveInsightId)
   const setInsightWorkspaceDefaults = useWorkspaceStore((state) => state.setInsightWorkspaceDefaults)
+  const toggleFavorite = useWorkspaceStore((state) => state.toggleFavorite)
+
+  const localDraftMap = useInsightDraftStore((state) => state.drafts)
+  const createDraftInStore = useInsightDraftStore((state) => state.createDraft)
+  const setDraftCompatibility = useInsightDraftStore((state) => state.setDraftCompatibility)
+  const markRunSuccess = useInsightDraftStore((state) => state.markRunSuccess)
 
   const [queryText, setQueryText] = useState('')
-  const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([])
-  const [segmentName, setSegmentName] = useState('New Insight Segment')
-  const [selectedAudienceId, setSelectedAudienceId] = useState('')
-  const [querySpec, setQuerySpec] = useState<InsightQuerySpec>(() =>
-    createInitialQuerySpec(insightDefaults.datasetStudyId, insightDefaults.waveId, insightDefaults.metric),
-  )
-  const [viewMode, setViewMode] = useState<'chart' | 'crosstab'>('chart')
-  const [chartType, setChartType] = useState<ChartType>('bar')
   const [queryResult, setQueryResult] = useState<RunInsightQueryResponse | null>(null)
-  const [compatibility, setCompatibility] = useState<InsightCompatibilityResult | undefined>(undefined)
-  const [boardViewIds, setBoardViewIds] = useState<string[]>([])
-  const [storySteps, setStorySteps] = useState<InsightStoryStep[]>([])
+  const [publishResult, setPublishResult] = useState<InsightPublishResult | null>(null)
+
+  const {
+    draft,
+    draftId,
+    ensureDraftId,
+    updateDraft,
+    isHydrating,
+  } = useInsightDraft(legacyRouteDraftId, {
+    studyId: insightDefaults.datasetStudyId,
+    waveId: insightDefaults.waveId,
+    metric: insightDefaults.metric,
+    step: currentStep,
+  })
 
   const { data: questionsResponse } = useQuestions({ per_page: 200, search: queryText || undefined })
   const { data: audiencesResponse } = useAudiences({ per_page: 100, project_id: activeProjectId || undefined })
   const { data: studies } = useStudies()
-  const { data: waves } = useWaves({ study_id: querySpec.dataset.primary_study_id || undefined })
-
+  const { data: waves } = useWaves({ study_id: draft?.query_spec.dataset.primary_study_id || undefined })
   const { data: assetsResponse } = useInsightAssets({ per_page: 100, project_id: activeProjectId || undefined })
-  const { data: loadedAsset } = useInsightAsset(assetId)
-  const { data: lineage } = useInsightLineage(assetId)
 
-  const createAsset = useCreateInsightAsset()
-  const updateAsset = useUpdateInsightAsset()
   const runQuery = useRunInsightQuery()
-  const convertAsset = useConvertInsightAsset()
+  const autosaveDraft = useAutosaveInsightDraft()
+  const publishDraft = usePublishInsightDraft()
 
   const questions = useMemo(() => questionsResponse?.data ?? [], [questionsResponse])
   const audiences = useMemo(() => audiencesResponse?.data ?? [], [audiencesResponse])
   const assets = useMemo(() => assetsResponse?.data ?? [], [assetsResponse])
-
-  const availableViews = useMemo(
-    () => assets.filter((asset) => asset.type === 'view'),
-    [assets],
+  const localDrafts = useMemo(() => Object.values(localDraftMap), [localDraftMap])
+  const pinnedFlowIds = useMemo(
+    () => new Set(favorites.filter((item) => item.type === 'insights_flow').map((item) => item.id)),
+    [favorites],
   )
+
+  const availableViews = useMemo(() => assets.filter((asset) => asset.type === 'view'), [assets])
+  const availableBoards = useMemo(() => assets.filter((asset) => asset.type === 'board'), [assets])
 
   const selectedAudience = useMemo(
-    () => audiences.find((audience) => audience.id === selectedAudienceId),
-    [audiences, selectedAudienceId],
+    () => audiences.find((audience) => audience.id === draft?.base_audience_id),
+    [audiences, draft?.base_audience_id],
   )
 
-  useEffect(() => {
-    if (!loadedAsset) return
-
-    setActiveInsightId(loadedAsset.id)
-    setSegmentName(loadedAsset.name)
-
-    if (loadedAsset.query_spec) {
-      setQuerySpec(loadedAsset.query_spec)
-      setSelectedQuestionIds(loadedAsset.query_spec.question_ids)
-    }
-
-    if (loadedAsset.view_config) {
-      setViewMode(loadedAsset.view_config.mode)
-      setChartType(loadedAsset.view_config.chart_type)
-    }
-
-    if (loadedAsset.board_config) {
-      setBoardViewIds(loadedAsset.board_config.view_asset_ids)
-    }
-
-    if (loadedAsset.story_config) {
-      setStorySteps(loadedAsset.story_config.steps)
-    }
-  }, [loadedAsset, setActiveInsightId])
+  const validations = useInsightStepValidation(draft)
 
   useEffect(() => {
-    setQuerySpec((prev) => ({
-      ...prev,
-      question_ids: selectedQuestionIds,
-      row_question_ids: selectedQuestionIds,
-    }))
-  }, [selectedQuestionIds])
+    if (!insightsStudioV2Enabled) return
+    if (routeStep && !isInsightStudioStep(routeStep)) {
+      navigate(`/app/insights/publish/${routeStep}`, { replace: true })
+    }
+  }, [navigate, routeStep])
 
   useEffect(() => {
-    setQuerySpec((prev) => ({
-      ...prev,
-      base_audience: selectedAudience?.expression,
-    }))
-  }, [selectedAudience])
+    if (!insightsStudioV2Enabled) return
+    if (!routeStep) return
+    if (currentStep === 'define') return
+    if (isHydrating) return
+    if (draft) return
 
-  const effectiveFilters = useMemo(() => {
-    const workspaceFilters = (insightDefaults.filterPresets ?? []).map<InsightFilterSet>((filterPreset, index) => ({
-      id: `workspace_${filterPreset}_${index}`,
-      question_id: 'workspace_preset',
-      datapoint_ids: [filterPreset],
-      operator: 'include',
-      source: 'workspace',
-    }))
+    navigate('/app/insights/define', { replace: true })
+  }, [currentStep, draft, isHydrating, navigate, routeStep])
 
-    return mergeFilters(workspaceFilters, querySpec.filters)
-  }, [insightDefaults.filterPresets, querySpec.filters])
+  useEffect(() => {
+    if (!routeStep) return
 
-  const toggleQuestion = (questionId: string) => {
-    setSelectedQuestionIds((prev) =>
-      prev.includes(questionId) ? prev.filter((id) => id !== questionId) : [...prev, questionId],
-    )
-  }
+    trackInsightsTelemetry('insights.step.entered', {
+      step: currentStep,
+      draft_id: draft?.id ?? null,
+    })
+  }, [currentStep, draft?.id, routeStep])
 
-  const handleApplySuggestion = (suggestionId: string) => {
-    const suggestion = compatibility?.suggestions.find((item) => item.id === suggestionId)
-    if (!suggestion) return
+  useEffect(() => {
+    if (!routeStep) return
+    if (!draft) return
+    if (draft.step === currentStep) return
 
-    setQuerySpec((prev) => mergeQuerySpec(prev, suggestion.patch))
-    toast.success('Compatibility suggestion applied')
-  }
+    updateDraft(draft.id, {
+      step: currentStep,
+    }, { structural: false, touch: false })
+  }, [currentStep, draft, routeStep, updateDraft])
 
-  const handleRunQuery = async () => {
+  useEffect(() => {
+    if (!routeStep) return
+    if (!draft) return
+
+    setInsightWorkspaceDefaults({
+      datasetStudyId: draft.query_spec.dataset.primary_study_id ?? null,
+      waveId: draft.query_spec.time.wave_ids[0]?.wave_id ?? null,
+      metric: draft.query_spec.metrics[0] ?? 'audience_percentage',
+    })
+  }, [draft, routeStep, setInsightWorkspaceDefaults])
+
+  useEffect(() => {
+    if (!routeStep) return
+    if (!draft || draft.change_token === 0) return
+
+    const timeoutId = setTimeout(() => {
+      autosaveDraft.mutate({
+        draft,
+        projectId: activeProjectId || undefined,
+      })
+    }, 2000)
+
+    return () => {
+      clearTimeout(timeoutId)
+    }
+  }, [activeProjectId, autosaveDraft, draft, routeStep])
+
+  const ensureRoutedDraftId = useCallback((step: InsightStudioStep = currentStep) => {
+    const ensuredId = ensureDraftId()
+
+    const legacyLink = legacyType && legacyId
+      ? [{ type: legacyType as InsightLegacyLink['type'], id: legacyId, path: legacyPath(legacyType, legacyId) }]
+      : undefined
+
+    if (legacyLink && (!draft || !draft.legacy_links || draft.legacy_links.length === 0)) {
+      updateDraft(ensuredId, { legacy_links: legacyLink }, { structural: false })
+    }
+
+    if (draftId !== ensuredId || routeStep !== step) {
+      navigate(`/app/insights/${step}/${ensuredId}`, { replace: !draftId })
+    }
+
+    return ensuredId
+  }, [currentStep, draft, draftId, ensureDraftId, legacyId, legacyType, navigate, routeStep, updateDraft])
+
+  useEffect(() => {
+    if (!insightsStudioV2Enabled) return
+    if (routeStep) return
+    if (!legacyType || !legacyId) return
+
+    const createdDraftId = ensureRoutedDraftId('define')
+    navigate(`/app/insights/define/${createdDraftId}`, { replace: true })
+  }, [ensureRoutedDraftId, legacyId, legacyType, navigate, routeStep])
+
+  const updateCurrentDraft = useCallback((patch: Parameters<typeof updateDraft>[1], options?: { structural?: boolean; touch?: boolean }) => {
+    const ensuredId = ensureRoutedDraftId(currentStep)
+    updateDraft(ensuredId, patch, {
+      structural: options?.structural ?? true,
+      touch: options?.touch ?? true,
+    })
+  }, [currentStep, ensureRoutedDraftId, updateDraft])
+
+  const applyCompatibilityToDraft = useCallback((compatibility: InsightCompatibilityResult | undefined) => {
+    if (!draft) return
+    setDraftCompatibility(draft.id, compatibility)
+  }, [draft, setDraftCompatibility])
+
+  const runWithContext = useCallback(async (
+    source: 'manual' | 'story_review' = 'manual',
+    activeStoryStepId?: string,
+  ) => {
+    if (!draft) return
+
+    const context = resolveInsightExecutionContext({
+      querySpec: draft.query_spec,
+      viewMode: draft.view_config.mode,
+      chartType: draft.view_config.chart_type,
+      workspaceFilterPresets: insightDefaults.filterPresets,
+      boardFilterOverrides: draft.board_config.filter_overrides,
+      storySteps: draft.story_config.steps,
+      activeStoryStepId,
+      assets,
+    })
+
     try {
       const response = await runQuery.mutateAsync({
-        view_mode: viewMode,
+        view_mode: context.viewMode,
         query_spec: {
-          ...querySpec,
-          filters: effectiveFilters,
+          ...context.baseQuerySpec,
+          filters: context.effectiveFilters,
         },
       })
+
       setQueryResult(response)
-      setCompatibility(response.compatibility)
+      applyCompatibilityToDraft(response.compatibility)
+      markRunSuccess(draft.id)
+
+      updateCurrentDraft({
+        query_spec: {
+          ...draft.query_spec,
+          filters: context.effectiveFilters,
+        },
+        view_config: {
+          ...draft.view_config,
+          mode: context.viewMode,
+          chart_type: context.chartType,
+        },
+      }, { structural: false, touch: false })
+
+      trackInsightsTelemetry('insights.query.run', {
+        source,
+        mode: context.viewMode,
+        filter_count: context.effectiveFilters.length,
+        story_step_id: context.activeStoryStep?.id ?? null,
+      })
+
       if (response.compatibility.issues.length > 0) {
         toast('Query ran with compatibility warnings')
+      } else if (source === 'manual') {
+        toast.success(currentStep === 'compare' ? 'Compare query ran' : 'Query ran')
       }
     } catch (error) {
       const nextCompatibility = compatibilityFromError(error)
       if (nextCompatibility) {
-        setCompatibility(nextCompatibility)
+        applyCompatibilityToDraft(nextCompatibility)
+        trackInsightsTelemetry('insights.query.compatibility_blocked', {
+          source,
+          issue_count: nextCompatibility.issues.length,
+          story_step_id: activeStoryStepId ?? null,
+        })
         toast.error('Query blocked by compatibility checks')
       } else {
         toast.error('Failed to run insight query')
       }
     }
+  }, [applyCompatibilityToDraft, assets, currentStep, draft, insightDefaults.filterPresets, markRunSuccess, runQuery, updateCurrentDraft])
+
+  const handleMetricToggle = (metric: InsightQuerySpec['metrics'][number]) => {
+    if (!draft) return
+
+    const hasMetric = draft.query_spec.metrics.includes(metric)
+    const nextMetrics = hasMetric
+      ? draft.query_spec.metrics.filter((item) => item !== metric)
+      : [...draft.query_spec.metrics, metric]
+
+    updateCurrentDraft({
+      query_spec: {
+        ...draft.query_spec,
+        metrics: nextMetrics.length > 0 ? nextMetrics : ['audience_percentage'],
+      },
+    })
   }
 
-  const saveAsset = async (
-    type: InsightAssetType,
-    payload: Partial<InsightAsset>,
-  ) => {
-    const legacyLinks = legacyType && legacyId
-      ? [{ type: legacyType as InsightLegacyLink['type'], id: legacyId, path: legacyPath(legacyType, legacyId) }]
-      : payload.legacy_links
+  const handleToggleQuestion = (questionId: string) => {
+    if (!draft) return
 
-    const createPayload = {
-      type,
-      name: payload.name ?? segmentName,
-      description: payload.description,
-      project_id: activeProjectId || undefined,
-      query_spec: payload.query_spec,
-      view_config: payload.view_config,
-      board_config: payload.board_config,
-      story_config: payload.story_config,
-      legacy_links: legacyLinks,
-      tags: payload.tags,
+    const selectedQuestionIds = draft.selected_question_ids.includes(questionId)
+      ? draft.selected_question_ids.filter((id) => id !== questionId)
+      : [...draft.selected_question_ids, questionId]
+
+    updateCurrentDraft({
+      selected_question_ids: selectedQuestionIds,
+      query_spec: {
+        ...draft.query_spec,
+        question_ids: selectedQuestionIds,
+        row_question_ids: selectedQuestionIds,
+      },
+    })
+  }
+
+  const handleAudienceChange = (audienceId: string) => {
+    if (!draft) return
+
+    const audience = audiences.find((entry) => entry.id === audienceId)
+    updateCurrentDraft({
+      base_audience_id: audienceId || undefined,
+      query_spec: {
+        ...draft.query_spec,
+        base_audience: audience?.expression,
+      },
+    })
+  }
+
+  const handleAddCoreFilter = (filter: Omit<InsightFilterSet, 'id' | 'source'>) => {
+    if (!draft) return
+
+    updateCurrentDraft({
+      query_spec: {
+        ...draft.query_spec,
+        filters: [
+          ...draft.query_spec.filters,
+          {
+            id: `view_filter_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+            source: 'view',
+            ...filter,
+          },
+        ],
+      },
+    })
+  }
+
+  const handleRemoveCoreFilter = (filterId: string) => {
+    if (!draft) return
+
+    updateCurrentDraft({
+      query_spec: {
+        ...draft.query_spec,
+        filters: draft.query_spec.filters.filter((filter) => filter.id !== filterId),
+      },
+    })
+  }
+
+  const handleApplySuggestion = (suggestionId: string) => {
+    if (!draft || !draft.compatibility) return
+
+    const suggestion = draft.compatibility.suggestions.find((item) => item.id === suggestionId)
+    if (!suggestion) return
+
+    updateCurrentDraft({
+      query_spec: mergeQuerySpec(draft.query_spec, suggestion.patch),
+    })
+
+    toast.success('Compatibility suggestion applied')
+  }
+
+  const navigateToStep = (step: InsightStudioStep) => {
+    if (!draft) {
+      if (step !== 'define') {
+        toast.error('Start from Define to create a draft first')
+        return
+      }
+      navigate('/app/insights/define')
+      return
     }
 
-    if (loadedAsset?.id && loadedAsset.type === type) {
-      await updateAsset.mutateAsync({
-        id: loadedAsset.id,
-        data: createPayload,
+    if (validations && !isStepReachable(validations, step)) {
+      toast.error('Complete previous steps before jumping ahead')
+      return
+    }
+
+    const ensuredId = ensureRoutedDraftId(step)
+    navigate(`/app/insights/${step}/${ensuredId}`)
+  }
+
+  const handlePrimaryAction = async () => {
+    if (!draft || !validations) {
+      const createdDraftId = ensureRoutedDraftId('define')
+      navigate(`/app/insights/define/${createdDraftId}`)
+      toast.success('Draft created')
+      return
+    }
+
+    if (currentStep === 'query' || currentStep === 'compare') {
+      const currentValidation = validations[currentStep]
+      if (currentStep === 'query' && !currentValidation.valid) {
+        toast.error(currentValidation.issues[0] ?? 'Step is incomplete')
+        return
+      }
+
+      if (currentStep === 'compare' && draft.query_spec.time.wave_ids.length === 0) {
+        toast.error('Select at least one primary wave.')
+        return
+      }
+
+      trackInsightsTelemetry('insights.step.completed', {
+        step: currentStep,
+        draft_id: draft.id,
       })
 
-      setActiveInsightId(loadedAsset.id)
-      return loadedAsset.id
-    }
-
-    const created = await createAsset.mutateAsync(createPayload)
-    setActiveInsightId(created.id)
-    return created.id
-  }
-
-  const handleSaveSegment = async () => {
-    if (!segmentName.trim()) {
-      toast.error('Enter a segment name')
+      await runWithContext('manual')
       return
     }
 
-    const savedId = await saveAsset('segment', {
-      name: segmentName,
-      query_spec: querySpec,
-      tags: ['insights', 'segment'],
-    })
-
-    navigate(`/app/insights/${savedId}`)
-  }
-
-  const handleSaveView = async () => {
-    const savedId = await saveAsset('view', {
-      name: `${segmentName} view`,
-      query_spec: querySpec,
-      view_config: {
-        mode: viewMode,
-        chart_type: chartType,
-        crosstab_highlight: 'heatmap',
-        show_legend: true,
-        show_grid: true,
-        show_labels: true,
-      },
-      tags: ['insights', 'view'],
-    })
-
-    navigate(`/app/insights/${savedId}`)
-  }
-
-  const handleSaveBoard = async () => {
-    const savedId = await saveAsset('board', {
-      name: `${segmentName} board`,
-      board_config: {
-        view_asset_ids: boardViewIds,
-        layout: { columns: 12, row_height: 80 },
-        filter_overrides: [],
-      },
-      tags: ['insights', 'board'],
-    })
-
-    navigate(`/app/insights/${savedId}`)
-  }
-
-  const handleSaveStory = async () => {
-    const savedId = await saveAsset('story', {
-      name: `${segmentName} story`,
-      story_config: {
-        steps: storySteps,
-      },
-      tags: ['insights', 'story'],
-    })
-
-    navigate(`/app/insights/${savedId}`)
-  }
-
-  const handleConvertToBoard = async () => {
-    if (!assetId) {
-      toast.error('Save an asset before conversion')
+    const currentValidation = validations[currentStep]
+    if (!currentValidation.valid) {
+      toast.error(currentValidation.issues[0] ?? 'Step is incomplete')
       return
     }
 
-    const converted = await convertAsset.mutateAsync({
-      id: assetId,
-      data: { target_type: 'board' },
+    trackInsightsTelemetry('insights.step.completed', {
+      step: currentStep,
+      draft_id: draft.id,
     })
 
-    navigate(`/app/insights/${converted.converted_asset.id}`)
-  }
-
-  const handleConvertToStory = async () => {
-    if (!assetId) {
-      toast.error('Save an asset before conversion')
+    if (currentStep === 'publish') {
+      const result = await publishDraft.mutateAsync({
+        draft,
+        projectId: activeProjectId || undefined,
+      })
+      setPublishResult(result)
       return
     }
 
-    const converted = await convertAsset.mutateAsync({
-      id: assetId,
-      data: { target_type: 'story' },
-    })
-
-    navigate(`/app/insights/${converted.converted_asset.id}`)
+    const nextStep = getNextStep(currentStep)
+    const ensuredId = ensureRoutedDraftId(nextStep)
+    navigate(`/app/insights/${nextStep}/${ensuredId}`)
   }
 
-  useEffect(() => {
-    setInsightWorkspaceDefaults({
-      datasetStudyId: querySpec.dataset.primary_study_id ?? null,
-      waveId: querySpec.time.wave_ids[0]?.wave_id ?? null,
-      metric: querySpec.metrics[0] ?? 'audience_percentage',
+  const handleBack = () => {
+    const previousStep = getPreviousStep(currentStep)
+    if (previousStep === currentStep) {
+      navigate('/app')
+      return
+    }
+
+    if (!draft) {
+      navigate(`/app/insights/${previousStep}`)
+      return
+    }
+
+    const ensuredId = ensureRoutedDraftId(previousStep)
+    navigate(`/app/insights/${previousStep}/${ensuredId}`)
+  }
+
+  const handleCreateDraft = () => {
+    const createdDraftId = ensureRoutedDraftId('define')
+    navigate(`/app/insights/define/${createdDraftId}`)
+    toast.success('Draft created')
+  }
+
+  const handleStartBlankFlow = useCallback(() => {
+    const createdDraftId = createDraftInStore({
+      studyId: insightDefaults.datasetStudyId,
+      waveId: insightDefaults.waveId,
+      metric: insightDefaults.metric,
+      step: 'define',
     })
-  }, [querySpec.dataset.primary_study_id, querySpec.metrics, querySpec.time.wave_ids, setInsightWorkspaceDefaults])
+
+    navigate(`/app/insights/define/${createdDraftId}`)
+    toast.success('Draft created')
+  }, [createDraftInStore, insightDefaults.datasetStudyId, insightDefaults.metric, insightDefaults.waveId, navigate])
+
+  const handleStartFlow = useCallback((flow: InsightFlowTemplate) => {
+    const createdDraftId = createDraftInStore({
+      studyId: insightDefaults.datasetStudyId,
+      waveId: insightDefaults.waveId,
+      metric: insightDefaults.metric,
+      step: 'define',
+    })
+
+    const createdDraft = useInsightDraftStore.getState().drafts[createdDraftId]
+    if (createdDraft) {
+      updateDraft(createdDraftId, createFlowDraftPatch(flow, createdDraft))
+    }
+
+    navigate(`/app/insights/define/${createdDraftId}`)
+    toast.success(`Flow started: ${flow.name}`)
+  }, [createDraftInStore, insightDefaults.datasetStudyId, insightDefaults.metric, insightDefaults.waveId, navigate, updateDraft])
+
+  const handleResumeDraft = useCallback((resumeDraftId: string) => {
+    const resumeStep = localDraftMap[resumeDraftId]?.step ?? 'define'
+    navigate(`/app/insights/${resumeStep}/${resumeDraftId}`)
+  }, [localDraftMap, navigate])
+
+  const handleToggleFlowPin = useCallback((flow: InsightFlowTemplate) => {
+    toggleFavorite({
+      id: flow.id,
+      type: 'insights_flow',
+      name: flow.name,
+    })
+  }, [toggleFavorite])
+
+  if (!insightsStudioEnabled) {
+    return (
+      <div className="insights-page">
+        <div className="ins-note">
+          <strong>Insights Studio rollout is disabled</strong>
+          <p>Set `VITE_ENABLE_INSIGHTS_STUDIO=true` to enable this surface in the current environment.</p>
+          <Link to="/app">Return to home</Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (!insightsStudioV2Enabled) {
+    return <LegacyInsightsStudio />
+  }
+
+  if (!routeStep) {
+    return (
+      <div className="insights-page ins-workflow-page">
+        <header className="ins-workflow-header">
+          <Link to="/app" className="back-link">
+            <ArrowLeft size={18} />
+            <span>Back to Home</span>
+          </Link>
+          <div className="ins-workflow-header__meta">
+            <h1>Insights Studio</h1>
+            <p>Choose a pre-built flow, pin your favorites, or resume a draft.</p>
+          </div>
+        </header>
+        <InsightsLanding
+          flows={insightFlowTemplates}
+          pinnedFlowIds={pinnedFlowIds}
+          drafts={localDrafts}
+          onTogglePin={handleToggleFlowPin}
+          onStartFlow={handleStartFlow}
+          onResumeDraft={handleResumeDraft}
+          onStartBlank={handleStartBlankFlow}
+        />
+      </div>
+    )
+  }
 
   return (
-    <div className="insights-page">
-      <div className="insights-header">
+    <div className="insights-page ins-workflow-page">
+      <header className="ins-workflow-header">
         <Link to="/app" className="back-link">
           <ArrowLeft size={18} />
           <span>Back to Home</span>
         </Link>
-
-        <div className="insights-header__actions">
-          <Button variant="secondary" icon={<Save size={14} />} onClick={handleSaveSegment}>
-            Save Segment
-          </Button>
-          <Button variant="secondary" icon={<Save size={14} />} onClick={handleSaveView}>
-            Save View
-          </Button>
-          <Button variant="secondary" icon={<Save size={14} />} onClick={handleSaveBoard}>
-            Save Board
-          </Button>
-          <Button variant="primary" icon={<Save size={14} />} onClick={handleSaveStory}>
-            Save Story
-          </Button>
+        <div className="ins-workflow-header__meta">
+          <h1>{draft?.name ?? 'Insights Studio'}</h1>
+          <p>Analyst workflow: Define -&gt; Query -&gt; Compare -&gt; Publish</p>
         </div>
-      </div>
+      </header>
 
       {(legacyType && legacyId) && (
         <div className="insights-legacy-banner">
           <div>
             <strong>Opened from legacy {legacyType}</strong>
-            <p>This insight is linked to `{legacyType}:{legacyId}` for interoperability.</p>
+            <p>This draft stays linked to `{legacyType}:{legacyId}` for interoperability.</p>
           </div>
           <Link to={legacyPath(legacyType, legacyId)} className="insights-legacy-banner__link">
             Open Legacy Asset
@@ -418,64 +629,110 @@ export default function InsightsStudio(): React.JSX.Element {
         </div>
       )}
 
-      {loadedAsset?.legacy_links && loadedAsset.legacy_links.length > 0 && (
-        <div className="insights-legacy-links">
-          {loadedAsset.legacy_links.map((legacyLink) => (
-            <Link key={`${legacyLink.type}_${legacyLink.id}`} to={legacyLink.path}>
-              Open linked {legacyLink.type}
-            </Link>
-          ))}
-        </div>
-      )}
+      <InsightsStepper
+        currentStep={currentStep}
+        validations={validations ?? {
+          define: { valid: false, issues: [] },
+          query: { valid: false, issues: [] },
+          compare: { valid: false, issues: [] },
+          publish: { valid: false, issues: [] },
+        }}
+        onStepClick={navigateToStep}
+      />
 
-      <div className="insights-grid">
-        <InsightsDataPane
-          query={queryText}
-          onQueryChange={setQueryText}
-          questions={questions}
-          selectedQuestionIds={selectedQuestionIds}
-          onToggleQuestion={toggleQuestion}
-        />
+      <div className="ins-workflow-layout">
+        <main className="ins-workflow-main">
+          {!draft && (
+            <section className="ins-step-pane">
+              <header className="ins-step-pane__header">
+                <h2>Start your draft</h2>
+                <p>Begin by setting an objective and selecting variables.</p>
+              </header>
+              <div className="ins-inline-actions">
+                <button type="button" className="ins-run-btn" onClick={handleCreateDraft}>
+                  Create draft
+                </button>
+              </div>
+            </section>
+          )}
 
-        <InsightsSegmentPane
-          segmentName={segmentName}
-          onSegmentNameChange={setSegmentName}
-          selectedAudienceId={selectedAudienceId}
-          onSelectedAudienceChange={setSelectedAudienceId}
-          availableAudiences={audiences as Audience[]}
-        />
+          {draft && currentStep === 'define' && (
+            <DefineStep
+              draft={draft}
+              query={queryText}
+              onQueryChange={setQueryText}
+              questions={questions}
+              audiences={audiences}
+              onObjectiveChange={(value) => updateCurrentDraft({ objective: value })}
+              onNameChange={(value) => updateCurrentDraft({ name: value })}
+              onAudienceChange={handleAudienceChange}
+              onToggleQuestion={handleToggleQuestion}
+            />
+          )}
 
-        <InsightsQueryPane
-          querySpec={querySpec}
-          onQuerySpecChange={setQuerySpec}
-          studies={studies ?? []}
-          waves={waves ?? []}
-          compatibility={compatibility}
-          onApplySuggestion={handleApplySuggestion}
-        />
+          {draft && currentStep === 'query' && (
+            <QueryStep
+              draft={draft}
+              questions={questions}
+              result={queryResult}
+              onMetricToggle={handleMetricToggle}
+              onViewModeChange={(mode) => updateCurrentDraft({ view_config: { ...draft.view_config, mode } })}
+              onChartTypeChange={(chartType) => updateCurrentDraft({ view_config: { ...draft.view_config, chart_type: chartType } })}
+              onAddFilter={handleAddCoreFilter}
+              onRemoveFilter={handleRemoveCoreFilter}
+            />
+          )}
 
-        <InsightsViewPane
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          chartType={chartType}
-          onChartTypeChange={setChartType}
-          result={queryResult}
-          isRunning={runQuery.isPending}
-          onRunQuery={handleRunQuery}
-        />
+          {draft && currentStep === 'compare' && (
+            <CompareStep
+              draft={draft}
+              studies={studies ?? []}
+              waves={waves ?? []}
+              onChangeDraft={(patch) => updateCurrentDraft({ query_spec: mergeQuerySpec(draft.query_spec, patch) })}
+              onApplySuggestion={handleApplySuggestion}
+            />
+          )}
 
-        <InsightsBoardStoryPane
-          availableViews={availableViews}
-          boardViewIds={boardViewIds}
-          onBoardViewIdsChange={setBoardViewIds}
-          storySteps={storySteps}
-          onStoryStepsChange={setStorySteps}
-          onSaveBoard={handleSaveBoard}
-          onSaveStory={handleSaveStory}
-          onConvertToBoard={handleConvertToBoard}
-          onConvertToStory={handleConvertToStory}
-          lineage={lineage}
-        />
+          {draft && currentStep === 'publish' && (
+            <PublishStep
+              draft={draft}
+              availableViews={availableViews}
+              availableBoards={availableBoards}
+              publishResult={publishResult}
+              isPublishing={publishDraft.isPending}
+              onDraftUpdate={(patch, options) => updateCurrentDraft(patch, { structural: options?.structural ?? true })}
+              onRunStoryStep={(stepId) => {
+                void runWithContext('story_review', stepId)
+              }}
+              onPublish={() => {
+                void handlePrimaryAction()
+              }}
+            />
+          )}
+
+          <div className="ins-workflow-actions">
+            <Button variant="secondary" onClick={handleBack}>Back</Button>
+            <Button
+              variant="primary"
+              icon={currentStep === 'publish' ? <CheckCircle2 size={14} /> : <ArrowRight size={14} />}
+              onClick={() => {
+                void handlePrimaryAction()
+              }}
+              loading={runQuery.isPending || publishDraft.isPending}
+            >
+              {getPrimaryActionLabel(currentStep)}
+            </Button>
+          </div>
+        </main>
+
+        {draft && validations && (
+          <InsightsContextRail
+            draft={draft}
+            selectedAudience={selectedAudience}
+            currentStep={currentStep}
+            validations={validations}
+          />
+        )}
       </div>
     </div>
   )

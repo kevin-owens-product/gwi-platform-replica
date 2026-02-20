@@ -376,9 +376,13 @@ function generateFromDimensions(info: CrosstabDimensionInfo, timeframe?: 'daily'
   // Build rows: flatten all row dimensions, preserving parent question as group
   const rows: CrosstabQueryResult['rows'] = []
   for (const dim of info.rows) {
-    if (dim.type === 'question' && dim.datapoint_ids) {
+    if (dim.type === 'question') {
       const parentId = dim.question_id ?? 'unknown'
-      for (const dpId of dim.datapoint_ids) {
+      const datapointIds = dim.datapoint_ids && dim.datapoint_ids.length > 0
+        ? dim.datapoint_ids
+        : generateDatapoints(parentId).map((datapoint) => datapoint.datapoint_id)
+
+      for (const dpId of datapointIds) {
         rows.push({
           id: dpId,
           label: resolveLabel(dpId),
@@ -394,8 +398,13 @@ function generateFromDimensions(info: CrosstabDimensionInfo, timeframe?: 'daily'
     columns = generateTimeframeColumns(timeframe)
   } else {
     for (const dim of info.columns) {
-      if (dim.type === 'question' && dim.datapoint_ids) {
-        for (const dpId of dim.datapoint_ids) {
+      if (dim.type === 'question') {
+        const questionId = dim.question_id ?? 'unknown'
+        const datapointIds = dim.datapoint_ids && dim.datapoint_ids.length > 0
+          ? dim.datapoint_ids
+          : generateDatapoints(questionId).map((datapoint) => datapoint.datapoint_id)
+
+        for (const dpId of datapointIds) {
           columns.push({ id: dpId, label: resolveLabel(dpId) })
         }
       } else if (dim.type === 'audience' && dim.audience_id) {
@@ -403,6 +412,18 @@ function generateFromDimensions(info: CrosstabDimensionInfo, timeframe?: 'daily'
         columns.push({ id: dim.audience_id, label })
       }
     }
+  }
+
+  // Ensure query-preview crosstabs are always renderable even without explicit column dims.
+  if (!timeframe && columns.length === 0) {
+    columns = [{ id: 'total', label: 'Total' }]
+  }
+
+  if (rows.length === 0) {
+    rows.push({
+      id: 'all_respondents',
+      label: 'All respondents',
+    })
   }
 
   // Generate cell data with enhanced fields and timeframe trend variation

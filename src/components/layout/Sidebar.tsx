@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   Search, Home, Sparkles, Users, UsersRound, BarChart2, Grid3X3,
   LayoutDashboard, Square, FileText, HelpCircle, FolderKanban,
-  Settings, LogOut, ChevronDown, ChevronUp, MessageCircle, Compass,
+  Settings, LogOut, ChevronDown, ChevronUp, MessageCircle, Compass, Layers,
   Tv, Newspaper, Plug, type LucideIcon,
 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
@@ -44,6 +44,7 @@ const navSections: NavSection[] = [
       { path: '/app/chart-builder', icon: BarChart2, label: 'Charts' },
       { path: '/app/crosstabs', icon: Grid3X3, label: 'Crosstabs' },
       { path: '/app/dashboards', icon: LayoutDashboard, label: 'Dashboards' },
+      { path: '/app/insights', icon: Layers, label: 'Insights' },
       { path: '/app/tv-study', icon: Tv, label: 'TV Study' },
     ],
   },

@@ -27,6 +27,7 @@ const Dashboards = lazy(() => import('./pages/app/Dashboards'))
 const DashboardDetail = lazy(() => import('./pages/app/DashboardDetail'))
 const Canvas = lazy(() => import('./pages/app/Canvas'))
 const CanvasAudiences = lazy(() => import('./pages/app/CanvasAudiences'))
+const InsightsStudio = lazy(() => import('./pages/app/InsightsStudio'))
 const Reports = lazy(() => import('./pages/app/Reports'))
 const Questions = lazy(() => import('./pages/app/Questions'))
 const DataExplorer = lazy(() => import('./pages/app/DataExplorer'))
@@ -78,6 +79,8 @@ function App() {
           <Route path="canvas" element={<Suspense fallback={<PageLoader />}><Canvas /></Suspense>} />
           <Route path="canvas/goals" element={<Suspense fallback={<PageLoader />}><Canvas /></Suspense>} />
           <Route path="canvas/audiences" element={<Suspense fallback={<PageLoader />}><CanvasAudiences /></Suspense>} />
+          <Route path="insights" element={<Suspense fallback={<PageLoader />}><InsightsStudio /></Suspense>} />
+          <Route path="insights/:assetId" element={<Suspense fallback={<PageLoader />}><InsightsStudio /></Suspense>} />
           <Route path="reports" element={<Suspense fallback={<PageLoader />}><Reports /></Suspense>} />
           <Route path="tv-study" element={<Suspense fallback={<PageLoader />}><TvStudy /></Suspense>} />
           <Route path="printrf" element={<Suspense fallback={<PageLoader />}><PrintRF /></Suspense>} />

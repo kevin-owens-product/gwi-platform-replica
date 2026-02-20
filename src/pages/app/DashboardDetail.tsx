@@ -573,6 +573,12 @@ export default function DashboardDetail(): React.JSX.Element {
           <span>Back to Dashboards</span>
         </Link>
         <div className="header-actions">
+          <Link
+            to={`/app/insights?legacy_type=dashboard&legacy_id=${id ?? 'new'}`}
+            className="config-panel__control-select"
+          >
+            Open in Insights
+          </Link>
           {/* Schedule indicator */}
           {hasSchedule && (
             <span

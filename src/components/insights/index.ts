@@ -1,0 +1,5 @@
+export { default as InsightsDataPane } from './InsightsDataPane'
+export { default as InsightsSegmentPane } from './InsightsSegmentPane'
+export { default as InsightsQueryPane } from './InsightsQueryPane'
+export { default as InsightsViewPane } from './InsightsViewPane'
+export { default as InsightsBoardStoryPane } from './InsightsBoardStoryPane'

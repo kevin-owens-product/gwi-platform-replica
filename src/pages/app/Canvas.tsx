@@ -138,6 +138,9 @@ export default function Canvas(): React.JSX.Element {
             <p className="page-subtitle">{greeting} -- Define your research objectives and target audiences</p>
           </div>
           <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+            <Button variant="secondary" onClick={() => navigate('/app/insights?legacy_type=canvas&legacy_id=canvas_workspace')}>
+              Open in Insights
+            </Button>
             <Button variant="ghost" onClick={() => setShowTemplateModal(true)}>
               <BookOpen size={16} />
               Templates

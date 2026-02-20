@@ -270,6 +270,12 @@ export default function AudienceDetail({ isNew = false }: AudienceDetailProps): 
           <span>Back to Audiences</span>
         </button>
         <div className="header-actions">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(`/app/insights?legacy_type=audience&legacy_id=${id ?? 'new'}`)}
+          >
+            Open in Insights
+          </Button>
           <Button variant="secondary" onClick={handleCancel} disabled={isSaving}>
             Cancel
           </Button>

@@ -30,12 +30,21 @@ interface ActiveProject {
   team_id?: string
 }
 
+interface InsightWorkspaceDefaults {
+  datasetStudyId: string | null
+  waveId: string | null
+  metric: string
+  filterPresets: string[]
+}
+
 interface WorkspaceState {
   selectedWaveIds: WaveId[]
   selectedLocationIds: string[]
   selectedLocations: Location[]
   activeProjectId: string | null
   activeProject: ActiveProject | null
+  activeInsightId: string | null
+  insightWorkspaceDefaults: InsightWorkspaceDefaults
   canvasGoals: string[]
 
   // Active team context
@@ -74,6 +83,8 @@ interface WorkspaceState {
   setSelectedLocations: (locations: Location[]) => void
   setActiveProjectId: (projectId: string | null) => void
   setActiveProject: (project: ActiveProject | null) => void
+  setActiveInsightId: (insightId: string | null) => void
+  setInsightWorkspaceDefaults: (defaults: Partial<InsightWorkspaceDefaults>) => void
   setCanvasGoals: (goals: string[]) => void
   setCanvasStep: (step: number) => void
   completeCanvasStep: (step: number) => void
@@ -110,6 +121,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       selectedLocations: [],
       activeProjectId: null,
       activeProject: null,
+      activeInsightId: null,
+      insightWorkspaceDefaults: {
+        datasetStudyId: 'study_core',
+        waveId: null,
+        metric: 'audience_percentage',
+        filterPresets: [],
+      },
       canvasGoals: [],
       activeTeamId: null,
       canvasWorkflow: { ...defaultCanvasWorkflow },
@@ -125,11 +143,19 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setLocationIds: (selectedLocationIds) => set({ selectedLocationIds }),
       setSelectedLocations: (selectedLocations) => set({ selectedLocations }),
       setActiveProjectId: (activeProjectId) => set({ activeProjectId }),
+      setActiveInsightId: (activeInsightId) => set({ activeInsightId }),
       setActiveProject: (activeProject) =>
         set((state) => ({
           activeProjectId: activeProject?.id ?? null,
           activeProject,
           activeTeamId: activeProject?.scope === 'team' ? activeProject.team_id ?? state.activeTeamId : state.activeTeamId,
+        })),
+      setInsightWorkspaceDefaults: (defaults) =>
+        set((state) => ({
+          insightWorkspaceDefaults: {
+            ...state.insightWorkspaceDefaults,
+            ...defaults,
+          },
         })),
       setCanvasGoals: (canvasGoals) => set({ canvasGoals }),
 
@@ -204,6 +230,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         selectedLocationIds: state.selectedLocationIds,
         activeProjectId: state.activeProjectId,
         activeProject: state.activeProject,
+        activeInsightId: state.activeInsightId,
+        insightWorkspaceDefaults: state.insightWorkspaceDefaults,
         canvasGoals: state.canvasGoals,
         activeTeamId: state.activeTeamId,
         recentItems: state.recentItems,

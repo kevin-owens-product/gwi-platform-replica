@@ -523,6 +523,12 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
           <span>Back to Crosstabs</span>
         </Link>
         <div className="header-actions">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(`/app/insights?legacy_type=crosstab&legacy_id=${id ?? 'new'}`)}
+          >
+            Open in Insights
+          </Button>
           <button className="icon-btn" onClick={handleDownloadCsv} title="Download CSV"><Download size={18} /></button>
           <button className="icon-btn" onClick={handleExportExcel} title="Export to Excel"><FileSpreadsheet size={18} /></button>
           <button className="icon-btn" onClick={handleExportPowerPoint} title="Export to PowerPoint"><Presentation size={18} /></button>

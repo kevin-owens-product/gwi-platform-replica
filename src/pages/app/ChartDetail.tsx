@@ -646,6 +646,12 @@ export default function ChartDetail(): React.JSX.Element {
           <span>Back to Charts</span>
         </Link>
         <div className="header-actions">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(`/app/insights?legacy_type=chart&legacy_id=${id ?? 'new'}`)}
+          >
+            Open in Insights
+          </Button>
           <button className="icon-btn" onClick={handleDownloadCsv} title="Download CSV"><Download size={18} /></button>
           <button className="icon-btn" onClick={handleShare} title="Copy link"><Share2 size={18} /></button>
           <Dropdown

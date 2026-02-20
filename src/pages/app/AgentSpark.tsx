@@ -937,6 +937,82 @@ export default function AgentSpark(): React.JSX.Element {
           )}
 
           <div className="agentic-section">
+            <div className="agentic-section-title">Selected Flow Blueprint</div>
+            <div className="agentic-section-subtitle">
+              Step-by-step execution plan and artifacts for this run.
+            </div>
+            {selectedFlow ? (
+              <div className="agentic-flow-steps">
+                {selectedFlow.steps.map((step, index) => (
+                  <div key={step.id} className="agentic-flow-step-card">
+                    <div className="agentic-flow-step-header">
+                      <span className="agentic-flow-step-index">{index + 1}</span>
+                      <div className="agentic-flow-step-name">{step.name}</div>
+                    </div>
+                    <div className="agentic-flow-step-desc">{step.description}</div>
+                    {step.output_artifacts && step.output_artifacts.length > 0 && (
+                      <div className="agentic-flow-artifacts">
+                        {step.output_artifacts.map((artifact) => (
+                          <span key={artifact} className="agentic-flow-artifact">
+                            {formatArtifactLabel(artifact)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="agentic-empty">Select a flow to preview its steps.</div>
+            )}
+          </div>
+
+          {activeAgent && (
+            <div className="agentic-section">
+              <div className="agentic-section-title">Agent Demo Kit</div>
+              <div className="agentic-section-subtitle">{activeAgent.demo.workflowName}</div>
+              <div className="agentic-demo-summary">{activeAgent.demo.workflowSummary}</div>
+
+              <div className="agentic-demo-group-title">Workflow Steps</div>
+              <div className="agentic-demo-steps">
+                {activeAgent.demo.steps.map((step) => (
+                  <div key={step.id} className="agentic-demo-step">
+                    <div className="agentic-demo-step-name">{step.name}</div>
+                    <div className="agentic-demo-step-desc">{step.description}</div>
+                    <div className="agentic-demo-step-deliverable">Deliverable: {step.deliverable}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="agentic-demo-group-title">Deliverables</div>
+              <div className="agentic-demo-deliverables">
+                {activeAgent.demo.deliverables.map((deliverable) => (
+                  <div key={deliverable.id} className="agentic-demo-deliverable">
+                    <div className="agentic-demo-deliverable-name">{deliverable.name}</div>
+                    <div className="agentic-demo-deliverable-type">{deliverable.type}</div>
+                    <div className="agentic-demo-deliverable-desc">{deliverable.description}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="agentic-demo-group-title">Chat Walkthrough</div>
+              <div className="agentic-demo-chat-prompts">
+                {activeAgent.demo.chatPrompts.map((item) => (
+                  <button
+                    key={item.id}
+                    className="agentic-chat-script-btn"
+                    onClick={() => handleLoadDemoPrompt(item.prompt)}
+                    title={item.prompt}
+                  >
+                    <span className="agentic-chat-script-title">{item.title}</span>
+                    <span className="agentic-chat-script-outcome">{item.expectedOutcome}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="agentic-section">
             <div className="agentic-section-title">Recent Runs</div>
             <div className="agentic-list">
               {(agenticRuns ?? []).slice(0, 6).map((run) => (

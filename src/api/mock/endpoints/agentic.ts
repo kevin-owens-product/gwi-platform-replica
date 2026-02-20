@@ -1,4 +1,4 @@
-import type { AgenticCapabilityInventory, AgenticFlow, AgenticRun } from '../../types/agentic'
+import type { AgenticCapabilityInventory, AgenticFlow, AgenticRun, AgentAnalysisConfig } from '../../types/agentic'
 import { agenticCapabilities, agenticFlows, agenticLinkages, agenticRuns } from '../data/agentic'
 
 const runsStore: AgenticRun[] = [...agenticRuns]
@@ -12,6 +12,17 @@ function outputTypeFromArtifact(artifact: string): AgenticRun['outputs'][number]
   if (artifact.includes('alert')) return 'alert'
   if (artifact.includes('report') || artifact.includes('validation') || artifact.includes('citation')) return 'report'
   return 'insight'
+}
+
+function formatAnalysisConfigSummary(config?: AgentAnalysisConfig): string {
+  if (!config) return ''
+  const parts: string[] = []
+  if (config.timeframe) parts.push(`timeframe: ${config.timeframe}`)
+  if (config.granularity) parts.push(`granularity: ${config.granularity}`)
+  if (config.rebase_mode) parts.push(`rebase: ${config.rebase_mode}`)
+  if (config.wave_ids?.length) parts.push(`waves: ${config.wave_ids.length}`)
+  if (config.compare_waves) parts.push('wave comparison enabled')
+  return parts.length > 0 ? ` [Filters: ${parts.join(', ')}]` : ''
 }
 
 function toTitleCase(value: string): string {
@@ -40,7 +51,7 @@ export const agenticApi = {
       outputs: [...run.outputs],
     })),
 
-  runFlow: async (flowId: string, brief: string): Promise<AgenticRun> => {
+  runFlow: async (flowId: string, brief: string, analysisConfig?: AgentAnalysisConfig): Promise<AgenticRun> => {
     const flow = agenticFlows.find((item) => item.id === flowId)
     const startedAt = new Date().toISOString()
 
@@ -52,6 +63,7 @@ export const agenticApi = {
         started_at: startedAt,
         completed_at: startedAt,
         brief,
+        analysis_config: analysisConfig,
         outputs: [
           {
             id: `out-${Math.random().toString(36).slice(2, 8)}`,
@@ -65,13 +77,15 @@ export const agenticApi = {
       return failedRun
     }
 
+    const filterSummary = formatAnalysisConfigSummary(analysisConfig)
+
     const outputs = flow.steps.flatMap((step) => {
       const artifacts = step.output_artifacts?.length ? step.output_artifacts : ['insight_summary']
       return artifacts.map((artifact) => ({
         id: `out-${Math.random().toString(36).slice(2, 8)}`,
         label: toTitleCase(artifact),
         type: outputTypeFromArtifact(artifact),
-        summary: `${step.name} produced ${toTitleCase(artifact)} for "${brief}".`,
+        summary: `${step.name} produced ${toTitleCase(artifact)} for "${brief}".${filterSummary}`,
       }))
     })
 
@@ -82,6 +96,7 @@ export const agenticApi = {
       started_at: startedAt,
       completed_at: new Date(Date.now() + 90_000).toISOString(),
       brief,
+      analysis_config: analysisConfig,
       outputs,
     }
 

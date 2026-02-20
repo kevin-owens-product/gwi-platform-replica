@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { agenticApi } from '@/api'
+import type { AgentAnalysisConfig } from '@/api/types'
 
 export function useAgenticInventory() {
   return useQuery({
@@ -24,7 +25,7 @@ export function useAgenticRuns() {
 
 export function useRunAgenticFlow() {
   return useMutation({
-    mutationFn: ({ flowId, brief }: { flowId: string; brief: string }) =>
-      agenticApi.runFlow(flowId, brief),
+    mutationFn: ({ flowId, brief, analysisConfig }: { flowId: string; brief: string; analysisConfig?: AgentAnalysisConfig }) =>
+      agenticApi.runFlow(flowId, brief, analysisConfig),
   })
 }

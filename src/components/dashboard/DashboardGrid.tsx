@@ -27,6 +27,7 @@ import type {
   DashboardWidget,
   DashboardFilter,
   MetricType,
+  RebaseMode,
   StatsQueryRequest,
   StatsDatapoint,
   AudienceExpression,
@@ -35,6 +36,7 @@ import type {
 import { useChart } from '@/hooks/useCharts'
 import { useStatsQuery } from '@/hooks/useQueries'
 import ChartRenderer from '@/components/chart/ChartRenderer'
+import { getEffectiveMetric } from '@/utils/rebase'
 import './DashboardGrid.css'
 
 // ---------------------------------------------------------------------------
@@ -140,8 +142,20 @@ function WidgetSkeleton() {
 // WidgetChart (existing, unchanged)
 // ---------------------------------------------------------------------------
 
-export function WidgetChart({ widget, height }: { widget: DashboardWidget; height?: number }) {
+export function WidgetChart({
+  widget,
+  height,
+  rebaseMode,
+}: {
+  widget: DashboardWidget
+  height?: number
+  rebaseMode?: RebaseMode
+}) {
   const { data: chart, isLoading: chartLoading } = useChart(widget.chart_id ?? '')
+  const effectiveMetric = useMemo(
+    () => getEffectiveMetric(chart?.config?.metrics?.[0] ?? 'audience_percentage', rebaseMode ?? chart?.config?.rebase_mode ?? 'column'),
+    [chart?.config?.metrics, chart?.config?.rebase_mode, rebaseMode],
+  )
 
   const statsRequest: StatsQueryRequest | null = useMemo(() => {
     if (!chart?.config) return null
@@ -151,21 +165,25 @@ export function WidgetChart({ widget, height }: { widget: DashboardWidget; heigh
     if (questionIds.length === 0) return null
     return {
       question_ids: questionIds,
-      metrics: chart.config.metrics ?? ['audience_percentage' as MetricType],
+      metrics: [effectiveMetric],
       wave_ids: chart.config.wave_ids ?? [],
       location_ids: chart.config.location_ids ?? [],
       base_audience: chart.config.base_audience,
+      rebase_mode: rebaseMode ?? chart.config.rebase_mode,
     }
-  }, [chart?.config])
+  }, [chart?.config, effectiveMetric, rebaseMode])
 
   const { data: statsData, isLoading: statsLoading } = useStatsQuery(statsRequest)
 
   const { chartData, series } = useMemo((): { chartData: ChartDataPoint[]; series: string[] } => {
     if (!statsData?.results?.length) return { chartData: [], series: [] }
-    const metric: MetricType = chart?.config?.metrics?.[0] ?? 'audience_percentage'
+    const metric: MetricType = effectiveMetric
     const metricLabel = metric === 'audience_percentage' ? 'Percentage'
       : metric === 'audience_index' ? 'Index'
       : metric === 'audience_size' ? 'Audience Size'
+      : metric === 'column_percentage' ? 'Column %'
+      : metric === 'row_percentage' ? 'Row %'
+      : metric === 'total_percentage' ? 'Total %'
       : metric
     const result = statsData.results[0]
     if (!result) return { chartData: [], series: [] }
@@ -174,7 +192,7 @@ export function WidgetChart({ widget, height }: { widget: DashboardWidget; heigh
       [metricLabel]: dp.metrics[metric] ?? 0,
     }))
     return { chartData: data, series: [metricLabel] }
-  }, [statsData, chart?.config?.metrics])
+  }, [statsData, effectiveMetric])
 
   if (chartLoading || statsLoading) {
     return <WidgetSkeleton />
@@ -781,9 +799,11 @@ function RefreshIndicator({ lastRefreshedAt, live }: { lastRefreshedAt?: string;
 
 function MaximizedOverlay({
   widget,
+  rebaseMode,
   onClose,
 }: {
   widget: DashboardWidget
+  rebaseMode?: RebaseMode
   onClose: () => void
 }) {
   return (
@@ -796,7 +816,7 @@ function MaximizedOverlay({
           </button>
         </div>
         <div className="dashboard-grid__maximized-body">
-          <WidgetContentRenderer widget={widget} />
+          <WidgetContentRenderer widget={widget} rebaseMode={rebaseMode} />
         </div>
       </div>
     </div>
@@ -807,10 +827,10 @@ function MaximizedOverlay({
 // Content renderer (shared between normal + maximized views)
 // ---------------------------------------------------------------------------
 
-function WidgetContentRenderer({ widget }: { widget: DashboardWidget }) {
+function WidgetContentRenderer({ widget, rebaseMode }: { widget: DashboardWidget; rebaseMode?: RebaseMode }) {
   switch (widget.type) {
     case 'chart':
-      return <WidgetChart widget={widget} />
+      return <WidgetChart widget={widget} rebaseMode={rebaseMode} />
     case 'stat':
       return <WidgetStat widget={widget} />
     case 'text':
@@ -859,6 +879,7 @@ interface DashboardGridProps {
   onWidgetSettings?: (widgetId: string) => void
   onWidgetMaximize?: (widgetId: string) => void
   baseAudience?: AudienceExpression
+  rebaseMode?: RebaseMode
   // New props
   filters?: DashboardFilter[]
   filterState?: Record<string, unknown>
@@ -879,6 +900,7 @@ export default function DashboardGrid({
   onWidgetMaximize,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   baseAudience,
+  rebaseMode,
   filters,
   filterState,
   onFilterChange,
@@ -1009,7 +1031,7 @@ export default function DashboardGrid({
 
               {/* Widget body */}
               <div className={`dashboard-grid__widget-body ${isDivider ? 'dashboard-grid__widget-body--divider' : ''}`}>
-                <WidgetContentRenderer widget={widget} />
+              <WidgetContentRenderer widget={widget} rebaseMode={rebaseMode} />
               </div>
             </div>
           )
@@ -1026,6 +1048,7 @@ export default function DashboardGrid({
       {maximizedWidget && (
         <MaximizedOverlay
           widget={maximizedWidget}
+          rebaseMode={rebaseMode}
           onClose={() => setMaximizedWidgetId(null)}
         />
       )}

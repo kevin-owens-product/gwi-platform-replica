@@ -81,6 +81,7 @@ const timeframeOptions = [
   { label: 'Daily', value: 'daily' },
   { label: 'Weekly', value: 'weekly' },
   { label: 'Monthly', value: 'monthly' },
+  { label: 'Quarterly', value: 'quarterly' },
 ]
 
 interface CrosstabConfigPanelProps {

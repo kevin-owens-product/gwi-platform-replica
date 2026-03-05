@@ -1,6 +1,6 @@
 // Chart types for the GWI Platform API -- fully enhanced
 
-import type { MetricType, WaveId, ExportOptions, SharingConfig, VersionEntry, PaletteMode } from './common'
+import type { MetricType, RebaseMode, WaveId, ExportOptions, SharingConfig, VersionEntry, PaletteMode } from './common'
 import type { AudienceExpression } from './audience'
 
 export type ChartType =
@@ -51,6 +51,7 @@ export interface ChartConfig {
   rows: ChartDimension[]
   columns: ChartDimension[]
   metrics: MetricType[]
+  rebase_mode?: RebaseMode
   base_audience?: AudienceExpression
   wave_ids: WaveId[]
   location_ids: string[]

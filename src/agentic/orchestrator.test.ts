@@ -106,4 +106,12 @@ describe('getAgenticFlow', () => {
     expect(flow).toBeDefined()
     expect(flow!.steps.length).toBe(4)
   })
+
+  it('returns all-in-one flow with all specialist stages', () => {
+    const flow = getAgenticFlow('flow-all-in-one-agent')
+    expect(flow).toBeDefined()
+    expect(flow!.steps.length).toBe(10)
+    expect(flow!.steps[0].capability_id).toBe('brief-interpreter')
+    expect(flow!.steps[9].capability_id).toBe('advisor-agent')
+  })
 })

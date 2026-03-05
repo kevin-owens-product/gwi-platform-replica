@@ -433,6 +433,10 @@
   box-shadow: var(--shadow-focus);
 }
 
+.chart-config-panel .wave-switcher {
+  width: 100%;
+}
+
 .config-divider {
   height: 1px;
   background-color: var(--color-border-light);

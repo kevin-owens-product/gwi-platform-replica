@@ -97,6 +97,15 @@ describe('real insightsApi fallback behavior', () => {
 
     mocks.mockRunQuery.mockResolvedValue({
       view_mode: 'chart',
+      chart: {
+        results: [],
+        meta: {
+          base_size: 0,
+          wave_name: 'N/A',
+          location_name: 'N/A',
+          execution_time_ms: 0,
+        },
+      },
       compatibility: {
         blocking: false,
         issues: [],
@@ -121,5 +130,72 @@ describe('real insightsApi fallback behavior', () => {
     })
 
     expect(mocks.mockRunQuery).not.toHaveBeenCalled()
+  })
+
+  it('normalizes legacy stats payloads that omit the chart wrapper', async () => {
+    mocks.post.mockReturnValue({
+      json: async () => ({
+        results: [{
+          question_id: 'q_social_platforms',
+          question_name: 'Social Media Platforms',
+          datapoints: [{
+            datapoint_id: 'dp_facebook',
+            datapoint_name: 'Facebook',
+            metrics: {
+              audience_percentage: 42,
+            },
+          }],
+        }],
+        meta: {
+          base_size: 1200,
+          wave_name: 'Q4 2024',
+          location_name: 'United States',
+          execution_time_ms: 31,
+        },
+      }),
+    })
+
+    const response = await insightsApi.runQuery(baseRequest())
+
+    expect(response.view_mode).toBe('chart')
+    expect(response.chart?.results[0]?.datapoints[0]?.metrics.audience_percentage).toBe(42)
+    expect(mocks.mockRunQuery).not.toHaveBeenCalled()
+  })
+
+  it('falls back to mock when real runQuery returns an unusable success shape', async () => {
+    mocks.post.mockReturnValue({
+      json: async () => ({
+        view_mode: 'chart',
+        compatibility: {
+          blocking: false,
+          issues: [],
+          suggestions: [],
+        },
+      }),
+    })
+
+    mocks.mockRunQuery.mockResolvedValue({
+      view_mode: 'chart',
+      chart: {
+        results: [],
+        meta: {
+          base_size: 0,
+          wave_name: 'N/A',
+          location_name: 'N/A',
+          execution_time_ms: 0,
+        },
+      },
+      compatibility: {
+        blocking: false,
+        issues: [],
+        suggestions: [],
+      },
+    })
+
+    const response = await insightsApi.runQuery(baseRequest())
+
+    expect(mocks.mockRunQuery).toHaveBeenCalledTimes(1)
+    expect(response.view_mode).toBe('chart')
+    expect(response.chart).toBeDefined()
   })
 })

@@ -2,7 +2,7 @@
 
 import type { ChartConfig, ChartType } from './chart'
 import type { AudienceExpression } from './audience'
-import type { SharingConfig, VersionEntry, ExportOptions, MetricType } from './common'
+import type { SharingConfig, VersionEntry, ExportOptions, MetricType, RebaseMode } from './common'
 
 export interface Dashboard {
   id: string
@@ -25,6 +25,7 @@ export interface Dashboard {
   versions?: VersionEntry[]
   filters?: DashboardFilter[]
   filter_state?: Record<string, unknown>
+  rebase_mode?: RebaseMode
   refresh_config?: DashboardRefreshConfig
   presentation_config?: PresentationConfig
   template_id?: string
@@ -298,6 +299,7 @@ export interface CreateDashboardRequest {
   tags?: string[]
   folder_id?: string
   filters?: DashboardFilter[]
+  rebase_mode?: RebaseMode
   template_id?: string
 }
 
@@ -312,6 +314,7 @@ export interface UpdateDashboardRequest {
   folder_id?: string
   filters?: DashboardFilter[]
   filter_state?: Record<string, unknown>
+  rebase_mode?: RebaseMode
   refresh_config?: DashboardRefreshConfig
   presentation_config?: PresentationConfig
 }

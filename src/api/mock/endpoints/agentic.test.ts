@@ -4,6 +4,7 @@ import type { AgentAnalysisConfig } from '../../types/agentic'
 
 // The mock data uses 'flow-brief-interpretation' as the flow id (not 'brief-interpretation')
 const VALID_FLOW_ID = 'flow-brief-interpretation'
+const ALL_IN_ONE_FLOW_ID = 'flow-all-in-one-agent'
 
 describe('mock agenticApi', () => {
   describe('listFlows', () => {
@@ -20,6 +21,16 @@ describe('mock agenticApi', () => {
       expect(flow!.name).toBe('Brief Interpretation Flow')
       expect(flow!.steps.length).toBe(6)
     })
+
+    it('includes all-in-one flow with 10 lifecycle steps', async () => {
+      const flows = await agenticApi.listFlows()
+      const flow = flows.find((f) => f.id === ALL_IN_ONE_FLOW_ID)
+      expect(flow).toBeDefined()
+      expect(flow!.name).toBe('All In One Agent Flow')
+      expect(flow!.steps.length).toBe(10)
+      expect(flow!.steps[0].capability_id).toBe('cap-brief-interpreter')
+      expect(flow!.steps[9].capability_id).toBe('cap-advisor-agent')
+    })
   })
 
   describe('getFlow', () => {
@@ -32,6 +43,12 @@ describe('mock agenticApi', () => {
     it('returns undefined for unknown flow', async () => {
       const flow = await agenticApi.getFlow('nonexistent')
       expect(flow).toBeUndefined()
+    })
+
+    it('returns all-in-one flow by id', async () => {
+      const flow = await agenticApi.getFlow(ALL_IN_ONE_FLOW_ID)
+      expect(flow).toBeDefined()
+      expect(flow!.steps.length).toBe(10)
     })
   })
 
@@ -113,6 +130,19 @@ describe('mock agenticApi', () => {
       await agenticApi.runFlow(VALID_FLOW_ID, 'Persistence test')
       const runsAfter = await agenticApi.listRuns()
       expect(runsAfter.length).toBe(countBefore + 1)
+    })
+
+    it('runs all-in-one flow and returns outputs across lifecycle stages', async () => {
+      const run = await agenticApi.runFlow(ALL_IN_ONE_FLOW_ID, 'End-to-end lifecycle test')
+      expect(run.status).toBe('completed')
+      expect(run.flow_id).toBe(ALL_IN_ONE_FLOW_ID)
+      expect(run.outputs.length).toBeGreaterThanOrEqual(10)
+
+      const outputLabels = run.outputs.map((output) => output.label)
+      expect(outputLabels).toContain('Structured Brief')
+      expect(outputLabels).toContain('Dashboard')
+      expect(outputLabels).toContain('Delivery Receipts')
+      expect(outputLabels).toContain('Recommendations')
     })
   })
 

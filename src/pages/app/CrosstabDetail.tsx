@@ -12,10 +12,11 @@ import { useWorkspaceStore } from '@/stores/workspace';
 import CrosstabGrid from '@/components/crosstab/CrosstabGrid';
 import CrosstabConfigPanel from '@/components/crosstab/CrosstabConfigPanel';
 import QuestionBrowser from '@/components/taxonomy/QuestionBrowser';
-import { Button, Modal, SearchInput, BaseAudiencePicker } from '@/components/shared';
+import { Button, Modal, SearchInput, BaseAudiencePicker, WaveCadenceSwitcher } from '@/components/shared';
 import ShareDialog from '@/components/sharing/ShareDialog';
 import GuardrailsPanel from '@/components/workspace/GuardrailsPanel';
 import { formatRelativeDate, formatMetricValue } from '@/utils/format';
+import { getWavesForCadence, type WaveCadence } from '@/utils/waves';
 import type { MetricType, CrosstabQueryRequest, Question, Study, AudienceQuestion, Audience, SharingConfig } from '@/api/types';
 import './CrosstabDetail.css';
 
@@ -95,6 +96,8 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
   const [dataSetStep, setDataSetStep] = useState<'study' | 'wave'>('study');
   const [selectedStudy, setSelectedStudy] = useState<Study | null>(null);
   const [wavePickerOpen, setWavePickerOpen] = useState(false);
+  const [waveCadence, setWaveCadence] = useState<WaveCadence>('quarterly');
+  const [selectedWaveId, setSelectedWaveId] = useState<string>('');
   const [columnAudienceSearch, setColumnAudienceSearch] = useState('');
 
   // Fetch data
@@ -109,6 +112,7 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
   const audiences = useMemo(() => audienceResponse?.data ?? [], [audienceResponse]);
   const questions = useMemo(() => questionsResponse?.data ?? [], [questionsResponse]);
   const waves = useMemo(() => allWaves ?? [], [allWaves]);
+  const cadenceWaves = useMemo(() => getWavesForCadence(waves, waveCadence), [waves, waveCadence]);
   const preselectedRowQuestionIds = useMemo(() => {
     const multi = searchParams.get('row_questions');
     const fallback = searchParams.get('questions') ?? searchParams.get('question');
@@ -185,6 +189,22 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
     }
   }, [crosstab, isInitialized, crosstabConfig]);
 
+  useEffect(() => {
+    const activeWaveId = crosstabConfig.config.wave_ids[0]?.wave_id ?? '';
+    if (activeWaveId !== selectedWaveId) {
+      setSelectedWaveId(activeWaveId);
+    }
+  }, [crosstabConfig.config.wave_ids, selectedWaveId]);
+
+  useEffect(() => {
+    if (!selectedWaveId) return;
+    if (cadenceWaves.some((wave) => wave.id === selectedWaveId)) return;
+    const fallbackWave = cadenceWaves[0];
+    if (!fallbackWave) return;
+    setSelectedWaveId(fallbackWave.id);
+    crosstabConfig.setWaveIds([{ study_id: fallbackWave.study_id, wave_id: fallbackWave.id }]);
+  }, [selectedWaveId, cadenceWaves, crosstabConfig.setWaveIds]);
+
   // Build crosstab query from config
   const crosstabRequest: CrosstabQueryRequest | null = useMemo(() => {
     const cfg = crosstabConfig.config;
@@ -252,7 +272,26 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
 
   // Timeframe change handler
   const handleTimeframeChange = (value: string) => {
-    crosstabConfig.setTimeframe(value === 'none' ? undefined : value as 'daily' | 'weekly' | 'monthly');
+    crosstabConfig.setTimeframe(value === 'none' ? undefined : value as 'daily' | 'weekly' | 'monthly' | 'quarterly');
+  };
+
+  const handleWaveCadenceChange = (cadence: WaveCadence) => {
+    setWaveCadence(cadence);
+    const nextWave = getWavesForCadence(waves, cadence)[0];
+    if (!nextWave) return;
+    setSelectedWaveId(nextWave.id);
+    crosstabConfig.setWaveIds([{ study_id: nextWave.study_id, wave_id: nextWave.id }]);
+  };
+
+  const handleWaveSelectionChange = (waveId: string) => {
+    setSelectedWaveId(waveId);
+    if (!waveId) {
+      crosstabConfig.setWaveIds([]);
+      return;
+    }
+    const wave = waves.find((candidate) => candidate.id === waveId);
+    if (!wave) return;
+    crosstabConfig.setWaveIds([{ study_id: wave.study_id, wave_id: wave.id }]);
   };
 
   // Highlight change handler
@@ -558,6 +597,16 @@ export default function CrosstabDetail({ isNew: isNewProp = false }: CrosstabDet
           {hasUnsavedChanges && !isNew && (
             <span className="crosstab-unsaved-badge">Unsaved changes</span>
           )}
+        </div>
+
+        <div style={{ marginBottom: 'var(--spacing-md)' }}>
+          <WaveCadenceSwitcher
+            waves={waves}
+            cadence={waveCadence}
+            selectedWaveId={selectedWaveId}
+            onCadenceChange={handleWaveCadenceChange}
+            onWaveChange={handleWaveSelectionChange}
+          />
         </div>
 
         <div className="crosstab-config-wrapper">

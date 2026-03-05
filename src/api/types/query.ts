@@ -1,6 +1,6 @@
 // Data query types for the GWI Platform API -- enhanced
 
-import type { MetricType, WaveId } from './common'
+import type { MetricType, RebaseMode, WaveId } from './common'
 import type { AudienceExpression } from './audience'
 
 // Stats query - used for charts and simple data queries
@@ -16,6 +16,7 @@ export interface StatsQueryRequest {
   include_trend?: boolean
   include_confidence_intervals?: boolean
   comparison_wave_ids?: WaveId[]
+  rebase_mode?: RebaseMode
 }
 
 export interface StatsQueryResponse {
@@ -51,7 +52,7 @@ export interface CrosstabQueryRequest {
   wave_ids: WaveId[]
   location_ids: string[]
   base_audience?: AudienceExpression
-  timeframe?: 'daily' | 'weekly' | 'monthly'
+  timeframe?: 'daily' | 'weekly' | 'monthly' | 'quarterly'
   // New fields
   stat_test_type?: 'chi_square' | 'z_test' | 'z_test_bonferroni' | 't_test'
   confidence_level?: number

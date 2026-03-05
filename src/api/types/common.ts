@@ -57,6 +57,8 @@ export type MetricType =
   | 'weighted_base'
   | 'unweighted_base'
 
+export type RebaseMode = 'column' | 'row' | 'total' | 'respondent_base'
+
 export interface Metric {
   type: MetricType
   value: number

@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Globe, Grid3X3, FlaskConical, LayoutGrid, List } from 'lucide-react';
 import { useCrosstabs } from '@/hooks/useCrosstabs';
+import { useWaves } from '@/hooks/useTaxonomy';
 import { useWorkspaceStore } from '@/stores/workspace';
-import { SearchInput, Tabs, Pagination, EmptyState, Badge } from '@/components/shared';
+import { SearchInput, Tabs, Pagination, EmptyState, Badge, WaveCadenceSwitcher } from '@/components/shared';
 import { formatRelativeDate } from '@/utils/format';
 import type { Crosstab } from '@/api/types';
+import { getWavesForCadence, type WaveCadence } from '@/utils/waves';
 import './Crosstabs.css';
 
 const tabs = [
@@ -22,6 +24,8 @@ export default function Crosstabs(): React.JSX.Element {
   const [page, setPage] = useState<number>(1);
   const [viewMode, setViewMode] = useState<'list' | 'card'>('list');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [waveCadence, setWaveCadence] = useState<WaveCadence>('quarterly');
+  const [selectedWaveId, setSelectedWaveId] = useState<string>('');
 
   const activeProject = useWorkspaceStore((s) => s.activeProject);
   const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
@@ -32,18 +36,39 @@ export default function Crosstabs(): React.JSX.Element {
     search: searchQuery || undefined,
     project_id: activeProjectId || undefined,
   });
+  const { data: allWaves } = useWaves();
 
   const crosstabs = crosstabsResponse?.data ?? [];
+  const waves = allWaves ?? [];
   const meta = crosstabsResponse?.meta;
   const totalPages = meta?.total_pages ?? 1;
+  const cadenceWaveIds = useMemo(
+    () => new Set(getWavesForCadence(waves, waveCadence).map((wave) => wave.id)),
+    [waves, waveCadence],
+  );
+
+  useEffect(() => {
+    if (selectedWaveId && !cadenceWaveIds.has(selectedWaveId)) {
+      setSelectedWaveId('');
+    }
+  }, [selectedWaveId, cadenceWaveIds]);
 
   // Client-side tab filtering
   const filtered = crosstabs.filter((ct: Crosstab) => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'my') return !ct.is_shared;
-    if (activeTab === 'shared') return ct.is_shared;
-    if (activeTab === 'gwi') return !ct.user_id;
-    if (activeTab === 'templates') return !!ct.template_id;
+    if (activeTab === 'all') { /* pass */ }
+    else if (activeTab === 'my' && ct.is_shared) return false;
+    else if (activeTab === 'shared' && !ct.is_shared) return false;
+    else if (activeTab === 'gwi' && ct.user_id) return false;
+    else if (activeTab === 'templates' && !ct.template_id) return false;
+
+    const crosstabWaveIds = ct.config.wave_ids?.map((wave) => wave.wave_id) ?? [];
+    if (selectedWaveId) {
+      return crosstabWaveIds.includes(selectedWaveId);
+    }
+    if (crosstabWaveIds.length > 0 && cadenceWaveIds.size > 0) {
+      return crosstabWaveIds.some((waveId) => cadenceWaveIds.has(waveId));
+    }
+
     return true;
   });
 
@@ -112,6 +137,22 @@ export default function Crosstabs(): React.JSX.Element {
           onChange={handleSearchChange}
           placeholder="Search crosstabs"
         />
+        <WaveCadenceSwitcher
+          waves={waves}
+          cadence={waveCadence}
+          selectedWaveId={selectedWaveId}
+          onCadenceChange={(cadence) => {
+            setWaveCadence(cadence);
+            setSelectedWaveId('');
+            setPage(1);
+            clearSelection();
+          }}
+          onWaveChange={(waveId) => {
+            setSelectedWaveId(waveId);
+            setPage(1);
+            clearSelection();
+          }}
+        />
       </div>
 
       {/* Bulk action bar */}
@@ -146,7 +187,7 @@ export default function Crosstabs(): React.JSX.Element {
           title="No crosstabs found"
           description={searchQuery ? 'No crosstabs match your search' : 'Create your first crosstab to get started'}
           action={
-            <button className="crosstabs-empty-btn" onClick={() => { setSearchQuery(''); setActiveTab('all'); }}>
+            <button className="crosstabs-empty-btn" onClick={() => { setSearchQuery(''); setActiveTab('all'); setWaveCadence('quarterly'); setSelectedWaveId(''); clearSelection(); }}>
               Clear filters
             </button>
           }

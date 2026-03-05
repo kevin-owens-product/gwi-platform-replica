@@ -555,6 +555,171 @@
 }
 
 /* ============================================
+   Dashboard Config Panel (Crosstab-style)
+   ============================================ */
+
+.dashboard-config-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-secondary);
+}
+
+.dashboard-config-panel__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--spacing-sm) var(--spacing-md);
+}
+
+.dashboard-config-panel__control {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+
+.dashboard-config-panel__control--wave {
+  min-width: 420px;
+  flex: 1;
+}
+
+.dashboard-config-panel__control--filter {
+  min-width: 170px;
+}
+
+.dashboard-config-panel__control-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-caps);
+  white-space: nowrap;
+}
+
+.dashboard-config-panel__search {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  color: var(--color-text-muted);
+}
+
+.dashboard-config-panel__search input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text);
+}
+
+.dashboard-config-panel__search:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.dashboard-config-panel__date {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text);
+}
+
+.dashboard-config-panel__date:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.dashboard-config-panel__toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-width: auto;
+  margin-top: 20px;
+}
+
+.dashboard-config-panel__reset-btn {
+  height: 34px;
+  margin-top: 20px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.dashboard-config-panel__reset-btn:hover {
+  border-color: var(--color-border-hover);
+  background: var(--color-surface);
+}
+
+.dashboard-config-panel__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-top: var(--spacing-xs);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.dashboard-config-panel__chips-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-caps);
+}
+
+.dashboard-config-panel__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+}
+
+.dashboard-config-panel__chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0;
+}
+
+.dashboard-config-panel__chip button:hover {
+  color: var(--color-text);
+}
+
+/* ============================================
    Base Audience Picker Button
    (duplicated from CrosstabConfigPanel so the
     dashboard page is self-contained)
@@ -584,6 +749,16 @@
 .dashboard-detail-page .config-panel__control-select svg {
   color: var(--color-text-muted);
   flex-shrink: 0;
+}
+
+.dashboard-detail-page select.config-panel__control-select {
+  min-height: 34px;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-text-muted) 50%), linear-gradient(135deg, var(--color-text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 14px) calc(50% - 2px), calc(100% - 9px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 24px;
 }
 
 /* ============================================
@@ -645,6 +820,10 @@
   .widget-grid-2col {
     grid-template-columns: 1fr;
     gap: var(--spacing-md);
+  }
+
+  .dashboard-config-panel__control--wave {
+    min-width: 100%;
   }
 
   .donut-widget-container {

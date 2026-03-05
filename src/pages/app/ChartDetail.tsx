@@ -11,11 +11,13 @@ import { useStatsQuery } from '@/hooks/useQueries';
 import { useWorkspaceStore } from '@/stores/workspace';
 import ChartRenderer from '@/components/chart/ChartRenderer';
 import QuestionBrowser from '@/components/taxonomy/QuestionBrowser';
-import { Button, Dropdown, Modal, BaseAudiencePicker, getBaseAudienceLabel } from '@/components/shared';
+import { Button, Dropdown, Modal, BaseAudiencePicker, getBaseAudienceLabel, WaveCadenceSwitcher } from '@/components/shared';
 import ShareDialog from '@/components/sharing/ShareDialog';
 import GuardrailsPanel from '@/components/workspace/GuardrailsPanel';
 import type { SharingConfig } from '@/api/types';
 import { formatRelativeDate } from '@/utils/format';
+import { getWavesForCadence, type WaveCadence } from '@/utils/waves';
+import { REBASE_OPTIONS, getEffectiveMetric } from '@/utils/rebase';
 import type {
   ChartType,
   ChartDimension,
@@ -31,6 +33,7 @@ import type {
   StatisticalOverlays,
   AccessibilityOptions,
   PaletteMode,
+  RebaseMode,
 } from '@/api/types';
 
 interface ChartDataPoint {
@@ -72,6 +75,7 @@ const metricOptions: { value: MetricType; label: string }[] = [
   { value: 'positive_size', label: 'Sample Count' },
   { value: 'column_percentage', label: 'Column %' },
   { value: 'row_percentage', label: 'Row %' },
+  { value: 'total_percentage', label: 'Total %' },
   { value: 'mean', label: 'Mean' },
   { value: 'median', label: 'Median' },
   { value: 'effective_base', label: 'Effective Base' },
@@ -121,7 +125,6 @@ export default function ChartDetail(): React.JSX.Element {
       { label: 'Q1 2024', value: 'q1-2024' },
     ];
   }, [waves]);
-
   // Fetch existing chart data
   const { data: chart, isLoading: chartLoading } = useChart(isNew ? '' : (id ?? ''));
   const updateChart = useUpdateChart();
@@ -132,12 +135,18 @@ export default function ChartDetail(): React.JSX.Element {
   const [chartName, setChartName] = useState<string>('');
   const [chartType, setChartType] = useState<ChartType>('bar');
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('audience_percentage');
+  const [rebaseMode, setRebaseMode] = useState<RebaseMode>('column');
   const [activeView, setActiveView] = useState<'chart' | 'table' | 'summary'>('chart');
   const [baseAudience, setBaseAudience] = useState<AudienceExpression | undefined>(undefined);
   const [audiencePickerOpen, setAudiencePickerOpen] = useState(false);
   const [selectedSource, setSelectedSource] = useState<string>('GWI Core');
   const [selectedWave, setSelectedWave] = useState<string>('');
+  const [waveCadence, setWaveCadence] = useState<WaveCadence>('quarterly');
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const cadenceWaveOptions = useMemo(
+    () => getWavesForCadence(waves ?? [], waveCadence).map((wave) => ({ label: wave.name, value: wave.id })),
+    [waves, waveCadence],
+  );
 
   // Question editor state
   const [rows, setRows] = useState<ChartDimension[]>([]);
@@ -183,6 +192,7 @@ export default function ChartDetail(): React.JSX.Element {
       if (chart.config.metrics?.[0]) {
         setSelectedMetric(chart.config.metrics[0]);
       }
+      setRebaseMode(chart.config.rebase_mode ?? 'column');
       if (chart.config.base_audience) {
         setBaseAudience(chart.config.base_audience);
       }
@@ -235,6 +245,12 @@ export default function ChartDetail(): React.JSX.Element {
     }
   }, [chart, isInitialized, waveOptions]);
 
+  useEffect(() => {
+    if (!selectedWave) return;
+    if (cadenceWaveOptions.some((wave) => wave.value === selectedWave)) return;
+    setSelectedWave(cadenceWaveOptions[0]?.value ?? '');
+  }, [selectedWave, cadenceWaveOptions]);
+
   // Derive display label for the current base audience
   const baseAudienceLabel = useMemo(
     () => getBaseAudienceLabel(baseAudience, audiences, questions),
@@ -284,6 +300,11 @@ export default function ChartDetail(): React.JSX.Element {
   );
 
   // Build stats query from local state
+  const effectiveMetric = useMemo(
+    () => getEffectiveMetric(selectedMetric, rebaseMode),
+    [selectedMetric, rebaseMode],
+  );
+
   const statsRequest: StatsQueryRequest | null = useMemo(() => {
     const questionIds = rows
       .filter((d) => d.type === 'question' && d.question_id)
@@ -292,14 +313,15 @@ export default function ChartDetail(): React.JSX.Element {
 
     return {
       question_ids: questionIds,
-      metrics: [selectedMetric],
+      metrics: [effectiveMetric],
       wave_ids: selectedWave ? [{ study_id: '', wave_id: selectedWave }] : (chart?.config.wave_ids ?? []),
       location_ids: chart?.config.location_ids ?? [],
       base_audience: baseAudience,
       include_confidence_intervals: showConfidenceIntervals,
       comparison_wave_ids: comparisonEnabled && comparisonWave ? [{ study_id: '', wave_id: comparisonWave }] : undefined,
+      rebase_mode: rebaseMode,
     };
-  }, [rows, selectedMetric, selectedWave, chart?.config.wave_ids, chart?.config.location_ids, baseAudience, showConfidenceIntervals, comparisonEnabled, comparisonWave]);
+  }, [rows, effectiveMetric, selectedWave, chart?.config.wave_ids, chart?.config.location_ids, baseAudience, showConfidenceIntervals, comparisonEnabled, comparisonWave, rebaseMode]);
 
   const { data: statsData, isLoading: statsLoading } = useStatsQuery(statsRequest);
 
@@ -312,11 +334,11 @@ export default function ChartDetail(): React.JSX.Element {
     const result = statsData.results[0];
     if (!result) return { chartData: [], series: [] };
 
-    const seriesNames = [metricOptions.find((m) => m.value === selectedMetric)?.label ?? selectedMetric];
+    const seriesNames = [metricOptions.find((m) => m.value === effectiveMetric)?.label ?? effectiveMetric];
 
     const data: ChartDataPoint[] = result.datapoints.map((dp: StatsDatapoint) => ({
       name: dp.datapoint_name,
-      [seriesNames[0]]: dp.metrics[selectedMetric] ?? 0,
+      [seriesNames[0]]: dp.metrics[effectiveMetric] ?? 0,
     }));
 
     if (statsData.results.length > 1) {
@@ -330,7 +352,7 @@ export default function ChartDetail(): React.JSX.Element {
         const row: ChartDataPoint = { name: dpName };
         statsData.results.forEach((r) => {
           const dp = r.datapoints.find((d: StatsDatapoint) => d.datapoint_name === dpName);
-          row[r.question_name] = dp?.metrics[selectedMetric] ?? 0;
+          row[r.question_name] = dp?.metrics[effectiveMetric] ?? 0;
         });
         return row;
       });
@@ -339,7 +361,7 @@ export default function ChartDetail(): React.JSX.Element {
     }
 
     return { chartData: data, series: seriesNames };
-  }, [statsData, selectedMetric]);
+  }, [statsData, effectiveMetric]);
 
   // Build statistical overlays config from state
   const statisticalOverlays: StatisticalOverlays | undefined = useMemo(() => {
@@ -425,6 +447,7 @@ export default function ChartDetail(): React.JSX.Element {
     if (chartName !== chart.name) return true;
     if (chartType !== chart.chart_type) return true;
     if (selectedMetric !== (chart.config.metrics?.[0] ?? 'audience_percentage')) return true;
+    if (rebaseMode !== (chart.config.rebase_mode ?? 'column')) return true;
     if (JSON.stringify(rows) !== JSON.stringify(chart.config.rows ?? [])) return true;
     if (showLegend !== (chart.config.options?.show_legend ?? true)) return true;
     if (showGrid !== (chart.config.options?.show_grid ?? true)) return true;
@@ -436,7 +459,7 @@ export default function ChartDetail(): React.JSX.Element {
     if (usePatternFills !== (chart.config.accessibility?.use_patterns ?? false)) return true;
     if (paletteMode !== (chart.config.accessibility?.palette_mode ?? 'default')) return true;
     return false;
-  }, [chart, isNew, chartName, chartType, selectedMetric, rows, showLegend, showGrid, showLabels, annotations, comparisonEnabled, showTrendLine, showConfidenceIntervals, usePatternFills, paletteMode]);
+  }, [chart, isNew, chartName, chartType, selectedMetric, rebaseMode, rows, showLegend, showGrid, showLabels, annotations, comparisonEnabled, showTrendLine, showConfidenceIntervals, usePatternFills, paletteMode]);
 
   // Save handler
   const handleSave = () => {
@@ -444,6 +467,7 @@ export default function ChartDetail(): React.JSX.Element {
       ...chart?.config,
       rows,
       metrics: [selectedMetric],
+      rebase_mode: rebaseMode,
       base_audience: baseAudience,
       wave_ids: selectedWave ? [{ study_id: '', wave_id: selectedWave }] : (chart?.config.wave_ids ?? []),
       options: {
@@ -466,6 +490,7 @@ export default function ChartDetail(): React.JSX.Element {
             rows,
             columns: [],
             metrics: [selectedMetric],
+            rebase_mode: rebaseMode,
             wave_ids: selectedWave ? [{ study_id: '', wave_id: selectedWave }] : [],
             location_ids: [],
             base_audience: baseAudience,
@@ -766,6 +791,10 @@ export default function ChartDetail(): React.JSX.Element {
                   <span className="summary-value">{baseAudienceLabel}</span>
                 </div>
                 <div className="summary-stat">
+                  <span className="summary-label">Rebase</span>
+                  <span className="summary-value">{REBASE_OPTIONS.find((option) => option.value === rebaseMode)?.label ?? 'Column %'}</span>
+                </div>
+                <div className="summary-stat">
                   <span className="summary-label">Execution Time</span>
                   <span className="summary-value">{statsData?.meta?.execution_time_ms ? `${statsData.meta.execution_time_ms}ms` : '-'}</span>
                 </div>
@@ -819,6 +848,14 @@ export default function ChartDetail(): React.JSX.Element {
               </select>
             </div>
             <div className="config-group">
+              <label>Rebase</label>
+              <select className="config-select" value={rebaseMode} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRebaseMode(e.target.value as RebaseMode)}>
+                {REBASE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="config-group">
               <label>Data Source</label>
               <select className="config-select" value={selectedSource} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedSource(e.target.value)}>
                 {dataSources.map((ds: string) => <option key={ds} value={ds}>{ds}</option>)}
@@ -836,14 +873,15 @@ export default function ChartDetail(): React.JSX.Element {
               </button>
             </div>
             <div className="config-group">
-              <label>Wave</label>
-              <select
-                className="config-select"
-                value={selectedWave}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedWave(e.target.value)}
-              >
-                {waveOptions.map((w) => <option key={w.value} value={w.value}>{w.label}</option>)}
-              </select>
+              <label>Wave Cadence</label>
+              <WaveCadenceSwitcher
+                waves={waves}
+                cadence={waveCadence}
+                selectedWaveId={selectedWave}
+                layout="stacked"
+                onCadenceChange={setWaveCadence}
+                onWaveChange={setSelectedWave}
+              />
             </div>
             <div className="config-divider" />
             {/* Display Options */}

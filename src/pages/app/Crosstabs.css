@@ -32,6 +32,8 @@
   display: flex;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-xl);
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .crosstabs-table {

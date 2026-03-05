@@ -24,7 +24,7 @@ const metricOptions: Array<{ label: string; value: MetricType }> = [
 
 function chartDataFromResult(
   result: RunInsightQueryResponse | null,
-  metric: MetricType,
+  metric: string,
 ): Array<{ name: string; value: number }> {
   const firstQuestion = result?.chart?.results?.[0]
   if (!firstQuestion) return []
@@ -45,7 +45,23 @@ export default function QueryStep({
   onRemoveFilter,
 }: QueryStepProps): React.JSX.Element {
   const activeMetric = draft.query_spec.metrics[draft.query_spec.metrics.length - 1] ?? 'audience_percentage'
-  const chartData = chartDataFromResult(result, activeMetric)
+  const chartMetricKey = useMemo(() => {
+    const metricMap = result?.chart?.results?.[0]?.datapoints?.[0]?.metrics
+    if (!metricMap) return activeMetric
+    if (typeof metricMap[activeMetric] === 'number') return activeMetric
+    if (typeof metricMap.audience_percentage === 'number') return 'audience_percentage'
+    return Object.keys(metricMap)[0] ?? activeMetric
+  }, [activeMetric, result])
+
+  const crosstabMetricKey = useMemo(() => {
+    const metricMap = result?.crosstab?.cells?.[0]?.[0]?.values
+    if (!metricMap) return activeMetric
+    if (typeof metricMap[activeMetric] === 'number') return activeMetric
+    if (typeof metricMap.audience_percentage === 'number') return 'audience_percentage'
+    return Object.keys(metricMap)[0] ?? activeMetric
+  }, [activeMetric, result])
+
+  const chartData = chartDataFromResult(result, chartMetricKey)
   const crosstab = result?.crosstab
   const [selectedQuestionId, setSelectedQuestionId] = useState('')
   const [selectedDatapointIds, setSelectedDatapointIds] = useState<string[]>([])
@@ -292,7 +308,7 @@ export default function QueryStep({
                       <td>{row.label}</td>
                       {crosstab.columns.slice(0, 8).map((column, colIdx) => (
                         <td key={`${row.id}_${column.id}`}>
-                          {crosstab.cells[rowIdx]?.[colIdx]?.values?.[activeMetric]?.toFixed(1) ?? '-'}
+                          {crosstab.cells[rowIdx]?.[colIdx]?.values?.[crosstabMetricKey]?.toFixed(1) ?? '-'}
                         </td>
                       ))}
                     </tr>

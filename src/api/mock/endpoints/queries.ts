@@ -6,12 +6,20 @@ import { delay } from '../helpers'
 export const queriesApi = {
   async stats(data: StatsQueryRequest): Promise<StatsQueryResponse> {
     await delay(120)
-    return generateStatsResponse(data.question_ids)
+    return generateStatsResponse(data.question_ids, {
+      include_trend: data.include_trend,
+      include_confidence_intervals: data.include_confidence_intervals,
+      rebase_mode: data.rebase_mode,
+    })
   },
 
   async statsStream(data: StatsQueryRequest): Promise<StatsQueryResponse['results'][0][]> {
     await delay(150)
-    const resp = generateStatsResponse(data.question_ids)
+    const resp = generateStatsResponse(data.question_ids, {
+      include_trend: data.include_trend,
+      include_confidence_intervals: data.include_confidence_intervals,
+      rebase_mode: data.rebase_mode,
+    })
     return resp.results
   },
 

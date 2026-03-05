@@ -1,4 +1,4 @@
-import type { StatsQueryResponse, CrosstabQueryResult, IntersectionResult, CrosstabDimension } from '../../types'
+import type { StatsQueryResponse, CrosstabQueryResult, IntersectionResult, CrosstabDimension, RebaseMode } from '../../types'
 
 // Comprehensive label lookup for all datapoint IDs used across mock crosstabs
 export const DATAPOINT_LABELS: Record<string, string> = {
@@ -193,7 +193,10 @@ function resolveQuestionLabel(qId: string): string {
   return QUESTION_LABELS[qId] ?? qId.replace(/^q_/, '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-export function generateStatsResponse(questionIds: string[], options?: { include_trend?: boolean; include_confidence_intervals?: boolean }): StatsQueryResponse {
+export function generateStatsResponse(
+  questionIds: string[],
+  options?: { include_trend?: boolean; include_confidence_intervals?: boolean; rebase_mode?: RebaseMode },
+): StatsQueryResponse {
   const results = questionIds.map((qid) => ({
     question_id: qid,
     question_name: qid.replace('q_', '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
@@ -215,7 +218,10 @@ export function generateStatsResponse(questionIds: string[], options?: { include
   }
 }
 
-function generateDatapoints(questionId: string, options?: { include_trend?: boolean; include_confidence_intervals?: boolean }) {
+function generateDatapoints(
+  questionId: string,
+  options?: { include_trend?: boolean; include_confidence_intervals?: boolean; rebase_mode?: RebaseMode },
+) {
   const datapointSets: Record<string, Array<{ id: string; name: string }>> = {
     q_social_platforms: [
       { id: 'dp_facebook', name: 'Facebook' }, { id: 'dp_instagram', name: 'Instagram' },
@@ -241,6 +247,9 @@ function generateDatapoints(questionId: string, options?: { include_trend?: bool
 
   return dps.map((dp, index) => {
     const pct = Math.round(Math.random() * 60 + 10)
+    const columnPct = Math.max(0, Math.min(100, pct + Math.round(Math.random() * 10 - 5)))
+    const rowPct = Math.max(0, Math.min(100, pct + Math.round(Math.random() * 12 - 6)))
+    const totalPct = Math.max(0, Math.min(100, pct + Math.round(Math.random() * 8 - 4)))
     const size = Math.round(pct * 452)
     const includeTrend = options?.include_trend && index < 3
     const includeCI = options?.include_confidence_intervals && index < 4
@@ -250,6 +259,9 @@ function generateDatapoints(questionId: string, options?: { include_trend?: bool
       datapoint_name: dp.name,
       metrics: {
         audience_percentage: pct,
+        column_percentage: columnPct,
+        row_percentage: rowPct,
+        total_percentage: totalPct,
         audience_size: size,
         audience_index: Math.round(Math.random() * 80 + 60),
         audience_sample: Math.round(size * 0.02),
@@ -284,7 +296,7 @@ export interface CrosstabDimensionInfo {
   columns: CrosstabDimension[]
 }
 
-function generateTimeframeColumns(timeframe: 'daily' | 'weekly' | 'monthly'): CrosstabQueryResult['columns'] {
+function generateTimeframeColumns(timeframe: 'daily' | 'weekly' | 'monthly' | 'quarterly'): CrosstabQueryResult['columns'] {
   const now = new Date(2024, 11, 15) // Dec 15, 2024 as reference
   const columns: CrosstabQueryResult['columns'] = []
 
@@ -303,12 +315,19 @@ function generateTimeframeColumns(timeframe: 'daily' | 'weekly' | 'monthly'): Cr
       const month = d.toLocaleDateString('en-US', { month: 'short' })
       columns.push({ id: `week_${i}`, label: `W${weekNum} ${month}` })
     }
-  } else {
+  } else if (timeframe === 'monthly') {
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now)
       d.setMonth(d.getMonth() - i)
       const label = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
       columns.push({ id: `month_${i}`, label })
+    }
+  } else {
+    for (let i = 7; i >= 0; i--) {
+      const d = new Date(now)
+      d.setMonth(d.getMonth() - i * 3)
+      const quarter = Math.floor(d.getMonth() / 3) + 1
+      columns.push({ id: `quarter_${i}`, label: `Q${quarter} ${d.getFullYear()}` })
     }
   }
 
@@ -319,7 +338,7 @@ export function generateCrosstabResult(
   rowCount: number,
   colCount: number,
   dimensionInfo?: CrosstabDimensionInfo,
-  timeframe?: 'daily' | 'weekly' | 'monthly',
+  timeframe?: 'daily' | 'weekly' | 'monthly' | 'quarterly',
 ): CrosstabQueryResult {
   // If we have dimension info, build rows/columns from actual config
   if (dimensionInfo) {
@@ -356,7 +375,15 @@ export function generateCrosstabResult(
     }),
   )
 
-  const timeframeLabel = timeframe === 'daily' ? 'Daily' : timeframe === 'weekly' ? 'Weekly' : timeframe === 'monthly' ? 'Monthly' : undefined
+  const timeframeLabel = timeframe === 'daily'
+    ? 'Daily'
+    : timeframe === 'weekly'
+      ? 'Weekly'
+      : timeframe === 'monthly'
+        ? 'Monthly'
+        : timeframe === 'quarterly'
+          ? 'Quarterly'
+          : undefined
 
   return {
     rows,
@@ -372,7 +399,7 @@ export function generateCrosstabResult(
   }
 }
 
-function generateFromDimensions(info: CrosstabDimensionInfo, timeframe?: 'daily' | 'weekly' | 'monthly'): CrosstabQueryResult {
+function generateFromDimensions(info: CrosstabDimensionInfo, timeframe?: 'daily' | 'weekly' | 'monthly' | 'quarterly'): CrosstabQueryResult {
   // Build rows: flatten all row dimensions, preserving parent question as group
   const rows: CrosstabQueryResult['rows'] = []
   for (const dim of info.rows) {
@@ -459,7 +486,15 @@ function generateFromDimensions(info: CrosstabDimensionInfo, timeframe?: 'daily'
     }),
   )
 
-  const timeframeLabel = timeframe === 'daily' ? 'Daily' : timeframe === 'weekly' ? 'Weekly' : timeframe === 'monthly' ? 'Monthly' : undefined
+  const timeframeLabel = timeframe === 'daily'
+    ? 'Daily'
+    : timeframe === 'weekly'
+      ? 'Weekly'
+      : timeframe === 'monthly'
+        ? 'Monthly'
+        : timeframe === 'quarterly'
+          ? 'Quarterly'
+          : undefined
 
   return {
     rows,

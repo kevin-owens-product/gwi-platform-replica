@@ -23,6 +23,43 @@ interface AgentChatBlueprint {
 }
 
 const AGENT_CHAT_BLUEPRINTS: Record<string, AgentChatBlueprint> = {
+  'all-in-one-agent': {
+    response:
+      'I orchestrated a full 10-stage lifecycle from brief interpretation through governed delivery and ROI recommendations. The run includes linked artifacts, validation coverage, and destination-ready packaging.',
+    narrativeSummary:
+      'All In One Agent completed end-to-end orchestration with governed outputs and follow-up actions.',
+    thinkingSteps: [
+      'Parsed the brief and extracted objective, audience, market, and KPI targets.',
+      'Sequenced all specialist stages with explicit dependencies and quality gates.',
+      'Harmonized source data and generated audience + crosstab outputs.',
+      'Converted analysis into narrative and visualization-ready assets.',
+      'Applied governance checks with citations and confidence controls.',
+      'Packaged and delivered outputs to destination systems with receipts.',
+      'Generated KPI monitoring rules and ROI-oriented next-step recommendations.',
+    ],
+    followUps: [
+      'Open the All In One flow blueprint?',
+      'Inspect governed output bundle before delivery?',
+      'Schedule weekly ROI monitoring recommendations?',
+    ],
+    dataTable: {
+      columns: [
+        { key: 'stage', label: 'Lifecycle Stage', format: 'text' },
+        { key: 'owner', label: 'Owner', format: 'text' },
+        { key: 'status', label: 'Status', format: 'text' },
+      ],
+      rows: [
+        { stage: 'Brief Intake', owner: 'Brief Interpreter', status: 'Completed' },
+        { stage: 'Workflow Setup', owner: 'Workflow Orchestrator', status: 'Completed' },
+        { stage: 'Data Harmonization', owner: 'Data Harmonizer', status: 'Completed' },
+        { stage: 'Audience + Analysis', owner: 'Audience Profiler + Crosstab Analyst', status: 'Completed' },
+        { stage: 'Story + Packaging', owner: 'Narrative + Visualization', status: 'Completed' },
+        { stage: 'Governance + Delivery', owner: 'Governance + Connector', status: 'Completed' },
+        { stage: 'Optimization Loop', owner: 'Advisor Agent', status: 'Completed' },
+      ],
+    },
+    confidence: 'high',
+  },
   'brief-interpreter': {
     response:
       'I translated the brief into a structured plan with objective, target audience, markets, KPIs, and required outputs. I also generated assumptions for missing constraints and an approval checklist for scope lock.',
@@ -456,6 +493,19 @@ function buildDataTable(context?: SparkChatRequest['context']) {
 }
 
 function buildSuggestedActions(context?: SparkChatRequest['context']) {
+  if (context?.agent_id === 'all-in-one-agent') {
+    return [
+      { type: 'navigate' as const, label: 'Open All In One Flow', payload: { path: '/app/agent-spark' } },
+      { type: 'create_dashboard' as const, label: 'Inspect Dashboard Output', payload: {} },
+      {
+        type: 'deliver_output' as const,
+        label: 'Deliver Governed Bundle',
+        payload: {
+          destination_ids: ['conn_slack_1', 'conn_zapier_1'],
+        },
+      },
+    ]
+  }
   if (context?.agent_id === 'brief-interpreter') {
     return [
       { type: 'navigate' as const, label: 'Open Workflow', payload: { path: '/app/canvas' } },

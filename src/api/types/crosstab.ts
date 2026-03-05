@@ -30,7 +30,7 @@ export interface CrosstabConfig {
   wave_ids: WaveId[]
   location_ids: string[]
   highlight?: CrosstabHighlight
-  timeframe?: 'daily' | 'weekly' | 'monthly'
+  timeframe?: 'daily' | 'weekly' | 'monthly' | 'quarterly'
   // New config sections
   banner?: BannerConfig
   stat_test?: StatisticalTestConfig

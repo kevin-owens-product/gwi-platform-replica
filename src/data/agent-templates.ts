@@ -36,6 +36,47 @@ export const AGENT_STARTER_TEMPLATE_CATEGORIES: StarterTemplateCategory[] = [
 
 export const agentStarterTemplates: AgentStarterTemplate[] = [
   {
+    id: 'tmpl-all-in-one-end-to-end',
+    agentId: 'all-in-one-agent',
+    title: 'Run all-in-one lifecycle',
+    prompt:
+      'Run an end-to-end lifecycle for {{objective}} in {{markets}} from brief interpretation through governed delivery, then summarize stage outputs.',
+    expectedOutcome: 'Completed all-in-one run with stage-by-stage outputs and delivery-ready assets.',
+    category: 'Build',
+    tags: ['all-in-one', 'orchestration', 'end-to-end'],
+    contextTypes: ['general', 'canvas', 'report'],
+    placeholders: [
+      { key: 'objective', label: 'Objective', defaultValue: 'streaming subscriber growth' },
+      { key: 'markets', label: 'Markets', defaultValue: 'US, UK, Germany' },
+    ],
+  },
+  {
+    id: 'tmpl-all-in-one-governed-delivery',
+    agentId: 'all-in-one-agent',
+    title: 'Governed delivery run',
+    prompt:
+      'Execute the full all-in-one workflow with strict governance checks before delivery and provide citation coverage plus destination receipts.',
+    expectedOutcome: 'Validated output bundle with confidence flags and delivery receipts.',
+    category: 'Validate',
+    tags: ['all-in-one', 'governance', 'delivery'],
+    contextTypes: ['general', 'dashboard', 'report'],
+    placeholders: [],
+  },
+  {
+    id: 'tmpl-all-in-one-monitor-and-optimize',
+    agentId: 'all-in-one-agent',
+    title: 'Monitor and optimize loop',
+    prompt:
+      'Run the all-in-one lifecycle and finish with advisor recommendations using {{threshold}} alert thresholds and weekly optimization follow-ups.',
+    expectedOutcome: 'Completed run plus ROI recommendations and monitoring policy.',
+    category: 'Discover',
+    tags: ['all-in-one', 'advisor', 'roi'],
+    contextTypes: ['general', 'dashboard', 'chart'],
+    placeholders: [
+      { key: 'threshold', label: 'Threshold', defaultValue: '5%' },
+    ],
+  },
+  {
     id: 'tmpl-brief-interpret-structured',
     agentId: 'brief-interpreter',
     title: 'Interpret campaign brief',
@@ -298,6 +339,7 @@ export const agentStarterTemplates: AgentStarterTemplate[] = [
 ]
 
 export const CROSS_ROLE_TEMPLATE_IDS: string[] = [
+  'tmpl-all-in-one-end-to-end',
   'tmpl-brief-interpret-structured',
   'tmpl-audience-build-from-objective',
   'tmpl-crosstab-run-significance',

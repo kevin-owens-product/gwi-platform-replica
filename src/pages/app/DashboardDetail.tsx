@@ -4,19 +4,21 @@ import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Download, Share2, Plus, TrendingUp, TrendingDown, Edit, Save, Loader2,
   Users, LayoutDashboard, Maximize, X, Calendar, RefreshCw, ToggleLeft, ToggleRight,
-  Gauge, Sparkles, Table, Filter as FilterIcon, Map, List, Code, Minus, Image,
+  Gauge, Sparkles, Table, Filter as FilterIcon, Map as MapIcon, List, Code, Minus, Image, Search,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useDashboard, useUpdateDashboard } from '@/hooks/useDashboards';
 import { useAudiences } from '@/hooks/useAudiences';
-import { useQuestions } from '@/hooks/useTaxonomy';
+import { useQuestions, useWaves, useLocations } from '@/hooks/useTaxonomy';
 import { useCharts } from '@/hooks/useCharts';
 import DashboardGrid, { WidgetChart } from '@/components/dashboard/DashboardGrid';
-import { Button, Modal, EmptyState, BaseAudiencePicker, getBaseAudienceLabel } from '@/components/shared';
+import { Button, Modal, EmptyState, BaseAudiencePicker, getBaseAudienceLabel, WaveCadenceSwitcher } from '@/components/shared';
 import ShareDialog from '@/components/sharing/ShareDialog';
 import GuardrailsPanel from '@/components/workspace/GuardrailsPanel';
 import { formatRelativeDate } from '@/utils/format';
-import type { DashboardWidget, DashboardWidgetType, AudienceExpression, AudienceQuestion, Audience, SharingConfig } from '@/api/types';
+import { getWaveCadence, getWavesForCadence, type WaveCadence } from '@/utils/waves';
+import { REBASE_OPTIONS } from '@/utils/rebase';
+import type { DashboardWidget, DashboardWidgetType, AudienceExpression, AudienceQuestion, Audience, SharingConfig, DashboardFilter, RebaseMode } from '@/api/types';
 import './DashboardDetail.css';
 
 // --- Mock data used as fallback when API returns no widgets ---
@@ -62,6 +64,33 @@ interface TableRow {
 interface SparkLineProps {
   data: number[];
   positive: boolean;
+}
+
+function shallowRecordEqual(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  return aKeys.every((key) => a[key] === b[key]);
+}
+
+function formatMetricLabel(metric: string): string {
+  switch (metric) {
+    case 'audience_percentage':
+      return 'Percentage';
+    case 'audience_index':
+      return 'Index';
+    case 'audience_size':
+      return 'Audience Size';
+    default:
+      return metric
+        .split('_')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+  }
+}
+
+function formatWidgetTypeLabel(type: DashboardWidgetType): string {
+  return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
 const kpiData: KpiItem[] = [
@@ -120,7 +149,7 @@ const allWidgetTypes: { type: DashboardWidgetType; label: string; icon: React.Re
   { type: 'sparkline', label: 'Sparkline', icon: <TrendingUp size={16} /> },
   { type: 'table', label: 'Table', icon: <Table size={16} /> },
   { type: 'funnel', label: 'Funnel', icon: <FilterIcon size={16} /> },
-  { type: 'map', label: 'Map', icon: <Map size={16} /> },
+  { type: 'map', label: 'Map', icon: <MapIcon size={16} /> },
   { type: 'list', label: 'List', icon: <List size={16} /> },
   { type: 'embed', label: 'Embed', icon: <Code size={16} /> },
   { type: 'divider', label: 'Divider', icon: <Minus size={16} /> },
@@ -339,10 +368,14 @@ export default function DashboardDetail(): React.JSX.Element {
   const { data: questionsResponse } = useQuestions({ per_page: 100 });
   const audiences = useMemo(() => audienceResponse?.data ?? [], [audienceResponse]);
   const questions = useMemo(() => questionsResponse?.data ?? [], [questionsResponse]);
+  const { data: locationsResponse } = useLocations();
+  const locations = useMemo(() => locationsResponse ?? [], [locationsResponse]);
 
   // Fetch charts for add-widget chart selector
   const { data: chartsResponse } = useCharts({ per_page: 50 });
   const chartsList = useMemo(() => chartsResponse?.data ?? [], [chartsResponse]);
+  const { data: wavesResponse } = useWaves();
+  const waves = useMemo(() => wavesResponse ?? [], [wavesResponse]);
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [dashboardName, setDashboardName] = useState<string>('');
@@ -369,6 +402,10 @@ export default function DashboardDetail(): React.JSX.Element {
   // Auto-refresh state
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [waveCadence, setWaveCadence] = useState<WaveCadence>('quarterly');
+  const [selectedWaveId, setSelectedWaveId] = useState<string>('');
+  const [rebaseMode, setRebaseMode] = useState<RebaseMode>('column');
+  const [filterState, setFilterState] = useState<Record<string, unknown>>({});
 
   // Seed base audience from dashboard data when it loads
   useEffect(() => {
@@ -383,6 +420,10 @@ export default function DashboardDetail(): React.JSX.Element {
       setAutoRefreshEnabled(dashboard.refresh_config.mode === 'polling');
     }
   }, [dashboard?.refresh_config]);
+
+  useEffect(() => {
+    setRebaseMode(dashboard?.rebase_mode ?? 'column');
+  }, [dashboard?.rebase_mode]);
 
   // Auto-refresh timer
   useEffect(() => {
@@ -421,7 +462,236 @@ export default function DashboardDetail(): React.JSX.Element {
   // Sync name from API data when it loads
   const displayName = dashboardName || dashboard?.name || 'Untitled Dashboard';
 
-  const hasApiWidgets = (dashboard?.widgets?.length ?? 0) > 0;
+  const cadenceWaveIds = useMemo(
+    () => new Set(getWavesForCadence(waves, waveCadence).map((wave) => wave.id)),
+    [waves, waveCadence],
+  );
+  const chartWaveMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const chart of chartsList) {
+      map.set(
+        chart.id,
+        chart.config.wave_ids?.map((wave) => wave.wave_id) ?? [],
+      );
+    }
+    return map;
+  }, [chartsList]);
+  const waveById = useMemo(() => {
+    return new Map(waves.map((wave) => [wave.id, wave]));
+  }, [waves]);
+
+  // Dashboard filters from filter config
+  const dashboardFilters = useMemo(
+    () => dashboard?.filters ?? [],
+    [dashboard?.filters],
+  );
+  const locationMetaById = useMemo(() => {
+    return new Map(locations.map((location) => [location.id, location]));
+  }, [locations]);
+  const marketOptions = useMemo(() => {
+    const marketIds = new Set<string>();
+    for (const chart of chartsList) {
+      for (const locationId of chart.config.location_ids ?? []) {
+        marketIds.add(locationId);
+      }
+    }
+    return [...marketIds]
+      .map((locationId) => {
+        const location = locationMetaById.get(locationId);
+        return {
+          label: location?.name ?? locationId,
+          value: location?.iso_code ?? locationId,
+        };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [chartsList, locationMetaById]);
+  const generatedFilters = useMemo<DashboardFilter[]>(() => {
+    const generated: DashboardFilter[] = [];
+    const hasMarketFilter = dashboardFilters.some((filter) => filter.field === 'market');
+    const hasTimePeriodFilter = dashboardFilters.some((filter) => filter.field === 'time_period');
+    const hasStudyFilter = dashboardFilters.some((filter) => filter.field === 'study');
+    const hasMetricFilter = dashboardFilters.some((filter) => filter.field === 'metric');
+    const hasWidgetTypeFilter = dashboardFilters.some((filter) => filter.field === 'widget_type');
+    const hasSearchFilter = dashboardFilters.some((filter) => filter.type === 'search');
+    const studyMap = new Map<string, string>();
+    const metricValues = new Set<string>();
+    const widgetTypes = new Set<DashboardWidgetType>();
+
+    for (const chart of chartsList) {
+      for (const waveRef of chart.config.wave_ids ?? []) {
+        const wave = waveById.get(waveRef.wave_id);
+        if (!wave) continue;
+        studyMap.set(wave.study_id, wave.study_name || wave.study_id);
+      }
+      for (const metric of chart.config.metrics ?? []) {
+        metricValues.add(metric);
+      }
+    }
+
+    for (const widget of dashboard?.widgets ?? []) {
+      widgetTypes.add(widget.type);
+    }
+
+    const studyOptions = [...studyMap.entries()]
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+    const metricOptions = [...metricValues]
+      .sort((a, b) => a.localeCompare(b))
+      .map((metric) => ({ value: metric, label: formatMetricLabel(metric) }));
+    const widgetTypeOptions = [...widgetTypes]
+      .sort((a, b) => a.localeCompare(b))
+      .map((type) => ({ value: type, label: formatWidgetTypeLabel(type) }));
+
+    if (!hasMarketFilter && marketOptions.length > 0) {
+      generated.push({
+        id: 'auto_market',
+        type: 'dropdown',
+        label: 'Market',
+        field: 'market',
+        options: marketOptions,
+        default_value: '',
+      });
+    }
+    if (!hasTimePeriodFilter) {
+      generated.push({
+        id: 'auto_time_period',
+        type: 'dropdown',
+        label: 'Time Period',
+        field: 'time_period',
+        options: [
+          { label: 'Weekly', value: 'weekly' },
+          { label: 'Monthly', value: 'monthly' },
+          { label: 'Quarterly', value: 'quarterly' },
+        ],
+        default_value: '',
+      });
+    }
+    if (!hasStudyFilter && studyOptions.length > 1) {
+      generated.push({
+        id: 'auto_study',
+        type: 'dropdown',
+        label: 'Study',
+        field: 'study',
+        options: studyOptions,
+        default_value: '',
+      });
+    }
+    if (!hasMetricFilter && metricOptions.length > 1) {
+      generated.push({
+        id: 'auto_metric',
+        type: 'dropdown',
+        label: 'Metric',
+        field: 'metric',
+        options: metricOptions,
+        default_value: '',
+      });
+    }
+    if (!hasWidgetTypeFilter && widgetTypeOptions.length > 1) {
+      generated.push({
+        id: 'auto_widget_type',
+        type: 'dropdown',
+        label: 'Widget Type',
+        field: 'widget_type',
+        options: widgetTypeOptions,
+        default_value: '',
+      });
+    }
+    if (!hasSearchFilter) {
+      generated.push({
+        id: 'auto_search',
+        type: 'search',
+        label: 'Search Widgets',
+        field: 'widget_search',
+        default_value: '',
+      });
+    }
+
+    return generated;
+  }, [dashboardFilters, marketOptions, chartsList, waveById, dashboard?.widgets]);
+  const effectiveFilters = useMemo(
+    () => [...dashboardFilters, ...generatedFilters],
+    [dashboardFilters, generatedFilters],
+  );
+
+  const filteredWidgets = useMemo(() => {
+    const widgets = dashboard?.widgets ?? [];
+    const activeMarketFilter = effectiveFilters.find((filter) => filter.field === 'market');
+    const activeTimePeriodFilter = effectiveFilters.find((filter) => filter.field === 'time_period');
+    const activeStudyFilter = effectiveFilters.find((filter) => filter.field === 'study');
+    const activeMetricFilter = effectiveFilters.find((filter) => filter.field === 'metric');
+    const activeWidgetTypeFilter = effectiveFilters.find((filter) => filter.field === 'widget_type');
+    const activeSearchFilter = effectiveFilters.find((filter) => filter.type === 'search');
+    const selectedMarket = activeMarketFilter ? String(filterState[activeMarketFilter.id] ?? '') : '';
+    const selectedTimePeriod = activeTimePeriodFilter ? String(filterState[activeTimePeriodFilter.id] ?? '') : '';
+    const selectedStudy = activeStudyFilter ? String(filterState[activeStudyFilter.id] ?? '') : '';
+    const selectedMetric = activeMetricFilter ? String(filterState[activeMetricFilter.id] ?? '') : '';
+    const selectedWidgetType = activeWidgetTypeFilter ? String(filterState[activeWidgetTypeFilter.id] ?? '') : '';
+    const searchQuery = activeSearchFilter ? String(filterState[activeSearchFilter.id] ?? '').trim().toLowerCase() : '';
+
+    return widgets.filter((widget) => {
+      if (selectedWidgetType && widget.type !== selectedWidgetType) {
+        return false;
+      }
+      if (searchQuery) {
+        const title = (widget.title ?? '').toLowerCase();
+        if (!title.includes(searchQuery)) return false;
+      }
+
+      if (!widget.chart_id) return true;
+      const chart = chartsList.find((candidate) => candidate.id === widget.chart_id);
+      if (!chart) return true;
+      const chartWaveIds = chartWaveMap.get(widget.chart_id) ?? [];
+
+      if (selectedMarket) {
+        const hasMarket = (chart.config.location_ids ?? []).some((locationId) => {
+          const location = locationMetaById.get(locationId);
+          return (
+            locationId === selectedMarket ||
+            location?.iso_code?.toLowerCase() === selectedMarket.toLowerCase() ||
+            location?.name.toLowerCase() === selectedMarket.toLowerCase()
+          );
+        });
+        if (!hasMarket) return false;
+      }
+
+      if (selectedTimePeriod) {
+        const normalizedTimePeriod = selectedTimePeriod.toLowerCase();
+        const hasPeriod = chartWaveIds.some((waveId) => {
+          const wave = waveById.get(waveId);
+          if (!wave) return false;
+          return (
+            getWaveCadence(wave) === normalizedTimePeriod ||
+            wave.name.toLowerCase() === normalizedTimePeriod ||
+            wave.id === selectedTimePeriod
+          );
+        });
+        if (!hasPeriod) return false;
+      }
+      if (selectedStudy) {
+        const hasStudy = chartWaveIds.some((waveId) => waveById.get(waveId)?.study_id === selectedStudy);
+        if (!hasStudy) return false;
+      }
+      if (selectedMetric) {
+        const hasMetric = (chart.config.metrics ?? []).includes(selectedMetric as never);
+        if (!hasMetric) return false;
+      }
+
+      if (selectedWaveId) {
+        if (chartWaveIds.length === 0) return true;
+        return chartWaveIds.includes(selectedWaveId);
+      }
+      if (chartWaveIds.length === 0) return true;
+      return chartWaveIds.some((waveId) => cadenceWaveIds.has(waveId));
+    });
+  }, [dashboard?.widgets, effectiveFilters, filterState, chartsList, chartWaveMap, locationMetaById, waveById, selectedWaveId, cadenceWaveIds]);
+  const hasWidgets = (dashboard?.widgets?.length ?? 0) > 0;
+  const hasVisibleWidgets = filteredWidgets.length > 0;
+
+  useEffect(() => {
+    if (!selectedWaveId) return;
+    if (cadenceWaveIds.has(selectedWaveId)) return;
+    setSelectedWaveId('');
+  }, [selectedWaveId, cadenceWaveIds]);
 
   // Derive display label for the current base audience
   const baseAudienceLabel = useMemo(
@@ -434,9 +704,90 @@ export default function DashboardDetail(): React.JSX.Element {
     () => dashboard?.widgets?.find((w) => w.id === maximizedWidgetId),
     [dashboard?.widgets, maximizedWidgetId],
   );
+  const activeFilterChips = useMemo(() => {
+    return effectiveFilters.flatMap((filter) => {
+      const value = filterState[filter.id] ?? filter.default_value;
+      if (
+        value == null ||
+        value === '' ||
+        value === false ||
+        (Array.isArray(value) && value.length === 0)
+      ) {
+        return [];
+      }
 
-  // Dashboard filters from filter config
-  const dashboardFilters = dashboard?.filters ?? [];
+      let displayValue = String(value);
+      if (filter.options && typeof value === 'string') {
+        const option = filter.options.find((candidate) => candidate.value === value);
+        if (option) displayValue = option.label;
+      }
+
+      return [{ id: filter.id, label: filter.label, value: displayValue }];
+    });
+  }, [effectiveFilters, filterState]);
+
+  const renderDashboardFilterControl = (filter: DashboardFilter): React.JSX.Element | null => {
+    const currentValue = filterState[filter.id] ?? filter.default_value;
+    if (filter.type === 'dropdown' || filter.type === 'multi_select') {
+      return (
+        <div key={filter.id} className="dashboard-config-panel__control dashboard-config-panel__control--filter">
+          <span className="dashboard-config-panel__control-label">{filter.label}</span>
+          <select
+            className="config-panel__control-select"
+            value={String(currentValue ?? '')}
+            onChange={(event) => handleFilterChange(filter.id, event.target.value)}
+          >
+            <option value="">All</option>
+            {filter.options?.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </div>
+      );
+    }
+    if (filter.type === 'search') {
+      return (
+        <div key={filter.id} className="dashboard-config-panel__control dashboard-config-panel__control--filter">
+          <span className="dashboard-config-panel__control-label">{filter.label}</span>
+          <label className="dashboard-config-panel__search">
+            <Search size={12} />
+            <input
+              type="text"
+              value={String(currentValue ?? '')}
+              onChange={(event) => handleFilterChange(filter.id, event.target.value)}
+              placeholder={`Search ${filter.label.toLowerCase()}...`}
+            />
+          </label>
+        </div>
+      );
+    }
+    if (filter.type === 'date_range') {
+      return (
+        <div key={filter.id} className="dashboard-config-panel__control dashboard-config-panel__control--filter">
+          <span className="dashboard-config-panel__control-label">{filter.label}</span>
+          <input
+            type="date"
+            className="dashboard-config-panel__date"
+            value={String(currentValue ?? '')}
+            onChange={(event) => handleFilterChange(filter.id, event.target.value)}
+          />
+        </div>
+      );
+    }
+    if (filter.type === 'toggle') {
+      return (
+        <label key={filter.id} className="dashboard-config-panel__control dashboard-config-panel__toggle">
+          <input
+            type="checkbox"
+            checked={Boolean(currentValue)}
+            onChange={(event) => handleFilterChange(filter.id, event.target.checked)}
+          />
+          <span className="dashboard-config-panel__control-label">{filter.label}</span>
+        </label>
+      );
+    }
+    return null;
+  };
 
   // Schedule info
   const hasSchedule = !!(dashboard as unknown as Record<string, unknown>)?.schedule;
@@ -466,9 +817,16 @@ export default function DashboardDetail(): React.JSX.Element {
   const handleSave = () => {
     if (!id) return;
     updateDashboard.mutate(
-      { id, data: { name: dashboardName || undefined, base_audience: baseAudience } },
+      { id, data: { name: dashboardName || undefined, base_audience: baseAudience, rebase_mode: rebaseMode } },
       { onSuccess: () => setIsEditing(false) }
     );
+  };
+
+  const handleRebaseModeChange = (nextMode: RebaseMode) => {
+    setRebaseMode(nextMode);
+    if (id) {
+      updateDashboard.mutate({ id, data: { rebase_mode: nextMode } });
+    }
   };
 
   const handleRemoveWidget = (widgetId: string) => {
@@ -477,12 +835,24 @@ export default function DashboardDetail(): React.JSX.Element {
     updateDashboard.mutate({ id, data: { widgets: updatedWidgets } });
   };
 
-  // Remove a filter chip
-  const handleRemoveFilter = (filterId: string) => {
-    if (!id || !dashboard) return;
-    const updatedFilters = dashboardFilters.filter((f) => f.id !== filterId);
-    updateDashboard.mutate({ id, data: { filters: updatedFilters } });
-    toast.success('Filter removed');
+  const handleFilterChange = (filterId: string, value: unknown) => {
+    setFilterState((prev) => ({ ...prev, [filterId]: value }));
+  };
+
+  const handleClearFilter = (filterId: string) => {
+    setFilterState((prev) => {
+      const next = { ...prev };
+      next[filterId] = '';
+      return next;
+    });
+  };
+
+  const handleResetFilters = () => {
+    const defaults = effectiveFilters.reduce<Record<string, unknown>>((acc, filter) => {
+      acc[filter.id] = filter.default_value ?? '';
+      return acc;
+    }, {});
+    setFilterState(defaults);
   };
 
   // Add widget handler
@@ -536,6 +906,14 @@ export default function DashboardDetail(): React.JSX.Element {
     { label: 'What KPIs are trending up?' },
     { label: 'Suggest new widgets' },
   ];
+
+  useEffect(() => {
+    const defaults = effectiveFilters.reduce<Record<string, unknown>>((acc, filter) => {
+      acc[filter.id] = filter.default_value ?? '';
+      return acc;
+    }, {});
+    setFilterState((prev) => (shallowRecordEqual(prev, defaults) ? prev : defaults));
+  }, [effectiveFilters]);
 
   if (isLoading) {
     return (
@@ -700,61 +1078,89 @@ export default function DashboardDetail(): React.JSX.Element {
           </p>
         )}
 
-        {/* Filter bar -- show dashboard filters as removable chips */}
-        {dashboardFilters.length > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 'var(--spacing-xs)',
-              marginBottom: 'var(--spacing-lg)',
-              padding: 'var(--spacing-sm) 0',
-            }}
-          >
-            <span style={{ fontSize: 'var(--font-size-body-sm)', color: 'var(--color-text-muted)', alignSelf: 'center', marginRight: 'var(--spacing-xs)' }}>
-              <FilterIcon size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-              Filters:
-            </span>
-            {dashboardFilters.map((filter) => (
-              <span
-                key={filter.id}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '4px 10px',
-                  borderRadius: 'var(--radius-full)',
-                  background: 'var(--color-surface-secondary)',
-                  border: '1px solid var(--color-border-light)',
-                  fontSize: 'var(--font-size-sm)',
-                  color: 'var(--color-text)',
-                  fontWeight: 500,
+        <div className="dashboard-config-panel">
+          <div className="dashboard-config-panel__controls">
+            <div className="dashboard-config-panel__control">
+              <span className="dashboard-config-panel__control-label">Base</span>
+              <button className="config-panel__control-select" onClick={() => setAudiencePickerOpen(true)}>
+                <Users size={14} />
+                {baseAudienceLabel}
+              </button>
+            </div>
+            <div className="dashboard-config-panel__control dashboard-config-panel__control--wave">
+              <span className="dashboard-config-panel__control-label">Wave</span>
+              <WaveCadenceSwitcher
+                waves={waves}
+                cadence={waveCadence}
+                selectedWaveId={selectedWaveId}
+                onCadenceChange={(cadence) => {
+                  setWaveCadence(cadence);
+                  setSelectedWaveId('');
                 }}
+                onWaveChange={setSelectedWaveId}
+              />
+            </div>
+            <div className="dashboard-config-panel__control">
+              <span className="dashboard-config-panel__control-label">Rebase</span>
+              <select
+                className="config-panel__control-select"
+                value={rebaseMode}
+                onChange={(event) => handleRebaseModeChange(event.target.value as RebaseMode)}
               >
-                <span>{filter.label}</span>
-                {isEditing && (
-                  <button
-                    onClick={() => handleRemoveFilter(filter.id)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: 0, display: 'flex' }}
-                  >
+                {REBASE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+            {effectiveFilters.map((filter) => renderDashboardFilterControl(filter))}
+            <button className="dashboard-config-panel__reset-btn" onClick={handleResetFilters}>
+              Reset filters
+            </button>
+          </div>
+          {activeFilterChips.length > 0 && (
+            <div className="dashboard-config-panel__chips">
+              <span className="dashboard-config-panel__chips-label">
+                <FilterIcon size={14} />
+                Active
+              </span>
+              {activeFilterChips.map((filter) => (
+                <span key={filter.id} className="dashboard-config-panel__chip">
+                  <span>{filter.label}: {filter.value}</span>
+                  <button onClick={() => handleClearFilter(filter.id)} aria-label={`Clear ${filter.label}`}>
                     <X size={12} />
                   </button>
-                )}
-              </span>
-            ))}
-          </div>
-        )}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
 
         <GuardrailsPanel compact />
 
-        {hasApiWidgets ? (
-          <DashboardGrid
-            widgets={dashboard!.widgets}
-            editable={isEditing}
-            onWidgetRemove={handleRemoveWidget}
-            onWidgetMaximize={(widgetId) => setMaximizedWidgetId(widgetId)}
-            baseAudience={baseAudience}
-          />
+        {hasWidgets ? (
+          <>
+            {hasVisibleWidgets ? (
+              <DashboardGrid
+                widgets={filteredWidgets}
+                editable={isEditing}
+                onWidgetRemove={handleRemoveWidget}
+                onWidgetMaximize={(widgetId) => setMaximizedWidgetId(widgetId)}
+                baseAudience={baseAudience}
+                rebaseMode={rebaseMode}
+              />
+            ) : (
+              <EmptyState
+                icon={<FilterIcon size={42} />}
+                title="No widgets match these filters"
+                description="Adjust your filter selections or reset to show all widgets."
+                action={
+                  <Button variant="secondary" onClick={handleResetFilters}>
+                    Reset Filters
+                  </Button>
+                }
+              />
+            )}
+          </>
         ) : (
           <EmptyState
             icon={<LayoutDashboard size={48} />}

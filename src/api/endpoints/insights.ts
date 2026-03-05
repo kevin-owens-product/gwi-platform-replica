@@ -14,6 +14,8 @@ import type {
   InsightFilterSet,
   InsightQuerySpec,
   InsightCompatibilityResult,
+  StatsQueryResponse,
+  CrosstabQueryResult,
 } from '../types'
 
 interface CompatibleErrorShape {
@@ -135,11 +137,165 @@ function normalizeAssetList(response: PaginatedResponse<InsightAsset>): Paginate
   }
 }
 
-function normalizeRunResponse(response: RunInsightQueryResponse): RunInsightQueryResponse {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function normalizeStatsQueryResponse(value: unknown): StatsQueryResponse | undefined {
+  if (!isRecord(value)) return undefined
+  const results = Array.isArray(value.results) ? value.results : undefined
+  if (!results) return undefined
+  const metaSource = isRecord(value.meta) ? value.meta : {}
+
   return {
-    ...response,
-    compatibility: normalizeCompatibility(response.compatibility),
+    results: results as StatsQueryResponse['results'],
+    meta: {
+      base_size: typeof metaSource.base_size === 'number' ? metaSource.base_size : 0,
+      wave_name: typeof metaSource.wave_name === 'string' ? metaSource.wave_name : 'Unknown wave',
+      location_name: typeof metaSource.location_name === 'string' ? metaSource.location_name : 'Unknown location',
+      execution_time_ms: typeof metaSource.execution_time_ms === 'number' ? metaSource.execution_time_ms : 0,
+      effective_base: typeof metaSource.effective_base === 'number' ? metaSource.effective_base : undefined,
+      weighted_base: typeof metaSource.weighted_base === 'number' ? metaSource.weighted_base : undefined,
+      confidence_level: typeof metaSource.confidence_level === 'number' ? metaSource.confidence_level : undefined,
+      data_freshness: typeof metaSource.data_freshness === 'string' ? metaSource.data_freshness : undefined,
+    },
   }
+}
+
+function normalizeCrosstabQueryResponse(value: unknown): CrosstabQueryResult | undefined {
+  if (!isRecord(value)) return undefined
+  const rows = Array.isArray(value.rows) ? value.rows : undefined
+  const columns = Array.isArray(value.columns) ? value.columns : undefined
+  const cells = Array.isArray(value.cells) ? value.cells : undefined
+  if (!rows || !columns || !cells) return undefined
+  const metaSource = isRecord(value.meta) ? value.meta : {}
+
+  return {
+    rows: rows as CrosstabQueryResult['rows'],
+    columns: columns as CrosstabQueryResult['columns'],
+    cells: cells as CrosstabQueryResult['cells'],
+    meta: {
+      base_size: typeof metaSource.base_size === 'number' ? metaSource.base_size : 0,
+      wave_name: typeof metaSource.wave_name === 'string' ? metaSource.wave_name : 'Unknown wave',
+      location_name: typeof metaSource.location_name === 'string' ? metaSource.location_name : 'Unknown location',
+      effective_base: typeof metaSource.effective_base === 'number' ? metaSource.effective_base : undefined,
+      weighted_base: typeof metaSource.weighted_base === 'number' ? metaSource.weighted_base : undefined,
+    },
+    stat_test_summary: isRecord(value.stat_test_summary)
+      ? value.stat_test_summary as CrosstabQueryResult['stat_test_summary']
+      : undefined,
+  }
+}
+
+function synthesizeChartFromCrosstab(crosstab: CrosstabQueryResult): StatsQueryResponse {
+  const firstColumn = crosstab.columns[0]
+  const firstColumnIndex = 0
+  const fallbackMetric = crosstab.cells[0]?.[firstColumnIndex]?.values?.audience_percentage
+    ? 'audience_percentage'
+    : Object.keys(crosstab.cells[0]?.[firstColumnIndex]?.values ?? {})[0]
+
+  return {
+    results: [{
+      question_id: 'synthesized_crosstab',
+      question_name: firstColumn?.label ?? 'Crosstab preview',
+      datapoints: crosstab.rows.map((row, rowIndex) => {
+        const values = crosstab.cells[rowIndex]?.[firstColumnIndex]?.values ?? {}
+        const metricValue = fallbackMetric ? values[fallbackMetric] : 0
+
+        return {
+          datapoint_id: row.id,
+          datapoint_name: row.label,
+          metrics: {
+            ...values,
+            audience_percentage: typeof metricValue === 'number' ? metricValue : 0,
+          },
+        }
+      }),
+    }],
+    meta: {
+      base_size: crosstab.meta.base_size ?? 0,
+      wave_name: crosstab.meta.wave_name ?? 'Unknown wave',
+      location_name: crosstab.meta.location_name ?? 'Unknown location',
+      execution_time_ms: 0,
+      effective_base: crosstab.meta.effective_base,
+      weighted_base: crosstab.meta.weighted_base,
+    },
+  }
+}
+
+function synthesizeCrosstabFromChart(chart: StatsQueryResponse): CrosstabQueryResult {
+  const firstQuestion = chart.results[0]
+  const rows = (firstQuestion?.datapoints ?? []).map((datapoint, index) => ({
+    id: datapoint.datapoint_id || `row_${index}`,
+    label: datapoint.datapoint_name || `Row ${index + 1}`,
+  }))
+
+  const cells = rows.map((_, index) => [{
+    values: firstQuestion?.datapoints[index]?.metrics ?? {},
+    sample_size: Math.max(1, Math.round((chart.meta.base_size || 0) / Math.max(1, rows.length))),
+  }])
+
+  return {
+    rows,
+    columns: [{ id: 'total', label: 'Total' }],
+    cells,
+    meta: {
+      base_size: chart.meta.base_size ?? 0,
+      wave_name: chart.meta.wave_name ?? 'Unknown wave',
+      location_name: chart.meta.location_name ?? 'Unknown location',
+      effective_base: chart.meta.effective_base,
+      weighted_base: chart.meta.weighted_base,
+    },
+  }
+}
+
+function normalizeRunResponseForMode(
+  response: unknown,
+  requestedViewMode: RunInsightQueryRequest['view_mode'],
+): RunInsightQueryResponse {
+  const source = isRecord(response) ? response : {}
+
+  const chart = normalizeStatsQueryResponse(
+    source.chart ?? source.stats ?? (source.results ? source : undefined),
+  )
+
+  const crosstab = normalizeCrosstabQueryResponse(
+    source.crosstab ?? (source.rows && source.columns && source.cells ? source : undefined),
+  )
+
+  const compatibility = normalizeCompatibility(
+    isRecord(source.compatibility) ? source.compatibility as RunInsightQueryResponse['compatibility'] : undefined,
+  )
+
+  if (requestedViewMode === 'chart') {
+    return {
+      view_mode: 'chart',
+      chart: chart ?? (crosstab ? synthesizeChartFromCrosstab(crosstab) : undefined),
+      compatibility,
+    }
+  }
+
+  return {
+    view_mode: 'crosstab',
+    crosstab: crosstab ?? (chart ? synthesizeCrosstabFromChart(chart) : undefined),
+    compatibility,
+  }
+}
+
+function isRunResponseUsable(
+  response: RunInsightQueryResponse,
+  requestedViewMode: RunInsightQueryRequest['view_mode'],
+): boolean {
+  if (requestedViewMode === 'chart') {
+    return Boolean(response.chart && Array.isArray(response.chart.results))
+  }
+
+  return Boolean(
+    response.crosstab
+      && Array.isArray(response.crosstab.rows)
+      && Array.isArray(response.crosstab.columns)
+      && Array.isArray(response.crosstab.cells),
+  )
 }
 
 function normalizeConvertResponse(response: ConvertInsightAssetResponse): ConvertInsightAssetResponse {
@@ -287,11 +443,23 @@ export const insightsApi = {
   runQuery: async (data: RunInsightQueryRequest) => {
     const response = await withFallback(
       'runQuery',
-      () => apiClient.post('v4/insights/query:run', { json: data }).json<RunInsightQueryResponse>(),
+      () => apiClient.post('v4/insights/query:run', { json: data }).json<unknown>(),
       async () => (await getMockInsightsApi()).runQuery(data),
     )
 
-    return normalizeRunResponse(response)
+    let normalized = normalizeRunResponseForMode(response, data.view_mode)
+    if (isRunResponseUsable(normalized, data.view_mode)) {
+      return normalized
+    }
+
+    trackInsightsTelemetry('insights.fallback', {
+      operation: 'runQuery',
+      reason: 'invalid_shape',
+    })
+
+    const fallbackResponse = await (await getMockInsightsApi()).runQuery(data)
+    normalized = normalizeRunResponseForMode(fallbackResponse, data.view_mode)
+    return normalized
   },
 
   convertAsset: async (id: string, data: ConvertInsightAssetRequest) => {

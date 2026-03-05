@@ -87,6 +87,147 @@ export const AGENT_CATEGORIES: AgentCategory[] = [
 
 export const agents: Agent[] = [
   {
+    id: 'all-in-one-agent',
+    name: 'All In One Agent',
+    description: 'Runs the full lifecycle from brief interpretation through delivery and ROI recommendations.',
+    category: 'Orchestration',
+    icon: Sparkles,
+    iconColor: '#7c3aed',
+    iconBg: '#f5f3ff',
+    capabilities: [
+      'Brief interpretation',
+      'Workflow orchestration',
+      'Data harmonization',
+      'Audience profiling',
+      'Crosstab analysis',
+      'Narrative generation',
+      'Visualization packaging',
+      'Governance validation',
+      'Connector delivery',
+      'ROI monitoring',
+    ],
+    status: 'new',
+    examplePrompt:
+      'Run an end-to-end workflow for Gen Z streaming growth in US/UK, then deliver outputs and propose next-step ROI actions.',
+    suggestedPrompts: [
+      { icon: Sparkles, text: 'Execute a full brief-to-delivery pipeline with governance gates.' },
+      { icon: Workflow, text: 'Run all specialist stages and summarize outputs by stage owner.' },
+      { icon: TrendingUp, text: 'Finish with KPI monitoring recommendations and ROI next actions.' },
+    ],
+    starterTemplateIds: [
+      'tmpl-all-in-one-end-to-end',
+      'tmpl-all-in-one-governed-delivery',
+      'tmpl-all-in-one-monitor-and-optimize',
+    ],
+    demo: {
+      workflowName: 'Unified Lifecycle Workflow',
+      workflowSummary:
+        'Combines every specialist agent into one orchestrated run for engineering validation and client-ready output generation.',
+      steps: [
+        {
+          id: 'aio-step-1',
+          name: 'Interpret Brief',
+          description: 'Extract objective, audience, market scope, and output requirements.',
+          deliverable: 'Structured brief package',
+        },
+        {
+          id: 'aio-step-2',
+          name: 'Orchestrate Workflow',
+          description: 'Build execution graph with dependencies, SLAs, and gates.',
+          deliverable: 'Flow orchestration DAG',
+        },
+        {
+          id: 'aio-step-3',
+          name: 'Harmonize Data',
+          description: 'Normalize sources, resolve collisions, and attach provenance.',
+          deliverable: 'Harmonized dataset and lineage log',
+        },
+        {
+          id: 'aio-step-4',
+          name: 'Profile Audience',
+          description: 'Build and size target segments with persona signals.',
+          deliverable: 'Audience definition and persona summary',
+        },
+        {
+          id: 'aio-step-5',
+          name: 'Run Crosstab Analysis',
+          description: 'Compute significant lifts, indices, and comparisons.',
+          deliverable: 'Crosstab and significance report',
+        },
+        {
+          id: 'aio-step-6',
+          name: 'Draft Narrative',
+          description: 'Translate findings into stakeholder-ready recommendations.',
+          deliverable: 'Executive narrative summary',
+        },
+        {
+          id: 'aio-step-7',
+          name: 'Package Visuals',
+          description: 'Generate charts, dashboard structure, and deck storyboard.',
+          deliverable: 'Visualization package',
+        },
+        {
+          id: 'aio-step-8',
+          name: 'Validate Governance',
+          description: 'Attach citations, confidence labels, and compliance checks.',
+          deliverable: 'Validation and citation bundle',
+        },
+        {
+          id: 'aio-step-9',
+          name: 'Deliver Outputs',
+          description: 'Send approved outputs to configured destinations.',
+          deliverable: 'Delivery receipts',
+        },
+        {
+          id: 'aio-step-10',
+          name: 'Advise Next Steps',
+          description: 'Monitor KPI drift and recommend ROI-focused follow-up actions.',
+          deliverable: 'Action plan and monitoring setup',
+        },
+      ],
+      deliverables: [
+        {
+          id: 'aio-del-1',
+          name: 'All-In-One Run Summary',
+          type: 'report',
+          description: 'Stage-by-stage status, artifacts, and execution notes.',
+        },
+        {
+          id: 'aio-del-2',
+          name: 'Governed Output Bundle',
+          type: 'dataset',
+          description: 'Validated narrative, charts, dashboard links, and delivery payload metadata.',
+        },
+        {
+          id: 'aio-del-3',
+          name: 'ROI Action Roadmap',
+          type: 'insight',
+          description: 'Prioritized recommendations with expected impact and monitoring thresholds.',
+        },
+      ],
+      chatPrompts: [
+        {
+          id: 'aio-chat-1',
+          title: 'Run complete lifecycle',
+          prompt: 'Run all 10 specialist stages from brief interpretation to delivery and ROI guidance.',
+          expectedOutcome: 'Single run with stage outputs and completion status.',
+        },
+        {
+          id: 'aio-chat-2',
+          title: 'Focus on governed delivery',
+          prompt: 'Execute end-to-end flow with strict governance checks before connector delivery.',
+          expectedOutcome: 'Validated output package with citation and delivery receipts.',
+        },
+        {
+          id: 'aio-chat-3',
+          title: 'Close with recommendations',
+          prompt: 'Finish the full workflow and recommend next actions with ROI impact estimates.',
+          expectedOutcome: 'Action roadmap plus KPI monitoring plan.',
+        },
+      ],
+    },
+  },
+  {
     id: 'brief-interpreter',
     name: 'Brief Interpreter',
     description: 'Translates loose briefs into structured objectives and outputs.',
@@ -941,7 +1082,10 @@ export const agents: Agent[] = [
 ]
 
 export function getFeaturedAgents(count: number): Agent[] {
-  return agents.slice(0, count)
+  const pinned = agents.find((agent) => agent.id === 'all-in-one-agent')
+  if (!pinned) return agents.slice(0, count)
+  const remaining = agents.filter((agent) => agent.id !== pinned.id)
+  return [pinned, ...remaining].slice(0, count)
 }
 
 export function getAgentById(id: string): Agent | undefined {
@@ -949,6 +1093,11 @@ export function getAgentById(id: string): Agent | undefined {
 }
 
 export const AGENT_STARTER_TEMPLATE_IDS: Record<string, string[]> = {
+  'all-in-one-agent': [
+    'tmpl-all-in-one-end-to-end',
+    'tmpl-all-in-one-governed-delivery',
+    'tmpl-all-in-one-monitor-and-optimize',
+  ],
   'brief-interpreter': ['tmpl-brief-interpret-structured', 'tmpl-brief-clarification-checklist'],
   'workflow-orchestrator': ['tmpl-workflow-build-execution', 'tmpl-workflow-run-status'],
   'data-harmonizer': ['tmpl-data-map-taxonomy', 'tmpl-data-dedupe-weighting'],

@@ -1,0 +1,111 @@
+.wave-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.wave-switcher__cadence {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-white);
+}
+
+.wave-switcher__cadence-btn {
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.wave-switcher__cadence-btn:not(:last-child) {
+  border-right: 1px solid var(--color-border-light);
+}
+
+.wave-switcher__cadence-btn:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-secondary);
+}
+
+.wave-switcher__cadence-btn.active {
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  font-weight: var(--font-weight-medium);
+}
+
+.wave-switcher__select-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wave-switcher__select-label {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-light);
+  white-space: nowrap;
+}
+
+.wave-switcher__select {
+  height: 36px;
+  min-width: 170px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  color: var(--color-text);
+  font-size: var(--font-size-body-sm);
+}
+
+.wave-switcher__select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.wave-switcher--stacked {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+}
+
+.wave-switcher--stacked .wave-switcher__cadence {
+  width: 100%;
+}
+
+.wave-switcher--stacked .wave-switcher__cadence-btn {
+  flex: 1;
+  text-align: center;
+}
+
+.wave-switcher--stacked .wave-switcher__select-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.wave-switcher--stacked .wave-switcher__select {
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .wave-switcher {
+    width: 100%;
+  }
+
+  .wave-switcher__select-wrap {
+    flex: 1;
+    min-width: 220px;
+  }
+
+  .wave-switcher__select {
+    width: 100%;
+  }
+}

@@ -26,6 +26,15 @@ export const platformLinkages: AgenticPlatformLinkage[] = [
 
 export const capabilityInventory: AgenticCapability[] = [
   {
+    id: 'all-in-one-agent',
+    name: 'All In One Agent',
+    type: 'agent',
+    category: 'Orchestration',
+    description: 'Composite orchestrator that runs all specialist agents in one lifecycle pipeline.',
+    inputs: ['brief_text', 'workspace_context', 'delivery_targets'],
+    outputs: ['lifecycle_run_summary', 'validated_output_bundle', 'roi_action_plan'],
+  },
+  {
     id: 'brief-interpreter',
     name: 'Brief Interpreter',
     type: 'agent',
@@ -118,6 +127,93 @@ export const capabilityInventory: AgenticCapability[] = [
 ]
 
 const baseFlows: AgenticFlow[] = [
+  {
+    id: 'flow-all-in-one-agent',
+    name: 'All In One Agent Flow',
+    description: 'Runs all specialist agents end-to-end from intake through delivery and optimization.',
+    triggers: ['agent_all_in_one_agent', 'agent_spark_prompt'],
+    steps: [
+      {
+        id: 'step-aio-brief',
+        name: 'Brief Interpreter',
+        capability_id: 'brief-interpreter',
+        description: 'Extract objective, markets, audience, KPIs, and output constraints.',
+        output_artifacts: ['structured_brief', 'intent_tags'],
+      },
+      {
+        id: 'step-aio-workflow',
+        name: 'Workflow Orchestrator',
+        capability_id: 'workflow-orchestrator',
+        description: 'Create workspace and stage dependencies with quality gates.',
+        depends_on: ['step-aio-brief'],
+        output_artifacts: ['workflow_plan', 'workspace_id'],
+      },
+      {
+        id: 'step-aio-data',
+        name: 'Data Harmonizer',
+        capability_id: 'data-harmonizer',
+        description: 'Normalize and unify source data with full provenance.',
+        depends_on: ['step-aio-workflow'],
+        output_artifacts: ['harmonized_dataset', 'provenance_log'],
+      },
+      {
+        id: 'step-aio-audience',
+        name: 'Audience Profiler',
+        capability_id: 'audience-profiler',
+        description: 'Build and size audience segments with persona context.',
+        depends_on: ['step-aio-data'],
+        output_artifacts: ['audience_id', 'persona_summary', 'reach_report'],
+      },
+      {
+        id: 'step-aio-crosstab',
+        name: 'Crosstab Analyst',
+        capability_id: 'crosstab-analyst',
+        description: 'Run significance-aware comparisons and lift detection.',
+        depends_on: ['step-aio-audience'],
+        output_artifacts: ['crosstab_table', 'significance_report', 'lift_matrix'],
+      },
+      {
+        id: 'step-aio-narrative',
+        name: 'Narrative Agent',
+        capability_id: 'narrative-agent',
+        description: 'Convert findings into a stakeholder-ready story with evidence links.',
+        depends_on: ['step-aio-crosstab'],
+        output_artifacts: ['insight_summary', 'story_beats'],
+      },
+      {
+        id: 'step-aio-visualization',
+        name: 'Visualization Agent',
+        capability_id: 'visualization-agent',
+        description: 'Build charts, dashboard layout, and deck storyboard outputs.',
+        depends_on: ['step-aio-narrative'],
+        output_artifacts: ['charts', 'dashboard', 'deck'],
+      },
+      {
+        id: 'step-aio-governance',
+        name: 'Governance Agent',
+        capability_id: 'governance-agent',
+        description: 'Validate claims and attach citations with confidence checks.',
+        depends_on: ['step-aio-visualization'],
+        output_artifacts: ['validation_report', 'citation_bundle'],
+      },
+      {
+        id: 'step-aio-connector',
+        name: 'Connector Agent',
+        capability_id: 'connector-agent',
+        description: 'Package and deliver approved artifacts to configured destinations.',
+        depends_on: ['step-aio-governance'],
+        output_artifacts: ['delivery_bundle', 'delivery_receipts'],
+      },
+      {
+        id: 'step-aio-advisor',
+        name: 'Advisor Agent',
+        capability_id: 'advisor-agent',
+        description: 'Monitor KPI movement and recommend ROI-focused follow-up actions.',
+        depends_on: ['step-aio-connector'],
+        output_artifacts: ['alert_feed', 'recommendations', 'learning_updates'],
+      },
+    ],
+  },
   {
     id: 'brief-interpretation',
     name: 'Brief Interpretation Flow',

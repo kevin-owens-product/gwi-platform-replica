@@ -1,13 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Globe, BarChart3, LayoutGrid, List, ChevronDown, FolderOpen, Tag } from 'lucide-react';
 import { useCharts } from '@/hooks/useCharts';
+import { useWaves } from '@/hooks/useTaxonomy';
 import { useWorkspaceStore } from '@/stores/workspace';
-import { SearchInput, Tabs, Pagination, EmptyState, Badge } from '@/components/shared';
+import { SearchInput, Tabs, Pagination, EmptyState, Badge, WaveCadenceSwitcher } from '@/components/shared';
 import ChartRenderer from '@/components/chart/ChartRenderer';
 import { DATAPOINT_LABELS } from '@/api/mock/data/queries';
 import { formatRelativeDate } from '@/utils/format';
 import type { Chart, ChartType } from '@/api/types';
+import { getWavesForCadence, type WaveCadence } from '@/utils/waves';
 import './Charts.css';
 
 const tabs = [
@@ -367,6 +369,8 @@ export default function Charts(): React.JSX.Element {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [chartTypeFilter, setChartTypeFilter] = useState<string>('all');
   const [showTypeDropdown, setShowTypeDropdown] = useState<boolean>(false);
+  const [waveCadence, setWaveCadence] = useState<WaveCadence>('quarterly');
+  const [selectedWaveId, setSelectedWaveId] = useState<string>('');
 
   const activeProject = useWorkspaceStore((s) => s.activeProject);
   const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
@@ -379,10 +383,22 @@ export default function Charts(): React.JSX.Element {
     sort_by: 'updated_at',
     sort_order: 'desc',
   });
+  const { data: allWaves } = useWaves();
 
   const charts = chartsResponse?.data ?? [];
+  const waves = allWaves ?? [];
   const meta = chartsResponse?.meta;
   const totalPages = meta?.total_pages ?? 1;
+  const cadenceWaveIds = useMemo(
+    () => new Set(getWavesForCadence(waves, waveCadence).map((wave) => wave.id)),
+    [waves, waveCadence],
+  );
+
+  useEffect(() => {
+    if (selectedWaveId && !cadenceWaveIds.has(selectedWaveId)) {
+      setSelectedWaveId('');
+    }
+  }, [selectedWaveId, cadenceWaveIds]);
 
   // Client-side tab filtering (tabs represent ownership, not a server filter)
   // Pre-compute preview data for all visible charts (stable across re-renders)
@@ -404,6 +420,14 @@ export default function Charts(): React.JSX.Element {
 
     // Chart type filter
     if (chartTypeFilter !== 'all' && chart.chart_type !== chartTypeFilter) return false;
+
+    const chartWaveIds = chart.config.wave_ids?.map((wave) => wave.wave_id) ?? [];
+    if (selectedWaveId) {
+      return chartWaveIds.includes(selectedWaveId);
+    }
+    if (chartWaveIds.length > 0 && cadenceWaveIds.size > 0) {
+      return chartWaveIds.some((waveId) => cadenceWaveIds.has(waveId));
+    }
 
     return true;
   });
@@ -469,6 +493,21 @@ export default function Charts(): React.JSX.Element {
           )}
         </div>
 
+        <WaveCadenceSwitcher
+          waves={waves}
+          cadence={waveCadence}
+          selectedWaveId={selectedWaveId}
+          onCadenceChange={(cadence) => {
+            setWaveCadence(cadence);
+            setSelectedWaveId('');
+            setPage(1);
+          }}
+          onWaveChange={(waveId) => {
+            setSelectedWaveId(waveId);
+            setPage(1);
+          }}
+        />
+
         {/* View mode toggle */}
         <div className="chart-view-toggle">
           <button
@@ -509,7 +548,7 @@ export default function Charts(): React.JSX.Element {
           title="No charts found"
           description={searchQuery ? 'No charts match your search' : 'Create your first chart to get started'}
           action={
-            <button className="charts-empty-btn" onClick={() => { setSearchQuery(''); setActiveTab('all'); setChartTypeFilter('all'); }}>
+            <button className="charts-empty-btn" onClick={() => { setSearchQuery(''); setActiveTab('all'); setChartTypeFilter('all'); setSelectedWaveId(''); setWaveCadence('quarterly'); }}>
               Clear filters
             </button>
           }

@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Globe, LayoutDashboard, MoreVertical, Edit, Copy, Trash2, Loader2, Calendar, Bell, Eye } from 'lucide-react';
 import { useDashboards, useDeleteDashboard } from '@/hooks/useDashboards';
+import { useCharts } from '@/hooks/useCharts';
+import { useWaves } from '@/hooks/useTaxonomy';
 import { useWorkspaceStore } from '@/stores/workspace';
-import { SearchInput, Tabs, Pagination, EmptyState, Badge, Dropdown } from '@/components/shared';
+import { SearchInput, Tabs, Pagination, EmptyState, Badge, Dropdown, WaveCadenceSwitcher } from '@/components/shared';
 import { formatRelativeDate } from '@/utils/format';
 import type { Dashboard, DashboardWidgetType } from '@/api/types';
+import { getWavesForCadence, type WaveCadence } from '@/utils/waves';
 import './Dashboards.css';
 
 type PreviewType = 'bars' | 'line' | 'pie' | 'mixed';
@@ -114,6 +117,8 @@ export default function Dashboards(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [page, setPage] = useState<number>(1);
+  const [waveCadence, setWaveCadence] = useState<WaveCadence>('quarterly');
+  const [selectedWaveId, setSelectedWaveId] = useState<string>('');
 
   const activeProject = useWorkspaceStore((s) => s.activeProject);
   const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
@@ -124,17 +129,70 @@ export default function Dashboards(): React.JSX.Element {
     search: searchQuery || undefined,
     project_id: activeProjectId || undefined,
   });
+  const { data: chartsData } = useCharts({
+    per_page: 500,
+    project_id: activeProjectId || undefined,
+  });
+  const { data: allWaves } = useWaves();
   const deleteDashboard = useDeleteDashboard();
 
   const dashboards = data?.data ?? [];
+  const charts = chartsData?.data ?? [];
+  const waves = allWaves ?? [];
   const meta = data?.meta;
   const totalPages = meta?.total_pages ?? 1;
+  const cadenceWaveIds = useMemo(
+    () => new Set(getWavesForCadence(waves, waveCadence).map((wave) => wave.id)),
+    [waves, waveCadence],
+  );
+  const chartWaveMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const chart of charts) {
+      map.set(
+        chart.id,
+        chart.config.wave_ids?.map((wave) => wave.wave_id) ?? [],
+      );
+    }
+    return map;
+  }, [charts]);
+  const dashboardWaveMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const dashboard of dashboards) {
+      const waveIds = new Set<string>();
+      for (const widget of dashboard.widgets ?? []) {
+        if (!widget.chart_id) continue;
+        const chartWaves = chartWaveMap.get(widget.chart_id) ?? [];
+        for (const waveId of chartWaves) {
+          waveIds.add(waveId);
+        }
+      }
+      map.set(dashboard.id, [...waveIds]);
+    }
+    return map;
+  }, [dashboards, chartWaveMap]);
+
+  useEffect(() => {
+    if (selectedWaveId && !cadenceWaveIds.has(selectedWaveId)) {
+      setSelectedWaveId('');
+    }
+  }, [selectedWaveId, cadenceWaveIds]);
 
   const filtered = dashboards.filter((d: Dashboard) => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'shared') return d.is_shared;
-    if (activeTab === 'my') return !d.is_shared;
-    if (activeTab === 'templates') return !!d.template_id;
+    if (activeTab === 'all') { /* pass */ }
+    else if (activeTab === 'shared' && !d.is_shared) return false;
+    else if (activeTab === 'my' && d.is_shared) return false;
+    else if (activeTab === 'gwi' && d.user_id) return false;
+    else if (activeTab === 'templates' && !d.template_id) return false;
+
+    const dashboardWaveIds = dashboardWaveMap.get(d.id) ?? [];
+    if (selectedWaveId) {
+      if (dashboardWaveIds.length === 0) return true;
+      return dashboardWaveIds.includes(selectedWaveId);
+    }
+    if (dashboardWaveIds.length > 0 && cadenceWaveIds.size > 0) {
+      return dashboardWaveIds.some((waveId) => cadenceWaveIds.has(waveId));
+    }
+
     return true;
   });
 
@@ -174,6 +232,20 @@ export default function Dashboards(): React.JSX.Element {
           onChange={(value) => { setSearchQuery(value); setPage(1); }}
           placeholder="Search dashboards"
         />
+        <WaveCadenceSwitcher
+          waves={waves}
+          cadence={waveCadence}
+          selectedWaveId={selectedWaveId}
+          onCadenceChange={(cadence) => {
+            setWaveCadence(cadence);
+            setSelectedWaveId('');
+            setPage(1);
+          }}
+          onWaveChange={(waveId) => {
+            setSelectedWaveId(waveId);
+            setPage(1);
+          }}
+        />
       </div>
 
       {isLoading ? (
@@ -193,7 +265,7 @@ export default function Dashboards(): React.JSX.Element {
           description={searchQuery ? 'No dashboards match your search' : 'Create your first dashboard to get started'}
           action={
             searchQuery ? (
-              <button className="dashboards-empty-btn" onClick={() => { setSearchQuery(''); setActiveTab('all'); }}>Clear filters</button>
+              <button className="dashboards-empty-btn" onClick={() => { setSearchQuery(''); setActiveTab('all'); setWaveCadence('quarterly'); setSelectedWaveId(''); }}>Clear filters</button>
             ) : (
               <Link to="/app/dashboards/new" className="btn-create">
                 <span>Create new dashboard</span>
